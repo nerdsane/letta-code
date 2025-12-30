@@ -1,5 +1,5 @@
 /**
- * Gemini CLI run_shell_command tool - wrapper around Letta Code's Bash tool
+ * Gemini CLI run_shell_command tool - wrapper around Deep Sci-Fi's Bash tool
  * Uses Gemini's exact schema and description
  */
 
@@ -14,7 +14,7 @@ interface RunShellCommandGeminiArgs {
 export async function run_shell_command(
   args: RunShellCommandGeminiArgs,
 ): Promise<{ message: string }> {
-  // Adapt Gemini params to Letta Code's Bash tool
+  // Adapt Gemini params to Deep Sci-Fi's Bash tool
   const lettaArgs = {
     command: args.command,
     description: args.description,

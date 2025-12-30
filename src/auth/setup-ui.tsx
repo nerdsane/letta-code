@@ -118,7 +118,7 @@ export function SetupUI({ onComplete }: SetupUIProps) {
     return (
       <Box flexDirection="column" padding={1}>
         <Text color="green">✓ Setup complete!</Text>
-        <Text dimColor>Starting Letta Code...</Text>
+        <Text dimColor>Starting Deep Sci-Fi...</Text>
       </Box>
     );
   }
@@ -157,7 +157,7 @@ export function SetupUI({ onComplete }: SetupUIProps) {
   return (
     <Box flexDirection="column" padding={1}>
       <Text color={colors.welcome.accent}>{asciiLogo}</Text>
-      <Text bold>Welcome to Letta Code!</Text>
+      <Text bold>Welcome to Deep Sci-Fi!</Text>
       <Text> </Text>
       <Text>Let's get you authenticated:</Text>
       <Text> </Text>

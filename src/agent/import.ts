@@ -48,7 +48,7 @@ export async function importAgentFromFile(
     agent = await client.agents.retrieve(agentId);
   }
 
-  // Link Letta Code tools to the imported agent
+  // Link Deep Sci-Fi tools to the imported agent
   await linkToolsToAgent(agentId);
 
   return { agent };

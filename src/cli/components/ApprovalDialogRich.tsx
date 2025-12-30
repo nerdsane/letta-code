@@ -727,7 +727,7 @@ export const ApprovalDialog = memo(function ApprovalDialog({
     const denyLabel =
       progress && progress.total > 1
         ? "No, deny this tool (esc)"
-        : "No, and tell Letta Code what to do differently (esc)";
+        : "No, and tell Deep Sci-Fi what to do differently (esc)";
     opts.push({
       label: denyLabel,
       action: () => {}, // Handled separately via setIsEnteringReason

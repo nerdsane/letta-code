@@ -54,7 +54,7 @@ export const SYSTEM_PROMPTS: SystemPromptOption[] = [
   {
     id: "default",
     label: "Default",
-    description: "Standard Letta Code system prompt (Claude-optimized)",
+    description: "Standard Deep Sci-Fi system prompt (Claude-optimized)",
     content: lettaAnthropicPrompt,
     isDefault: true,
     isFeatured: true,

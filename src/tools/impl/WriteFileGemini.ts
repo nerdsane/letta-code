@@ -1,5 +1,5 @@
 /**
- * Gemini CLI write_file tool - wrapper around Letta Code's Write tool
+ * Gemini CLI write_file tool - wrapper around Deep Sci-Fi's Write tool
  * Uses Gemini's exact schema and description
  */
 

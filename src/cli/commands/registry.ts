@@ -13,7 +13,7 @@ interface Command {
 export const commands: Record<string, Command> = {
   // === Page 1: Most commonly used (order 10-19) ===
   "/agents": {
-    desc: "Browse agents (pinned, Letta Code, all)",
+    desc: "Browse agents (pinned, Deep Sci-Fi, all)",
     order: 10,
     handler: () => {
       // Handled specially in App.tsx to open agent browser
@@ -305,7 +305,7 @@ export const commands: Record<string, Command> = {
     },
   },
   "/link": {
-    desc: "Attach all Letta Code tools to agent (deprecated, use /toolset instead)",
+    desc: "Attach all Deep Sci-Fi tools to agent (deprecated, use /toolset instead)",
     hidden: true,
     handler: () => {
       // Handled specially in App.tsx to access agent ID and client
@@ -313,7 +313,7 @@ export const commands: Record<string, Command> = {
     },
   },
   "/unlink": {
-    desc: "Remove all Letta Code tools from agent (deprecated, use /toolset instead)",
+    desc: "Remove all Deep Sci-Fi tools from agent (deprecated, use /toolset instead)",
     hidden: true,
     handler: () => {
       // Handled specially in App.tsx to access agent ID and client

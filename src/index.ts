@@ -20,19 +20,19 @@ import {
 function printHelp() {
   // Keep this plaintext (no colors) so output pipes cleanly
   const usage = `
-Letta Code is a general purpose CLI for interacting with Letta agents
+Deep Sci-Fi is a general purpose CLI for interacting with Letta agents
 
 USAGE
   # interactive TUI
-  letta                 Resume from profile or create new agent (shows selector)
-  letta --new           Create a new agent directly (skip profile selector)
-  letta --agent <id>    Open a specific agent by ID
+  deep-scifi                 Resume from profile or create new agent (shows selector)
+  deep-scifi --new           Create a new agent directly (skip profile selector)
+  deep-scifi --agent <id>    Open a specific agent by ID
 
   # headless
-  letta -p "..."        One-off prompt in headless mode (no TTY UI)
+  deep-scifi -p "..."        One-off prompt in headless mode (no TTY UI)
 
   # maintenance
-  letta update          Manually check for updates and install if available
+  deep-scifi update          Manually check for updates and install if available
 
 OPTIONS
   -h, --help            Show this help and exit
@@ -54,7 +54,7 @@ OPTIONS
   --from-af <path>      Create agent from an AgentFile (.af) template
 
 BEHAVIOR
-  On startup, Letta Code checks for saved profiles:
+  On startup, Deep Sci-Fi checks for saved profiles:
   - If profiles exist, you'll be prompted to select one or create a new agent
   - Profiles can be "pinned" to specific projects for quick access
   - Use /profile save <name> to bookmark your current agent
@@ -68,9 +68,9 @@ BEHAVIOR
 
 EXAMPLES
   # when installed as an executable
-  letta                    # Show profile selector or create new
-  letta --new              # Create new agent directly
-  letta --agent agent_123  # Open specific agent
+  deep-scifi                    # Show profile selector or create new
+  deep-scifi --new              # Create new agent directly
+  deep-scifi --agent agent_123  # Open specific agent
 
   # inside the interactive session
   /profile save MyAgent    # Save current agent as profile
@@ -143,7 +143,7 @@ async function printInfo() {
     return name ? `${id} (${name})` : `${id} (not found)`;
   };
 
-  console.log(`Letta Code ${getVersion()}\n`);
+  console.log(`Deep Sci-Fi ${getVersion()}\n`);
   console.log(`Current directory: ${cwd}`);
   console.log(
     `Skills directory:  ${skillsDir}${skillsExist ? "" : " (not found)"}`,
@@ -367,7 +367,7 @@ async function main(): Promise<void> {
   // Handle version flag
   if (values.version) {
     const { getVersion } = await import("./version");
-    console.log(`${getVersion()} (Letta Code)`);
+    console.log(`${getVersion()} (Deep Sci-Fi)`);
     process.exit(0);
   }
 
@@ -945,7 +945,7 @@ async function main(): Promise<void> {
               // Load only the specific tools attached to this agent
               await loadSpecificTools(attachedTools);
             } else {
-              // No Letta Code tools attached, load default based on model
+              // No Deep Sci-Fi tools attached, load default based on model
               const modelForTools = getModelForToolLoading(model, undefined);
               await loadTools(modelForTools);
             }

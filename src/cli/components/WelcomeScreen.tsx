@@ -103,21 +103,21 @@ export function WelcomeScreen({
 
   return (
     <Box flexDirection="row" marginTop={1}>
-      {/* Left column: Logo */}
+      {/* Left column: Logo - solid teal */}
       <Box flexDirection="column" paddingLeft={1} paddingRight={2}>
         {logoLines.map((line, idx) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: Logo lines are static and never reorder
-          <Text key={idx} bold color={colors.welcome.accent}>
-            {idx === 0 ? `  ${line}` : line}
+          <Text key={idx} bold color="#00F0FF">
+            {line}
           </Text>
         ))}
       </Box>
 
       {/* Right column: Text info */}
       <Box flexDirection="column" marginTop={0}>
-        {/* Row 1: Letta Code + version */}
+        {/* Row 1: Deep Sci-Fi + version */}
         <Box>
-          <Text bold>Letta Code</Text>
+          <Text bold>Deep Sci-Fi</Text>
           <Text color="gray"> v{version}</Text>
         </Box>
         {/* Row 2: model · auth (or just auth while loading) */}

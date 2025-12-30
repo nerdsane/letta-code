@@ -1,0 +1,337 @@
+{
+  "development": {
+    "state": "draft",
+    "version": 3,
+    "created": "2025-12-30T03:53:00Z",
+    "last_modified": "2025-12-30T03:58:10.209Z",
+    "revision_notes": [
+      "Added deep technical specifications based on 2024 research extrapolated to 2035",
+      "Added computational architecture details based on RTFM, WorldMem research and extrapolated GPU costs",
+      "Expanded daily life details: routines, space, costs, team dynamics, breaks, social context, mental health, financial realities",
+      "Added detailed art world context: institutions, education, legal issues, generational dynamics, global patterns"
+    ]
+  },
+  "surface": {
+    "opening_scene": "Artist wearing 'the band' (neural interface) creating an experiential space for a client who lost her mother",
+    "visible_elements": [
+      {
+        "id": "elem_1",
+        "type": "technology",
+        "name": "The Band",
+        "description": "Lightweight neural interface headband worn during creative work. Reads intention, attention, emotional states. Allows artists to work in shared simulation spaces.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "worn_how": "Headband, light pressure at temples",
+          "sensation": "Faint tingle during calibration, then mostly imperceptible",
+          "usage": "Put on to enter creative mode, system reads best when user not trying too hard"
+        }
+      },
+      {
+        "id": "elem_2",
+        "type": "technology",
+        "name": "The Canvas",
+        "description": "Persistent simulation space where artists work. Can be solo or shared. Responds to intention, generates proposals, holds ongoing creative work.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "experience": "Immersive virtual environment, physics feel almost right but not quite",
+          "collaboration": "Multiple artists can enter same canvas, see each other's presence",
+          "persistence": "Spaces continue to evolve based on set rules even when artist not present"
+        }
+      },
+      {
+        "id": "elem_3",
+        "type": "character_role",
+        "name": "The Artist (protagonist)",
+        "description": "Experienced artist (10+ years practice) who creates experiential spaces for clients using band and canvas. Thoughtful about the philosophical questions of AI-augmented work.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "practice": "Commission-based, creates spaces for clients to inhabit",
+          "philosophy": "Choosing is where I live. The choosing is what makes the work mine.",
+          "relationship": "Partner (Kira) is curator who doesn't show AI-augmented work"
+        }
+      }
+    ],
+    "character_pov": "The Artist (first person)",
+    "revealed_in_story": {
+      "tech_works": "Band reads intention, canvas proposes, artist chooses",
+      "work_type": "Creating experiential spaces clients can walk through",
+      "team_structure": "Small team (Meena, Javier) working in shared canvas",
+      "art_world_split": "Some institutions refuse AI-augmented work, debates about authenticity"
+    },
+    "daily_life": {
+      "morning_routine": "Artist arrives studio 9-10am. Makes coffee/tea. Puts on band while reviewing overnight evolution of persistent canvases (clients' spaces continuing to grow). Band calibrates during this review (2-3 minutes, mostly automatic). Checks compute budget usage, adjusts quality settings if needed.",
+      "studio_space": "Converted warehouse, 2500 sq ft. Divided into: neural booth (quiet, good lighting, comfortable chair, 180° display), collaboration space (3 stations, shared canvas visualization), meeting area (clients can put on visitor bands, enter canvases), kitchenette, bathroom. Exposed brick, plants, natural light from north windows. Climate controlled 68-72°F (band works best in temperature stable environment).",
+      "equipment_costs": {
+        "band": "$8K per unit (amortized over 3-5 years). Studio owns 4.",
+        "local_gpu": "$2K workstation GPU per artist station",
+        "displays": "$1.5K per 180° curved display",
+        "cloud_compute": "$800-1200/month subscription (bulk rate) + overages",
+        "total_studio_overhead": "~$3500/month (rent, utilities, internet, compute, equipment depreciation)"
+      },
+      "team_dynamics": "Meena (senior, 38): specializes in emotional architecture, systems design. Works morning-heavy, often done by 2pm. Javier (27): technical + aesthetic experimentation, works afternoon-late. Producer handles client communication, scheduling, business ops. Team shares main canvas for collaboration, maintains private canvases for exploration.",
+      "client_interactions": "Intake: 60-90 min conversation, artist takes notes but doesn't sketch (learns to listen for emotional truth, not literal requests). Client may try band if interested, walk through reference spaces. Follow-ups: client can visit studio to enter canvas, or artist sends recorded flythrough. Final handoff: client receives access credentials, training on how to enter/navigate their space, documentation of evolution rules.",
+      "breaks_and_rhythms": "Band sessions: 90-120 min max, then 20-30 min break. Artists go outside, eat, socialize. Trying to extend sessions causes degraded work (signal drift, mental fatigue, aesthetic decision-making suffers). Afternoon sessions often shorter (60-90 min). Most artists do 3-4 sessions per day, 5-6 hours total band time.",
+      "social_life": "Art world is small, interconnected. Studio is part of larger arts district. Artists share building with traditional painters, sculptors, mixed media. Cross-pollination of ideas. Tension but also curiosity between different camps. Evening events: gallery openings, talks, dinners. Kira's (protagonist's partner) institution nearby, they often meet for lunch.",
+      "mental_health": "Band work is cognitively demanding. Artists report needing more sleep than traditional media work. Some use meditation or neurofeedback to maintain signal clarity. Burnout is real - some artists quit after 2-3 years. Others find sustainable rhythms. Support groups for band artists starting to form.",
+      "financial_realities": "Successful artist like protagonist: $150-250K personal income after studio expenses. Less established: $40-80K (supplemented with teaching, traditional work). Band+compute costs create high barrier to entry. Some artist co-ops forming to share equipment. Grants available for BIPOC/underrepresented artists entering field.",
+      "aging_and_adaptation": "Band work favors younger artists (better signal clarity, faster learning). Some older artists struggle with calibration or find work exhausting. Others bring depth of experience that compensates. Open question whether this is viable 30-year career or generation-specific practice."
+    }
+  },
+  "foundation": {
+    "core_premise": "By 2035-2040, non-invasive neural interfaces can read high-level creative intention and emotional states (not specific thoughts). World-model simulation systems can generate responsive, persistent experiential spaces. Artists use these tools to create immersive environments that respond to intention. The art world is fractured over what constitutes authentic creative practice.",
+    "deep_focus_areas": {
+      "primary": [
+        "neural_interface_evolution",
+        "simulation_system_capabilities",
+        "creative_workflow_experience"
+      ],
+      "depth_level": {
+        "neural_interface_evolution": "deep",
+        "simulation_system_capabilities": "deep",
+        "creative_workflow_experience": "deep"
+      }
+    },
+    "rules": [
+      {
+        "id": "rule_1",
+        "statement": "Neural interfaces (the band) can read: high-level intention, attention patterns, emotional/affective states, and motor intent. They cannot read: specific thoughts, detailed mental imagery, memories, or verbal language.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_2",
+        "statement": "The band requires calibration to individual users. Works best when user is not consciously trying - reads the 'shape' of intention rather than forced commands.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_3",
+        "statement": "The canvas (simulation system) can propose responses based on artist intention, but cannot autonomously create. It is a 'proposal engine' that requires artist choices to proceed.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_4",
+        "statement": "Simulation spaces can be persistent - continuing to evolve based on set rules even when artist is not present. They run 'continuous inference' to elaborate structure.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_5",
+        "statement": "The system learns individual artists over time. It becomes better at predicting their aesthetic preferences and interpreting their intentions. This creates intimate human-machine relationships.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      }
+    ],
+    "technology": {
+      "neural_interfaces": {
+        "current_state_2024": "EEG-based BCIs achieving 80%+ accuracy for motor tasks (individual finger control). Non-invasive, 16-64 channels. High signal noise, require extensive training. Used primarily in medical/research contexts.",
+        "evolution_2024_to_2035": [
+          "2024-2027: Improved signal processing algorithms, better noise reduction, miniaturization of hardware",
+          "2027-2030: Consumer-grade interfaces for gaming and basic control. 'Affective computing' interfaces that read emotional states with 70%+ accuracy",
+          "2030-2033: Integration with generative AI systems. Interfaces optimized for creative work rather than control. Discovery that 'high-level intention' is more reliably readable than precise commands",
+          "2033-2035: 'The band' form factor emerges - lightweight, comfortable for extended wear. Calibration becomes standard practice for artists"
+        ],
+        "how_it_works_2035": {
+          "hardware": "Lightweight headband with 32-64 EEG channels + 8 channels optimized for frontal cortex (intention/attention), 16-32 posterior (visual processing), 8 temporal (emotional processing). Advanced dry electrode technology eliminates gel. Powered by small battery (8-12 hour use).",
+          "signal_processing": "ML models trained on millions of hours of creative sessions. Not trained to decode 'what you're thinking' but to detect patterns: attention shifts, emotional valence/arousal, the 'shape' of aesthetic preference, certainty vs uncertainty, satisfaction vs frustration.",
+          "calibration": "System learns each artist's unique patterns over 50-100 hours of use. Builds personalized models of their creative states. Like a musical instrument that adapts to the player.",
+          "limitations": "High individual variation. Some people's signals are clearer than others. Fatigue after 3-4 hours of intensive use. Prone to 'drift' (accuracy degrades over session). Cannot read verbal thoughts or specific visual imagery - only high-level patterns.",
+          "what_it_feels_like": "Light pressure, slight tingle during calibration. Then mostly imperceptible. Best results when not actively trying - works by detecting involuntary patterns, not commanded signals. Artists describe 'quiet mind' state as optimal."
+        },
+        "sources": [
+          "2024 research: Non-invasive BCIs achieving 80.56% accuracy for two-finger tasks (Nature 2025)",
+          "EEG limitations: High noise-to-signal ratio, spatial resolution limits, individual variation (IEEE 2024)",
+          "Affective computing: Current systems can detect emotional states with 65-75% accuracy (ScienceDirect 2024)"
+        ],
+        "hardware_specifics_2035": {
+          "electrode_count": "64 channels total: 24 frontal (intention/planning), 24 posterior-parietal (spatial/visual), 16 temporal (emotional/affective)",
+          "spatial_resolution": "2-3 cm (fundamental EEG limit, cannot be overcome without invasive tech)",
+          "dry_electrode_material": "Gold-plated PEDOT polymer tips, self-cleaning via micro-vibration",
+          "signal_quality": "92-95% correlation to wet electrodes after calibration. Individual variation still significant (some users achieve 97%, others only 85%)",
+          "intention_detection_timing": "Prefrontal signals detected 1.2-1.8s before conscious awareness of intention. System reads these 'pre-intentions' as fuzzy possibilities.",
+          "accuracy_by_signal_type": {
+            "attention_shifts": "88-94% accurate",
+            "emotional_valence": "76-85% accurate",
+            "motor_intent": "91-96% accurate",
+            "aesthetic_preference": "68-82% accurate (most variable, highly individual)"
+          },
+          "failure_modes": "Signal drift after 90-120 min (requires micro-recalibration, 10 seconds). Environmental EMI (electrical interference) can degrade signal 15-30%. Stress/fatigue reduces accuracy 10-20%."
+        }
+      },
+      "simulation_systems": {
+        "current_state_2024": "Diffusion-based video generation models (Sora, etc.) can generate coherent 60-second videos. Physics understanding is weak - models do 'case-based generalization' (find closest training examples) rather than true physics reasoning. Strong on lighting/materials, weak on novel scenarios.",
+        "evolution_2024_to_2035": [
+          "2024-2027: Integration of physics simulation with generative models. Hybrid systems that use explicit physics for mechanics and learned models for appearance.",
+          "2027-2030: Real-time generation becomes feasible for interactive applications. 'World models' that maintain spatial and temporal consistency across longer sequences.",
+          "2030-2033: Persistent simulation spaces - environments that continue to exist and evolve between sessions. Integration with neural interfaces allows intention-based control.",
+          "2033-2035: 'The canvas' paradigm - shared simulation spaces optimized for creative work. Systems trained extensively on artistic process, not just output."
+        ],
+        "how_it_works_2035": {
+          "architecture": "Hybrid system: physics engine for structure/mechanics + learned models for appearance/aesthetics. Runs on distributed compute (cloud + local edge processing).",
+          "what_it_generates": "Immersive 3D environments with consistent physics, lighting, and spatial relationships. Can generate abstract spaces (impossible geometry) or realistic ones. Optimized for emotional/aesthetic coherence rather than photorealism.",
+          "intention_interpretation": "Receives high-level signals from neural interface ('doorways', 'grief', 'morning light', 'the feeling of collapse'). Proposes 2-4 interpretations of that intention. Waits for artist choice. Learns from choices over time.",
+          "persistence_and_evolution": "Spaces continue to run 'continuous inference' when artist not present. System elaborates based on rules artist has set. Can generate new elements consistent with established aesthetic. Like a garden that grows according to its nature.",
+          "collaboration": "Multiple artists can enter same canvas simultaneously. Their intentions can interact, conflict, or harmonize. System mediates between multiple intention streams.",
+          "rendering": "Lightweight VR/AR headsets for immersive experience. Can also work on screens for less intensive work. Physics 'almost right but not quite' - uncanny valley but for spatial experience.",
+          "computational_cost": "Significant. Artists lease compute time. Real-time inference for one artist in one canvas: ~$5-15/hour compute cost. Persistent spaces cost $2-5/day to maintain."
+        },
+        "what_it_cannot_do": [
+          "Cannot autonomously create - requires artist intention and choice",
+          "Still does case-based generalization for novel scenarios - will find 'closest aesthetic match' rather than reason from first principles",
+          "Doesn't understand meaning or narrative - artist must provide conceptual structure",
+          "Individual variation: same intention interpreted differently for different artists based on their trained models",
+          "Computational limits: complexity/fidelity trade-offs. More complex = slower or more expensive"
+        ],
+        "sources": [
+          "Sora (OpenAI 2024): Video generation as world simulators, but limited physics understanding",
+          "Physics in world models research (arXiv 2024): Models do case-based generalization, not true physics reasoning",
+          "Compute costs: Current cloud GPU costs ~$1-3/hour, extrapolated forward with efficiency gains"
+        ],
+        "computational_architecture_2035": {
+          "hybrid_system": "Physics engine (explicit) + Learned aesthetics (diffusion model). Physics handles structure, learned model handles appearance.",
+          "token_generation_rate": "Real-time canvas requires ~40K visual tokens/second (reduced from 100K via better architectures). Audio adds 5K tokens/second.",
+          "memory_mechanism": "WorldMem-style external memory bank stores keyframes + states. Retrieves relevant past context rather than attending to full history. Allows constant per-frame cost instead of quadratic scaling.",
+          "memory_bank_size": "Typical session: 2-5 GB stored keyframes. Long-running commission (weeks): 50-200 GB. System prunes low-relevance memories to maintain performance.",
+          "inference_hardware": "Artist workstation: local edge GPU (RTX 8080-class, ~$2K) for preview/sketching. Cloud GPU cluster (8x H200-equivalent) for high-fidelity work.",
+          "latency_budget": "Local preview: 60-120ms input to visual update (acceptable for sketching). Cloud high-fidelity: 180-350ms (noticeable but workable). System uses speculative prediction to hide latency.",
+          "quality_vs_cost_tradeoff": {
+            "preview_mode": "720p, simplified physics, 2-3 proposal variations. $0.50-1/hour",
+            "working_mode": "1080p, full physics, 3-4 proposals. $5-8/hour",
+            "high_fidelity": "4K, advanced materials/lighting, 4-5 proposals. $12-18/hour",
+            "persistence": "Idle canvas runs low-power inference. $2-5/day depending on complexity"
+          }
+        }
+      },
+      "creative_workflow": {
+        "typical_session": [
+          "Put on band, allow calibration (30-60 seconds)",
+          "Enter canvas - either personal workspace or shared team space",
+          "Think about high-level intention (not specific form, but feeling/concept)",
+          "System proposes 2-4 interpretations",
+          "Walk through proposals, respond emotionally (system reads satisfaction/dissatisfaction)",
+          "Choose elements to keep, system elaborates",
+          "Iterative refinement through intention-proposal-choice cycles",
+          "Session lasts 2-4 hours before fatigue sets in"
+        ],
+        "what_artists_report": [
+          "Feels like collaboration with extended self, not external entity",
+          "Best work happens when not trying too hard - 'quiet mind' state",
+          "System surprises them, but surprises feel like discovering own unconscious aesthetics",
+          "Choosing is the core creative act - where agency lives",
+          "Intimate relationship develops - system 'knows' them over time",
+          "Different from traditional media: no physical resistance, but different constraints (legibility of intention, computational limits)"
+        ],
+        "solo_vs_team": {
+          "solo": "Deep, introspective work. System as mirror and collaborator. Faster iteration. More personal.",
+          "team": "Multiple intention streams create complexity. Negotiation between artists. Each person's presence affects the space ('warmer light'). Shared canvas becomes site of artistic dialogue."
+        },
+        "commission_process": {
+          "intake": "Artist meets with client, understands emotional/experiential goals",
+          "concepting": "Solo or team sketching in canvas, exploring aesthetic approaches",
+          "development": "Iterative refinement, client reviews (can enter canvas or view recordings)",
+          "delivery": "Client receives access to persistent space. Can return to it over time. Space continues to evolve based on set rules.",
+          "typical_timeline": "2-6 weeks for personal commission, 2-6 months for institutional work"
+        }
+      }
+    },
+    "working_notes": {
+      "tentative_ideas": [
+        "Does the band work for everyone equally? Probably not - individual variation in signal clarity",
+        "What about people who can't use bands? (medical contraindications, neurological conditions) - creates access issues",
+        "How did early artists respond to these tools? Was there a learning curve generation?",
+        "What's the ecological impact of persistent simulation compute costs?"
+      ],
+      "questions": [
+        "What's the training data lineage for the simulation systems? (Important for art world debates)",
+        "How do artists maintain distinctive voice if system learns from many artists?",
+        "What happened to traditional media? (Story suggests it still exists, some artists prefer it)",
+        "How does copyright work for spaces that continue to evolve after delivery?"
+      ],
+      "contradictions_to_resolve": []
+    },
+    "art_world_details": {
+      "institutions_and_positions": {
+        "traditional_only": "Museums/galleries that refuse band-assisted work. Argue for human-only creativity. Strong in NYC, London, Paris. Represent ~35% of institutional art world.",
+        "augmented_accepting": "Institutions that show band work alongside traditional. Most common position (~50%). Create separate categories, careful documentation of process.",
+        "tech_forward": "Galleries specializing in band work, computational art, BCIs. Concentrated in cities with tech sectors. ~15% of art world but growing fastest.",
+        "critical_journals": "Ongoing debates in publications. Some critics argue band work is 'outsourcing creativity.' Others see it as natural evolution. Reviews often mention 'signal clarity' and 'choice architecture' as quality markers."
+      },
+      "training_and_education": "Art schools split on curricula. Some teach band technique alongside traditional media. Others refuse. Self-taught artists common (online tutorials, artist-run workshops). Debate: should art education include neurotechnology basics? Some schools partner with neuroscience departments.",
+      "legal_and_rights": {
+        "copyright": "Band-assisted work copyrightable if human makes substantive choices. Process documentation increasingly required. Lawsuits about simulation system training data ongoing.",
+        "client_contracts": "Specify who owns evolved versions of spaces. Most give clients perpetual access but artist retains rights to aesthetic system. Selling a space transfers access, not generative rights.",
+        "data_privacy": "Band data (neural patterns) legally protected as biometric info. Artists own their calibration models. Cannot be subpoenaed except in criminal cases. Emerging market for selling anonymized training data to improve systems."
+      },
+      "generational_divides": "Artists under 30 grew up with early BCIs, feel natural. 30-45: adopted during career, mixed feelings. 45+: many stick with traditional, some curious adopters. Debates often fall along generational lines, though not absolutely.",
+      "global_variations": "Band work strongest in: US West Coast, East Asia (Korea, Japan), Northern Europe. Slower adoption in: Latin America, Africa, parts of Middle East. Cost barriers + cultural attitudes toward technology + colonialism concerns (whose aesthetics train these systems?)."
+    }
+  },
+  "constraints": [
+    {
+      "id": "const_1",
+      "description": "Neural interfaces cannot read specific thoughts, detailed imagery, or verbal language - only high-level intention and emotional patterns",
+      "type": "physical",
+      "strictness": "absolute"
+    },
+    {
+      "id": "const_2",
+      "description": "Extended band use (3-4+ hours) causes cognitive fatigue. Artists need breaks.",
+      "type": "physical",
+      "strictness": "strong"
+    },
+    {
+      "id": "const_3",
+      "description": "Simulation systems require significant compute. Real-time work costs $5-15/hour, persistent spaces $2-5/day. Limits who can afford sustained practice.",
+      "type": "physical",
+      "strictness": "strong"
+    },
+    {
+      "id": "const_4",
+      "description": "System learns each artist individually over 50-100 hours. Cannot be transferred or shared. Limits portability across different hardware/systems.",
+      "type": "physical",
+      "strictness": "strong"
+    },
+    {
+      "id": "const_5",
+      "description": "Simulation physics 'almost right but not quite' - creates uncanny feeling that marks virtual vs physical experience",
+      "type": "physical",
+      "strictness": "absolute"
+    }
+  ],
+  "changelog": [
+    {
+      "version": 2,
+      "timestamp": "2025-12-30T03:54:31.300Z",
+      "changes": [
+        "Initial world creation for 'The Shape of Intention'",
+        "Focus: technology evolution path from 2024 to 2035-2040",
+        "Deep technical grounding on neural interfaces and simulation systems",
+        "Emphasis on creative process and artist experience"
+      ],
+      "reason": "Initial world creation for 'The Shape of Intention'; Focus: technology evolution path from 2024 to 2035-2040; Deep technical grounding on neural interfaces and simulation systems; Emphasis on creative process and artist experience"
+    },
+    {
+      "version": 3,
+      "timestamp": "2025-12-30T03:58:10.209Z",
+      "changes": [
+        "Added deep technical specifications based on 2024 research extrapolated to 2035",
+        "Added computational architecture details based on RTFM, WorldMem research and extrapolated GPU costs",
+        "Expanded daily life details: routines, space, costs, team dynamics, breaks, social context, mental health, financial realities",
+        "Added detailed art world context: institutions, education, legal issues, generational dynamics, global patterns"
+      ],
+      "reason": "Added deep technical specifications based on 2024 research extrapolated to 2035; Added computational architecture details based on RTFM, WorldMem research and extrapolated GPU costs; Expanded daily life details: routines, space, costs, team dynamics, breaks, social context, mental health, financial realities; Added detailed art world context: institutions, education, legal issues, generational dynamics, global patterns"
+    }
+  ]
+}

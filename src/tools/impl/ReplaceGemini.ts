@@ -1,5 +1,5 @@
 /**
- * Gemini CLI replace tool - wrapper around Letta Code's Edit tool
+ * Gemini CLI replace tool - wrapper around Deep Sci-Fi's Edit tool
  * Uses Gemini's exact schema and description
  */
 
@@ -15,8 +15,8 @@ interface ReplaceGeminiArgs {
 export async function replace(
   args: ReplaceGeminiArgs,
 ): Promise<{ message: string }> {
-  // Adapt Gemini params to Letta Code's Edit tool
-  // Gemini uses expected_replacements, Letta Code uses replace_all
+  // Adapt Gemini params to Deep Sci-Fi's Edit tool
+  // Gemini uses expected_replacements, Deep Sci-Fi uses replace_all
   const lettaArgs = {
     file_path: args.file_path,
     old_string: args.old_string,

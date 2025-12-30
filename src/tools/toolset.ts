@@ -37,7 +37,7 @@ export type ToolsetName =
 export const BASE_TOOL_NAMES = ["memory", "web_search"];
 
 /**
- * Gets the list of Letta Code tools currently attached to an agent.
+ * Gets the list of Deep Sci-Fi tools currently attached to an agent.
  * Returns the tool names that are both attached to the agent AND in our tool definitions.
  */
 export async function getAttachedLettaTools(
@@ -53,7 +53,7 @@ export async function getAttachedLettaTools(
       ?.map((t) => t.name)
       .filter((name): name is string => typeof name === "string") || [];
 
-  // Get all possible Letta Code tool names
+  // Get all possible Deep Sci-Fi tool names
   const allLettaTools: string[] = [
     ...CODEX_TOOLS,
     ...CODEX_SNAKE_TOOLS,
@@ -68,7 +68,7 @@ export async function getAttachedLettaTools(
 
 /**
  * Detects which toolset is attached to an agent by examining its tools.
- * Returns the toolset name based on majority, or null if no Letta Code tools.
+ * Returns the toolset name based on majority, or null if no Deep Sci-Fi tools.
  */
 export async function detectToolsetFromAgent(
   client: Letta,

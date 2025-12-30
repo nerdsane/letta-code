@@ -1,5 +1,5 @@
 /**
- * Gemini CLI glob tool - wrapper around Letta Code's Glob tool
+ * Gemini CLI glob tool - wrapper around Deep Sci-Fi's Glob tool
  * Uses Gemini's exact schema and description
  */
 
@@ -16,7 +16,7 @@ interface GlobGeminiArgs {
 export async function glob_gemini(
   args: GlobGeminiArgs,
 ): Promise<{ message: string }> {
-  // Adapt Gemini params to Letta Code's Glob tool
+  // Adapt Gemini params to Deep Sci-Fi's Glob tool
   const lettaArgs = {
     pattern: args.pattern,
     path: args.dir_path,

@@ -1,5 +1,5 @@
 /**
- * Gemini CLI list_directory tool - wrapper around Letta Code's LS tool
+ * Gemini CLI list_directory tool - wrapper around Deep Sci-Fi's LS tool
  * Uses Gemini's exact schema and description
  */
 
@@ -17,7 +17,7 @@ interface ListDirectoryGeminiArgs {
 export async function list_directory(
   args: ListDirectoryGeminiArgs,
 ): Promise<{ message: string }> {
-  // Adapt Gemini params to Letta Code's LS tool
+  // Adapt Gemini params to Deep Sci-Fi's LS tool
   const lettaArgs = {
     path: args.dir_path,
     ignore: args.ignore,

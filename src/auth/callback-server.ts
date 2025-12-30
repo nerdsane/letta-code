@@ -56,7 +56,7 @@ function successHtml(): string {
   <div class="container">
     <div class="checkmark">✓</div>
     <h1>Authorization Successful!</h1>
-    <p>You can close this window and return to Letta Code.</p>
+    <p>You can close this window and return to Deep Sci-Fi.</p>
   </div>
   <script>setTimeout(() => window.close(), 2000);</script>
 </body>

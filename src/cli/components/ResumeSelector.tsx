@@ -25,13 +25,13 @@ interface PinnedAgentData {
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "pinned", label: "Pinned" },
-  { id: "letta-code", label: "Letta Code" },
+  { id: "letta-code", label: "Deep Sci-Fi" },
   { id: "all", label: "All" },
 ];
 
 const TAB_DESCRIPTIONS: Record<TabId, string> = {
   pinned: "Save agents for easy access by pinning them with /pin",
-  "letta-code": "Displaying agents created inside of Letta Code",
+  "letta-code": "Displaying agents created inside of Deep Sci-Fi",
   all: "Displaying all available agents",
 };
 
@@ -118,7 +118,7 @@ export function ResumeSelector({
   const [pinnedSelectedIndex, setPinnedSelectedIndex] = useState(0);
   const [pinnedPage, setPinnedPage] = useState(0);
 
-  // Letta Code tab state (cached separately)
+  // Deep Sci-Fi tab state (cached separately)
   const [lettaCodeAgents, setLettaCodeAgents] = useState<AgentState[]>([]);
   const [lettaCodeCursor, setLettaCodeCursor] = useState<string | null>(null);
   const [lettaCodeLoading, setLettaCodeLoading] = useState(false);
@@ -182,7 +182,7 @@ export function ResumeSelector({
     }
   }, []);
 
-  // Fetch agents for list tabs (Letta Code / All)
+  // Fetch agents for list tabs (Deep Sci-Fi / All)
   const fetchListAgents = useCallback(
     async (
       filterLettaCode: boolean,
@@ -212,7 +212,7 @@ export function ResumeSelector({
     [],
   );
 
-  // Load Letta Code agents
+  // Load Deep Sci-Fi agents
   const loadLettaCodeAgents = useCallback(
     async (query?: string) => {
       setLettaCodeLoading(true);
@@ -296,7 +296,7 @@ export function ResumeSelector({
     loadAllAgents,
   ]);
 
-  // Fetch more Letta Code agents
+  // Fetch more Deep Sci-Fi agents
   const fetchMoreLettaCodeAgents = useCallback(async () => {
     if (lettaCodeLoadingMore || !lettaCodeHasMore || !lettaCodeCursor) return;
 
@@ -352,7 +352,7 @@ export function ResumeSelector({
     pinnedStartIndex + DISPLAY_PAGE_SIZE,
   );
 
-  // Pagination calculations - Letta Code
+  // Pagination calculations - Deep Sci-Fi
   const lettaCodeTotalPages = Math.ceil(
     lettaCodeAgents.length / DISPLAY_PAGE_SIZE,
   );
@@ -723,7 +723,7 @@ export function ResumeSelector({
         </Box>
       )}
 
-      {/* Letta Code tab content */}
+      {/* Deep Sci-Fi tab content */}
       {activeTab === "letta-code" &&
         !lettaCodeLoading &&
         !lettaCodeError &&

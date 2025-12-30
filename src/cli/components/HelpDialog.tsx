@@ -146,7 +146,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
     <Box flexDirection="column" gap={1}>
       <Box flexDirection="column">
         <Text bold color={colors.selector.title}>
-          Letta Code v{version} (↑↓ navigate, ←→/jk page, ESC close)
+          Deep Sci-Fi v{version} (↑↓ navigate, ←→/jk page, ESC close)
         </Text>
         <Box>
           <Text dimColor>Tab: </Text>

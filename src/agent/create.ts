@@ -215,7 +215,7 @@ export async function createAgent(
     agent_type: "letta_v1_agent" as AgentType,
     system: systemPromptContent,
     name,
-    description: `Letta Code agent created in ${process.cwd()}`,
+    description: `Deep Sci-Fi agent created in ${process.cwd()}`,
     embedding: embeddingModel,
     model: modelHandle,
     context_window_limit: contextWindow,

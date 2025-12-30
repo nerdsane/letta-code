@@ -160,7 +160,7 @@ export interface UnlinkResult {
 }
 
 /**
- * Attach all Letta Code tools to an agent.
+ * Attach all Deep Sci-Fi tools to an agent.
  *
  * @param agentId - The agent ID
  * @returns Result with success status and message
@@ -183,7 +183,7 @@ export async function linkToolsToAgent(agentId: string): Promise<LinkResult> {
         .filter((name): name is string => typeof name === "string"),
     );
 
-    // Get Letta Code tool names (internal names from registry)
+    // Get Deep Sci-Fi tool names (internal names from registry)
     const { getServerToolName } = await import("../tools/manager");
     const lettaCodeToolNames = getToolNames();
 
@@ -197,7 +197,7 @@ export async function linkToolsToAgent(agentId: string): Promise<LinkResult> {
     if (toolsToAdd.length === 0) {
       return {
         success: true,
-        message: "All Letta Code tools already attached",
+        message: "All Deep Sci-Fi tools already attached",
         addedCount: 0,
       };
     }
@@ -218,7 +218,7 @@ export async function linkToolsToAgent(agentId: string): Promise<LinkResult> {
     const newToolIds = [...currentToolIds, ...toolsToAddIds];
 
     // Get current tool_rules and add requires_approval rules for new tools
-    // ALL Letta Code tools need requires_approval to be routed to the client
+    // ALL Deep Sci-Fi tools need requires_approval to be routed to the client
     const currentToolRules = agent.tool_rules || [];
     const newToolRules = [
       ...currentToolRules,
@@ -236,7 +236,7 @@ export async function linkToolsToAgent(agentId: string): Promise<LinkResult> {
 
     return {
       success: true,
-      message: `Attached ${toolsToAddIds.length} Letta Code tool(s) to agent`,
+      message: `Attached ${toolsToAddIds.length} Deep Sci-Fi tool(s) to agent`,
       addedCount: toolsToAddIds.length,
     };
   } catch (error) {
@@ -248,7 +248,7 @@ export async function linkToolsToAgent(agentId: string): Promise<LinkResult> {
 }
 
 /**
- * Remove all Letta Code tools from an agent.
+ * Remove all Deep Sci-Fi tools from an agent.
  *
  * @param agentId - The agent ID
  * @returns Result with success status and message
@@ -265,14 +265,14 @@ export async function unlinkToolsFromAgent(
     });
     const allTools = agent.tools || [];
 
-    // Get all possible Letta Code tool names (both internal and server names)
+    // Get all possible Deep Sci-Fi tool names (both internal and server names)
     const { getServerToolName } = await import("../tools/manager");
     const lettaCodeToolNames = new Set(getAllLettaToolNames());
     const lettaCodeServerNames = new Set(
       Array.from(lettaCodeToolNames).map((name) => getServerToolName(name)),
     );
 
-    // Filter out Letta Code tools, keep everything else
+    // Filter out Deep Sci-Fi tools, keep everything else
     // Check against server names since that's what the agent sees
     const remainingTools = allTools.filter(
       (t) => t.name && !lettaCodeServerNames.has(t.name),
@@ -284,7 +284,7 @@ export async function unlinkToolsFromAgent(
       .map((t) => t.id)
       .filter((id): id is string => typeof id === "string");
 
-    // Remove approval rules for Letta Code tools being unlinked
+    // Remove approval rules for Deep Sci-Fi tools being unlinked
     // Check against server names since that's what appears in tool_rules
     const currentToolRules = agent.tool_rules || [];
     const remainingToolRules = currentToolRules.filter(
@@ -300,7 +300,7 @@ export async function unlinkToolsFromAgent(
 
     return {
       success: true,
-      message: `Removed ${removedCount} Letta Code tool(s) from agent`,
+      message: `Removed ${removedCount} Deep Sci-Fi tool(s) from agent`,
       removedCount,
     };
   } catch (error) {

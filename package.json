@@ -1,22 +1,22 @@
 {
-  "name": "@letta-ai/letta-code",
-  "version": "0.10.3",
-  "description": "Letta Code is a CLI tool for interacting with stateful Letta agents from the terminal.",
+  "name": "@deep-scifi/deep-scifi",
+  "version": "0.1.0",
+  "description": "Deep Sci-Fi is a CLI tool for interacting with stateful AI agents from the terminal.",
   "type": "module",
   "bin": {
-    "letta": "letta.js"
+    "deep-scifi": "deep-scifi.js"
   },
   "files": [
     "LICENSE",
     "README.md",
-    "letta.js",
+    "deep-scifi.js",
     "scripts",
     "skills",
     "vendor"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/letta-ai/letta-code.git"
+    "url": "https://github.com/sesh/letta-code.git"
   },
   "license": "Apache-2.0",
   "publishConfig": {

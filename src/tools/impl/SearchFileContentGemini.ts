@@ -1,5 +1,5 @@
 /**
- * Gemini CLI search_file_content tool - wrapper around Letta Code's Grep tool
+ * Gemini CLI search_file_content tool - wrapper around Deep Sci-Fi's Grep tool
  * Uses Gemini's exact schema and description
  */
 
@@ -14,7 +14,7 @@ interface SearchFileContentGeminiArgs {
 export async function search_file_content(
   args: SearchFileContentGeminiArgs,
 ): Promise<{ message: string }> {
-  // Adapt Gemini params to Letta Code's Grep tool
+  // Adapt Gemini params to Deep Sci-Fi's Grep tool
   const lettaArgs = {
     pattern: args.pattern,
     path: args.dir_path,

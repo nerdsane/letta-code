@@ -98,7 +98,7 @@ export const GEMINI_DEFAULT_TOOLS: ToolName[] = [
 
 // PascalCase toolsets (codex-2 and gemini-2) for consistency with Skill tool naming
 export const OPENAI_PASCAL_TOOLS: ToolName[] = [
-  // Additional Letta Code tools
+  // Additional Deep Sci-Fi tools
   "AskUserQuestion",
   "EnterPlanMode",
   "ExitPlanMode",
@@ -115,7 +115,7 @@ export const OPENAI_PASCAL_TOOLS: ToolName[] = [
 ];
 
 export const GEMINI_PASCAL_TOOLS: ToolName[] = [
-  // Additional Letta Code tools
+  // Additional Deep Sci-Fi tools
   "AskUserQuestion",
   "EnterPlanMode",
   "ExitPlanMode",
@@ -1006,7 +1006,7 @@ export function getToolNames(): string[] {
 }
 
 /**
- * Returns all Letta Code tool names known to this build, regardless of what is currently loaded.
+ * Returns all Deep Sci-Fi tool names known to this build, regardless of what is currently loaded.
  * Useful for unlinking/removing tools when switching providers/models.
  */
 export function getAllLettaToolNames(): string[] {

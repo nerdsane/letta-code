@@ -152,7 +152,7 @@ export async function manualUpdate(): Promise<{
   if (updateResult.success) {
     return {
       success: true,
-      message: `Updated to ${result.latestVersion}. Restart Letta Code to use the new version.`,
+      message: `Updated to ${result.latestVersion}. Restart Deep Sci-Fi to use the new version.`,
     };
   }
 

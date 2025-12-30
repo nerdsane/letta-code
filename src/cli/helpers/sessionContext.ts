@@ -196,12 +196,12 @@ export function buildSessionContext(options: SessionContextOptions): string {
     // Build the context
     let context = `<system-reminder>
 This is an automated message providing context about the user's environment.
-The user has just initiated a new connection via the [Letta Code CLI client](https://docs.letta.com/letta-code/index.md).
+The user has just initiated a new connection via the [Deep Sci-Fi CLI client](https://docs.letta.com/letta-code/index.md).
 
 ## Device Information
 - **Local time**: ${localTime}
 - **Device type**: ${deviceType}
-- **Letta Code version**: ${version}
+- **Deep Sci-Fi version**: ${version}
 - **Current working directory**: ${cwd}
 `;
 

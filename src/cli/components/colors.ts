@@ -1,40 +1,40 @@
 /**
- * Letta Code Color System
+ * Deep Sci-Fi Color System
  *
  * This file defines all colors used in the application.
  * No colors should be hardcoded in components - all should reference this file.
  */
 
-// Brand colors (dark mode)
+// Brand colors (dark mode) - Cyberpunk Neon Theme (Cool Colors Only)
 export const brandColors = {
   orange: "#FF5533", // dark orange
   blue: "#0707AC", // dark blue
   // text colors
-  primaryAccent: "#8C8CF9", // lighter blue
-  primaryAccentLight: "#BEBEEE", // even lighter blue
+  primaryAccent: "#00F0FF", // neon teal/cyan - cyberpunk primary
+  primaryAccentLight: "#B026FF", // neon purple - cyberpunk accent
   textMain: "#DEE1E4", // white
   textSecondary: "#A5A8AB", // light grey
   textDisabled: "#46484A", // dark grey
   // status colors
-  statusSuccess: "#64CF64", // green
-  statusWarning: "FEE19C", // yellow
-  statusError: "#F1689F", // red
+  statusSuccess: "#00F0FF", // neon teal (cool, not warm green)
+  statusWarning: "#B026FF", // neon purple
+  statusError: "#FF00FF", // neon magenta
 } as const;
 
-// Brand colors (light mode)
+// Brand colors (light mode) - Cyberpunk Neon Theme (Cool Colors Only)
 export const brandColorsLight = {
   orange: "#FF5533", // dark orange
   blue: "#0707AC", // dark blue
   // text colors
-  primaryAccent: "#3939BD", // lighter blue
-  primaryAccentLight: "#A9A9DE", // even lighter blue
-  textMain: "#202020", // white
-  textSecondary: "#797B7D", // light grey
-  textDisabled: "#A5A8AB", // dark grey
+  primaryAccent: "#00B8CC", // darker teal for light mode
+  primaryAccentLight: "#8B1ACF", // darker purple for light mode
+  textMain: "#202020", // black
+  textSecondary: "#797B7D", // grey
+  textDisabled: "#A5A8AB", // light grey
   // status colors
-  statusSuccess: "#28A428", // green
-  statusWarning: "#B98813", // yellow
-  statusError: "#BA024C", // red
+  statusSuccess: "#00B8CC", // darker teal
+  statusWarning: "#8B1ACF", // darker purple
+  statusError: "#CC00CC", // darker magenta
 } as const;
 
 // Semantic color system

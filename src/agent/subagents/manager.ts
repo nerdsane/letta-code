@@ -382,7 +382,7 @@ async function executeSubagent(
   try {
     const cliArgs = buildSubagentArgs(type, config, model, userPrompt);
 
-    // Spawn Letta Code in headless mode.
+    // Spawn Deep Sci-Fi in headless mode.
     // Some environments may have a different `letta` binary earlier in PATH.
     const lettaCmd = process.env.LETTA_CODE_BIN || "letta";
     const proc = spawn(lettaCmd, cliArgs, {

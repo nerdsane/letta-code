@@ -210,7 +210,7 @@ export function SlashCommandAutocomplete({
           <Text color={colors.link.text}>join our Discord ↗</Text>
         </Link>
       </Text>
-      <Text dimColor>Version: Letta Code v{getVersion()}</Text>
+      <Text dimColor>Version: Deep Sci-Fi v{getVersion()}</Text>
     </AutocompleteBox>
   );
 }

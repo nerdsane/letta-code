@@ -1,5 +1,5 @@
 /**
- * Gemini CLI read_many_files tool - new implementation for Letta Code
+ * Gemini CLI read_many_files tool - new implementation for Deep Sci-Fi
  * Uses Gemini's exact schema and description
  */
 

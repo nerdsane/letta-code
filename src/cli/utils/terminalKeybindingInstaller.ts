@@ -370,7 +370,7 @@ export function getWezTermConfigPath(): string {
  * The Lua code to fix Delete key in WezTerm
  */
 const WEZTERM_DELETE_FIX = `
--- Letta Code: Fix Delete key sending wrong sequence with kitty keyboard protocol
+-- Deep Sci-Fi: Fix Delete key sending wrong sequence with kitty keyboard protocol
 -- See: https://github.com/wez/wezterm/issues/3758
 local wezterm = require 'wezterm'
 local keys = config.keys or {}
@@ -392,7 +392,7 @@ export function wezTermDeleteFixExists(configPath: string): boolean {
     const content = readFileSync(configPath, { encoding: "utf-8" });
     // Check if our fix or equivalent already exists
     return (
-      content.includes("Letta Code: Fix Delete key") ||
+      content.includes("Deep Sci-Fi: Fix Delete key") ||
       (content.includes("key = 'Delete'") &&
         content.includes("SendString") &&
         content.includes("\\x1b[3~"))

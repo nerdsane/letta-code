@@ -52,7 +52,7 @@ describeOrSkip("Link/Unlink Tools", () => {
     }
   });
 
-  test("linkToolsToAgent attaches all Letta Code tools", async () => {
+  test("linkToolsToAgent attaches all Deep Sci-Fi tools", async () => {
     // Reset: ensure tools are not already attached
     await unlinkToolsFromAgent(testAgentId);
 
@@ -91,7 +91,7 @@ describeOrSkip("Link/Unlink Tools", () => {
     const lettaCodeTools = getToolNames();
     expect(approvalRules?.length).toBe(lettaCodeTools.length);
 
-    // Check all Letta Code tools have approval rules
+    // Check all Deep Sci-Fi tools have approval rules
     const rulesToolNames = approvalRules?.map((r) => r.tool_name) || [];
     for (const toolName of lettaCodeTools) {
       expect(rulesToolNames).toContain(toolName);
@@ -111,7 +111,7 @@ describeOrSkip("Link/Unlink Tools", () => {
     expect(result.message).toContain("already attached");
   }, 30000);
 
-  test("unlinkToolsFromAgent removes all Letta Code tools", async () => {
+  test("unlinkToolsFromAgent removes all Deep Sci-Fi tools", async () => {
     // First link tools
     await linkToolsToAgent(testAgentId);
 
@@ -157,7 +157,7 @@ describeOrSkip("Link/Unlink Tools", () => {
   }, 30000);
 
   test("unlinkToolsFromAgent preserves non-Letta-Code tools", async () => {
-    // Link Letta Code tools
+    // Link Deep Sci-Fi tools
     await linkToolsToAgent(testAgentId);
 
     // Attach memory tool
@@ -169,7 +169,7 @@ describeOrSkip("Link/Unlink Tools", () => {
       });
     }
 
-    // Unlink Letta Code tools
+    // Unlink Deep Sci-Fi tools
     await unlinkToolsFromAgent(testAgentId);
 
     // Verify memory tool is still there
@@ -180,7 +180,7 @@ describeOrSkip("Link/Unlink Tools", () => {
 
     expect(toolNames).toContain("memory");
 
-    // Verify Letta Code tools are gone
+    // Verify Deep Sci-Fi tools are gone
     const lettaCodeTools = getToolNames();
     for (const toolName of lettaCodeTools) {
       expect(toolNames).not.toContain(toolName);
@@ -206,7 +206,7 @@ describeOrSkip("Link/Unlink Tools", () => {
 
     await client.agents.update(testAgentId, { tool_rules: newToolRules });
 
-    // Unlink Letta Code tools
+    // Unlink Deep Sci-Fi tools
     await unlinkToolsFromAgent(testAgentId);
 
     // Verify continue_loop rule is still there

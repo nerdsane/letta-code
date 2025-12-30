@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 /**
- * Build script for Letta Code CLI
+ * Build script for Deep Sci-Fi CLI
  * Bundles TypeScript source into a single JavaScript file
  */
 
@@ -16,7 +16,7 @@ const __dirname = dirname(__filename);
 const pkg = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf-8"));
 const version = pkg.version;
 
-console.log(`📦 Building Letta Code v${version}...`);
+console.log(`📦 Building Deep Sci-Fi v${version}...`);
 
 await Bun.build({
   entrypoints: ["./src/index.ts"],
@@ -26,7 +26,7 @@ await Bun.build({
   minify: false, // Keep readable for debugging
   sourcemap: "external",
   naming: {
-    entry: "letta.js",
+    entry: "deep-scifi.js",
   },
   define: {
     LETTA_VERSION: JSON.stringify(version),
@@ -41,7 +41,7 @@ await Bun.build({
 });
 
 // Add shebang to output file
-const outputPath = join(__dirname, "letta.js");
+const outputPath = join(__dirname, "deep-scifi.js");
 let content = readFileSync(outputPath, "utf-8");
 
 // Remove any existing shebang first
@@ -66,7 +66,7 @@ ${content}`;
 await Bun.write(outputPath, withShebang);
 
 // Make executable
-await Bun.$`chmod +x letta.js`;
+await Bun.$`chmod +x deep-scifi.js`;
 
 // Copy bundled skills to skills/ directory for shipping
 const bundledSkillsSrc = join(__dirname, "src/skills/builtin");
@@ -82,5 +82,5 @@ if (existsSync(bundledSkillsSrc)) {
 }
 
 console.log("✅ Build complete!");
-console.log(`   Output: letta.js`);
+console.log(`   Output: deep-scifi.js`);
 console.log(`   Size: ${(Bun.file(outputPath).size / 1024).toFixed(0)}KB`);
