@@ -69,8 +69,8 @@ export async function createAgent(
     }
     modelHandle = resolved;
   } else {
-    // Use default model
-    modelHandle = "anthropic/claude-sonnet-4-5-20250929";
+    // Use default model - Opus 4.5 for DSF agent
+    modelHandle = "anthropic/claude-opus-4-5-20251101";
   }
 
   const client = await getClient();
@@ -91,6 +91,11 @@ export async function createAgent(
     "web_search",
     "conversation_search",
     "fetch_webpage",
+    // Evaluation tools for DSF agent
+    "assess_output_quality",
+    "check_logical_consistency",
+    "compare_versions",
+    "analyze_information_gain",
   ];
 
   let toolNames = [...serverToolNames, ...defaultBaseTools];
