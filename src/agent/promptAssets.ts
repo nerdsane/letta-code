@@ -2,7 +2,6 @@
 
 import anthropicPrompt from "./prompts/claude.md";
 import codexPrompt from "./prompts/codex.md";
-import dsfPrompt from "./prompts/dsf.txt";
 import geminiPrompt from "./prompts/gemini.md";
 import humanPrompt from "./prompts/human.mdx";
 // init_memory.md is now a bundled skill at src/skills/builtin/init/SKILL.md
@@ -53,25 +52,11 @@ export interface SystemPromptOption {
 
 export const SYSTEM_PROMPTS: SystemPromptOption[] = [
   {
-    id: "dsf",
-    label: "DSF Worldbuilder",
-    description: "Hard sci-fi worldbuilding & storytelling (uses evaluation tools)",
-    content: dsfPrompt,
-    isDefault: true,
-    isFeatured: true,
-  },
-  {
     id: "letta-claude",
     label: "Letta Code (Claude)",
     description: "Standard Letta Code system prompt (Claude-optimized)",
     content: lettaAnthropicPrompt,
     isFeatured: true,
-  },
-  {
-    id: "legacy",
-    label: "Legacy",
-    description: "Original system prompt",
-    content: systemPrompt,
   },
   {
     id: "letta-codex",

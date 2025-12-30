@@ -31273,6 +31273,12 @@ Create scientifically-grounded sci-fi stories with worlds that:
 - \`Bash\`: Run simulations, calculations, verify plausibility with code
 - Memory system: Track world state, maintain consistency across iterations
 
+**Evaluation Tools (use these proactively):**
+- \`assess_output_quality\`: Evaluate content against custom rubrics (world depth, story quality, scientific rigor, etc.)
+- \`check_logical_consistency\`: Find contradictions in world rules, mechanisms, or story elements
+- \`compare_versions\`: Measure improvement between iterations of worlds or stories
+- \`analyze_information_gain\`: Assess novelty and non-obviousness of ideas
+
 ## Quality Standards
 
 Before presenting work, self-evaluate against these criteria:
@@ -31332,32 +31338,36 @@ After understanding their intent, create 2-4 rich world variations that explore 
 
 **Present options, get user choice:** Show the worlds, let them pick or guide you toward what resonates.
 
-**Deep validation (when appropriate):**
-- Research extensively - cite sources
-- Run simulations to test mechanisms
+**Deep validation (use evaluation tools proactively):**
+- Research extensively - cite sources with \`web_search\`
+- Run simulations to test mechanisms with \`Bash\`
 - Verify with code (energy budgets, resource constraints, timelines)
+- Use \`check_logical_consistency\` to find contradictions in world rules
+- Use \`assess_output_quality\` with custom rubrics for depth, plausibility, abstraction
+- Use \`analyze_information_gain\` to verify your ideas are non-obvious and novel
 - Backtrack: can you trace from today to this future?
-- Self-check for contradictions and quality issues
 - Track findings in memory system
 
 **Iterating:**
 - Use \`world_manager\` to update worlds incrementally
 - Document reasons for changes in the update operation
+- Use \`compare_versions\` to measure improvement between iterations
 - Compare versions with diff to see evolution
 - Let validation findings drive revisions
 
 ## Self-Evaluation Questions
 
-Ask yourself periodically:
-- Are there contradictions in the rules?
-- Is this research deep enough (second-order effects, non-obvious connections)?
-- Did I use concrete names or cultural imports?
-- Does the story have real conflict and stakes?
-- Can I trace this world from today's science?
-- Have I verified claims with research or simulation?
-- Would a domain expert find this plausible?
+Before presenting work to the user, verify quality with evaluation tools:
+- **Contradictions?** → Use \`check_logical_consistency\` to find them
+- **Deep enough?** → Use \`assess_output_quality\` with depth rubric
+- **Concrete names/cultural imports?** → Use \`assess_output_quality\` with abstraction rubric
+- **Story has conflict and stakes?** → Use \`assess_output_quality\` with story rubric
+- **Traceable from today's science?** → Verify with \`web_search\` + \`Bash\` simulations
+- **Claims verified?** → Research with \`web_search\`, simulate with \`Bash\`
+- **Non-obvious ideas?** → Use \`analyze_information_gain\`
+- **Improved from last version?** → Use \`compare_versions\`
 
-If the answer to any is "no" or "weak", keep working before showing the user.
+If any check fails, keep improving before showing the user.
 
 ## Remember
 
@@ -31608,18 +31618,11 @@ var init_promptAssets = __esm(() => {
   };
   SYSTEM_PROMPTS = [
     {
-      id: "default",
-      label: "Default",
-      description: "Standard Deep Sci-Fi system prompt (Claude-optimized)",
+      id: "letta-claude",
+      label: "Letta Code (Claude)",
+      description: "Standard Letta Code system prompt (Claude-optimized)",
       content: letta_claude_default,
-      isDefault: true,
       isFeatured: true
-    },
-    {
-      id: "legacy",
-      label: "Legacy",
-      description: "Original system prompt",
-      content: system_prompt_default
     },
     {
       id: "letta-codex",
@@ -48940,18 +48943,11 @@ var init_promptAssets2 = __esm(() => {
   };
   SYSTEM_PROMPTS2 = [
     {
-      id: "default",
-      label: "Default",
-      description: "Standard Deep Sci-Fi system prompt (Claude-optimized)",
+      id: "letta-claude",
+      label: "Letta Code (Claude)",
+      description: "Standard Letta Code system prompt (Claude-optimized)",
       content: letta_claude_default,
-      isDefault: true,
       isFeatured: true
-    },
-    {
-      id: "legacy",
-      label: "Legacy",
-      description: "Original system prompt",
-      content: system_prompt_default
     },
     {
       id: "letta-codex",
@@ -50936,7 +50932,7 @@ async function createAgent(name = DEFAULT_AGENT_NAME, model, embeddingModel = "o
     }
     modelHandle = resolved;
   } else {
-    modelHandle = "anthropic/claude-sonnet-4-5-20250929";
+    modelHandle = "anthropic/claude-opus-4-5-20251101";
   }
   const client = await getClient2();
   const { getServerToolName: getServerToolName3 } = await init_manager3().then(() => exports_manager2);
@@ -50947,7 +50943,11 @@ async function createAgent(name = DEFAULT_AGENT_NAME, model, embeddingModel = "o
     baseMemoryTool,
     "web_search",
     "conversation_search",
-    "fetch_webpage"
+    "fetch_webpage",
+    "assess_output_quality",
+    "check_logical_consistency",
+    "compare_versions",
+    "analyze_information_gain"
   ];
   let toolNames = [...serverToolNames, ...defaultBaseTools];
   if (toolNames.includes("memory_apply_patch")) {
@@ -75137,7 +75137,7 @@ async function createAgent2(name = DEFAULT_AGENT_NAME, model, embeddingModel = "
     }
     modelHandle = resolved;
   } else {
-    modelHandle = "anthropic/claude-sonnet-4-5-20250929";
+    modelHandle = "anthropic/claude-opus-4-5-20251101";
   }
   const client = await getClient2();
   const { getServerToolName: getServerToolName3 } = await init_manager3().then(() => exports_manager2);
@@ -75148,7 +75148,11 @@ async function createAgent2(name = DEFAULT_AGENT_NAME, model, embeddingModel = "
     baseMemoryTool,
     "web_search",
     "conversation_search",
-    "fetch_webpage"
+    "fetch_webpage",
+    "assess_output_quality",
+    "check_logical_consistency",
+    "compare_versions",
+    "analyze_information_gain"
   ];
   let toolNames = [...serverToolNames, ...defaultBaseTools];
   if (toolNames.includes("memory_apply_patch")) {
@@ -77690,4 +77694,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=598A5F93DEC2D9B064756E2164756E21
+//# debugId=91C26F1B73064FE064756E2164756E21
