@@ -29,6 +29,7 @@ import TaskDescription from "./descriptions/Task.md";
 import TodoWriteDescription from "./descriptions/TodoWrite.md";
 import UpdatePlanDescription from "./descriptions/UpdatePlan.md";
 import WriteDescription from "./descriptions/Write.md";
+import WorldManagerDescription from "./descriptions/world_manager.md";
 import WriteFileGeminiDescription from "./descriptions/WriteFileGemini.md";
 import WriteTodosGeminiDescription from "./descriptions/WriteTodosGemini.md";
 import { apply_patch } from "./impl/ApplyPatch";
@@ -64,6 +65,7 @@ import { update_plan } from "./impl/UpdatePlan";
 import { write } from "./impl/Write";
 import { write_file_gemini } from "./impl/WriteFileGemini";
 import { write_todos } from "./impl/WriteTodosGemini";
+import { world_manager } from "./impl/world_manager";
 import ApplyPatchSchema from "./schemas/ApplyPatch.json";
 import AskUserQuestionSchema from "./schemas/AskUserQuestion.json";
 import BashSchema from "./schemas/Bash.json";
@@ -97,6 +99,7 @@ import UpdatePlanSchema from "./schemas/UpdatePlan.json";
 import WriteSchema from "./schemas/Write.json";
 import WriteFileGeminiSchema from "./schemas/WriteFileGemini.json";
 import WriteTodosGeminiSchema from "./schemas/WriteTodosGemini.json";
+import WorldManagerSchema from "./schemas/world_manager.json";
 
 type ToolImplementation = (args: Record<string, unknown>) => Promise<unknown>;
 
@@ -186,6 +189,11 @@ const toolDefinitions = {
     schema: WriteSchema,
     description: WriteDescription.trim(),
     impl: write as unknown as ToolImplementation,
+  },
+  world_manager: {
+    schema: WorldManagerSchema,
+    description: WorldManagerDescription.trim(),
+    impl: world_manager as unknown as ToolImplementation,
   },
   shell_command: {
     schema: ShellCommandSchema,

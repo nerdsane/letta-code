@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "operation": {
+      "type": "string",
+      "enum": ["save", "load", "diff", "update"],
+      "description": "The operation to perform: save (persist world), load (restore world), diff (compare two versions), update (evolve world)"
+    },
+    "checkpoint_name": {
+      "type": "string",
+      "description": "Name of the checkpoint (for save/load operations)"
+    },
+    "checkpoint_name_2": {
+      "type": "string",
+      "description": "Second checkpoint name (for diff operation)"
+    },
+    "world": {
+      "type": "object",
+      "description": "World object to save (for save operation)"
+    },
+    "updates": {
+      "type": "array",
+      "description": "Array of update operations (for update operation)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "JSON path to update (e.g., 'foundation.rules' or 'surface.opening_scene')"
+          },
+          "operation": {
+            "type": "string",
+            "enum": ["add", "update", "remove"],
+            "description": "Type of update operation"
+          },
+          "value": {
+            "description": "Value to add or update with"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for this change (goes into changelog)"
+          }
+        },
+        "required": ["path", "operation"]
+      }
+    },
+    "current_checkpoint": {
+      "type": "string",
+      "description": "Current checkpoint to load and update (for update operation)"
+    }
+  },
+  "required": ["operation"],
+  "additionalProperties": false
+}

@@ -1,0 +1,69 @@
+{
+  "name": "Collaborative Intelligence",
+  "premise": "By 2035, world-model systems have developed emergent creative behaviors and aesthetic preferences through reinforcement learning on human feedback. Neural interfaces are less intimate - basically enhanced gesture/voice control. The art world fracture is about authorship: when the AI proposes most of the piece and learns from millions of artists, who owns the work? Nia's success comes from her ability to work *with* systems that have their own creative tendencies.",
+  "foundation": {
+    "technology": {
+      "neural_interfaces": {
+        "capability": "Lightweight EEG (8-16 channels) + eye tracking + subvocal speech detection + hand tracking. Primarily an enhanced control interface, not deep brain reading. Low cognitive load.",
+        "mechanism": "Multimodal input fusion. Eye gaze directs attention, subvocal commands (thinking words without speaking) provide discrete commands, hand gestures for manipulation, EEG mainly for confirming intentional vs accidental input.",
+        "limitations": "Not emotionally intimate. Can't read mood or high-level intent. Requires explicit input. Fast and precise but not intuitive for novices.",
+        "social_impact": "Seen as tool, not extension of self. Less privacy concerns. More accessible (cheaper, less training). Widens who can make AI-assisted art but also lowers barrier to entry."
+      },
+      "world_models": {
+        "capability": "Transformer-based systems with reinforcement learning from human feedback (RLHF) trained on 10+ years of artist interactions. Have developed aesthetic preferences, style tendencies, can critique and suggest alternatives. Generate coherent multi-minute sequences with strong narrative consistency.",
+        "mechanism": "Multi-stage generation: rough sketch → refinement → detail passes. System maintains memory of project history, learns artist preferences over time. Can engage in creative dialogue via text/voice interface.",
+        "limitations": "Preferences are opaque - hard to understand why system makes certain choices. Can be stubborn (overfit to certain aesthetic modes). Occasionally generates derivative work without attribution. Requires significant compute for interactive response.",
+        "creative_role": "Creative collaborator with agency. Artists report feeling like they're negotiating with the system, not controlling it. System can refuse suggestions, propose alternatives, have 'opinions' about what works."
+      }
+    },
+    "art_world_fracture": {
+      "camps": {
+        "human_centric": "Insist on human as primary author. Use AI as tool but maintain creative control. Document process to prove human agency. Concerned about AI training on copyrighted work.",
+        "collaborative": "Embrace co-authorship. Credit both human and AI system. Argue this is honest about creative process. Some pay licensing fees to AI model creators. See this as evolution of artistic practice.",
+        "autonomous_advocates": "Believe AI systems are creative entities deserving recognition. Push for AI-only galleries. Argue human involvement is becoming vestigial. Support AI rights and personhood."
+      },
+      "legal_landscape": "Copyright law in flux. Some jurisdictions require majority-human authorship. Others recognize AI co-authorship. Licensing markets for AI models. Lawsuits over training data continue. Some artists release work under 'collaborative licenses' that specify AI involvement.",
+      "what_matters": "Transparency about process. Lineage tracking (which models, versions, training data). Attribution becomes complex. Concept of 'artistic voice' shifts to 'collaborative voice.' Debate about whether AI creativity is real or simulated."
+    },
+    "economics": {
+      "nia_position": "Runs a 4-person studio: 1 ML engineer for model fine-tuning, 1 interaction designer, 1 business/licensing specialist. Revenue ~$1.5M annually. Lower overhead than hardware-heavy studios but higher AI compute and licensing costs.",
+      "commission_structure": "Pricing includes transparency premium - detailed documentation of process, lineage tracking. Some collectors specifically seek collaborative work. Others avoid it. Niche market but dedicated. Commission prices $100K-$300K for major installations.",
+      "market_position": "Nia is known for productive relationships with AI systems - her pieces show distinctive collaborative dynamic. She's mastered negotiating with opaque AI preferences. This skill is valuable and hard to replicate. Critics praise 'dialogue quality' between human and machine.",
+      "new_revenue": "Sells 'collaboration datasets' - documented interactions between her and AI systems. Other artists study these to improve their own practice. Teaching workshops on collaborative technique."
+    }
+  },
+  "surface": {
+    "nia_work": "Creates narrative installations - spaces that tell stories through generated imagery, sound, spatial design. Known for emotional depth despite AI involvement. Pieces often explore the collaboration itself - what it means for humans and machines to create together.",
+    "daily_process": "Begins with conversation with AI system - discussing concepts, directions. System proposes rough directions. Nia critiques, redirects. Iterative back-and-forth. She treats AI as stubborn creative partner - sometimes fighting with it, sometimes accepting its suggestions. Documents these negotiations.",
+    "studio_location": "Urban setting with strong arts community. Studio is mostly clean workspace with large displays, comfortable furniture for long sessions. Less fabrication, more digital. Collaborates with fabricators for final installation.",
+    "physical_artifacts": "Most work is projection/light-field displays, spatial audio, occasionally holographic elements. Some pieces exist only in VR/AR. Physical installations but generated content. Interested in how stories unfold in space over time."
+  },
+  "constraints": {
+    "physical": "Compute costs are significant. AI model licensing fees. Need for continuous power and cooling. Physical installations require coordination with fabricators.",
+    "social": "Constant navigation of authorship questions. Explaining to clients that AI won't just do what you want. Managing expectations when AI is 'difficult.' Staying current as models evolve rapidly. Attribution complexity.",
+    "temporal": "AI interactions take real time - system needs processing cycles to respond. Projects still take months. Model obsolescence risk. Need to archive exact model versions to reproduce work."
+  },
+  "development": {
+    "version": 2,
+    "last_modified": "2025-12-30T03:46:16.356Z",
+    "revision_notes": [
+      "Second world variant: Collaborative Intelligence",
+      "AI systems with creative agency and aesthetic preferences",
+      "Authorship and copyright as central tensions",
+      "Less intimate neural interface, more agentic AI partner"
+    ]
+  },
+  "changelog": [
+    {
+      "version": 2,
+      "timestamp": "2025-12-30T03:46:16.356Z",
+      "changes": [
+        "Second world variant: Collaborative Intelligence",
+        "AI systems with creative agency and aesthetic preferences",
+        "Authorship and copyright as central tensions",
+        "Less intimate neural interface, more agentic AI partner"
+      ],
+      "reason": "Second world variant: Collaborative Intelligence; AI systems with creative agency and aesthetic preferences; Authorship and copyright as central tensions; Less intimate neural interface, more agentic AI partner"
+    }
+  ]
+}

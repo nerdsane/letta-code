@@ -1,0 +1,70 @@
+{
+  "name": "Experiential Architecture",
+  "premise": "By 2035, art has moved toward direct experience design. Neural interfaces are bidirectional - reading and stimulating. World-model systems generate experiences: not just visuals, but multisensory environments with psychological impact. The art world fracture is about intervention level: observe vs participate vs alter. Nia creates 'psychotopologies' - navigable psychological spaces where viewers' mental states shape what they experience.",
+  "foundation": {
+    "technology": {
+      "neural_interfaces": {
+        "capability": "Bidirectional: reads EEG/affective state AND can stimulate via transcranial magnetic/electrical stimulation (non-invasive). Reads: emotional state, attention, basic visual cortex. Stimulates: mood modulation (subtle), attention guidance, mild perceptual effects (brightness, contrast, edge detection enhancement).",
+        "mechanism": "Closed-loop systems that adjust stimulation based on read state. Can guide viewer toward intended emotional states without overt control. Like subtle nudges toward target experience. Artist designs state trajectories, system guides viewers along paths.",
+        "limitations": "Individual variation - same stimulation affects people differently. Ethical concerns limit intervention strength. Requires informed consent and monitoring. Can cause discomfort, fatigue, rare adverse effects. Heavily regulated.",
+        "social_impact": "Deep concerns about autonomy and consent. Rigorous protocols for experiential art. Some jurisdictions ban neural stimulation in art contexts. Others require licensing, medical oversight. Powerful experiences but controversial practice."
+      },
+      "world_models": {
+        "capability": "Generate real-time adaptive environments based on viewer state. Combines: visual synthesis, spatial audio, environmental controls (temperature, scent, air movement), timing/pacing of events. Optimizes for intended psychological trajectory.",
+        "mechanism": "Trained on psychology research, user experience data, neuroscience findings. Models psychological state spaces and how experiences move people through them. Generates experience 'scores' - temporal sequences of stimuli designed to induce target states.",
+        "limitations": "Imperfect models of human psychology. Works statistically but not for everyone. Can fail to achieve intended effect or create unexpected reactions. Requires extensive testing and safety protocols. Computationally expensive for real-time adaptation.",
+        "creative_role": "Experience composer. Artist defines desired psychological journey, system orchestrates elements to guide viewers along that path. Like conductor leading through emotional landscape."
+      }
+    },
+    "art_world_fracture": {
+      "camps": {
+        "observational": "Traditional stance - art should be observed, not experienced as intervention. Viewers should maintain critical distance. Concerned experiential art is manipulation, not art. Skeptical of neural stimulation.",
+        "participatory": "Embrace interactive art but draw line at neural intervention. Viewers should participate through action, not passive reception of stimulation. Want agency in the experience.",
+        "experiential": "Argue that altering consciousness is ancient artistic goal (music, architecture, ritual). Modern tools make this more precise, not fundamentally different. See neural intervention as evolution of immersive art."
+      },
+      "legal_landscape": "Strict regulation of neural stimulation. Requires: informed consent, medical oversight, safety protocols, liability insurance. Some venues won't show experiential work. Age restrictions. Pregnancy warnings. List of contraindications. Works more like clinical trial than exhibition.",
+      "what_matters": "Safety and ethics. Consent protocols. Documentation of psychological effects. Long-term impact studies. Boundaries between art, therapy, and entertainment. Questions of agency and autonomy. Who controls the experience?"
+    },
+    "economics": {
+      "nia_position": "Runs a 9-person studio: 2 neuroscientists, 2 ML engineers, 1 experience designer, 1 ethics compliance specialist, 1 medical safety officer, 2 technical specialists. Revenue ~$3.5M. High costs for regulatory compliance, insurance, medical oversight.",
+      "commission_structure": "Institutional commissions dominant - museums, experiential venues, therapeutic spaces. $500K-$1.2M for installations. Per-viewer fees ($50-$200) for access. Venues need licensing and safety infrastructure. Some private collectors commission personal installations.",
+      "market_position": "Nia is pioneer in safe, effective experiential art. Known for powerful experiences that respect autonomy. Strong ethics background builds trust. Works with psychologists to create meaningful journeys, not just novelty. Critics praise depth and psychological sophistication."
+    }
+  },
+  "surface": {
+    "nia_work": "Immersive installations where viewer's mental state shapes their experience. Each person has unique journey through psychological landscape. Known for introspective, emotionally resonant pieces. Explores memory, identity, consciousness, emotional processing. Some pieces have therapeutic effects.",
+    "daily_process": "Designs psychological trajectories - intended emotional arcs. Works with neuroscientists to translate to stimulation patterns. Extensive testing with volunteers. Safety review cycles. Iteration based on participant feedback. Documentation and analysis.",
+    "studio_location": "Facility with clinical-grade safety infrastructure. Testing chambers with monitoring equipment. Comfortable waiting areas. Medical supervision capability. Looks more like research lab than traditional studio. In city with progressive stance on experiential art.",
+    "physical_artifacts": "Installations are physical spaces with neural equipment, environmental controls, sensory elements. Viewers enter equipped spaces, spend 15-45 minutes in piece. Each session documented for safety. Pieces exist as spaces + software + protocols. Can't be photographed - must be experienced."
+  },
+  "constraints": {
+    "physical": "Extensive safety equipment and monitoring. Medical oversight. Climate control and sensory systems. Space requirements for comfortable experiences. Regulatory compliance infrastructure.",
+    "social": "Ethical concerns require constant navigation. Consent and safety protocols add complexity. Limited venues willing/able to show work. Public skepticism and fear. Need for transparency and trust-building. Potential for misuse creates scrutiny.",
+    "temporal": "Long development cycles with safety testing. Regulatory approval processes. Per-viewer experiences limit throughput. Can't scale easily. Need for ongoing monitoring and incident tracking."
+  },
+  "development": {
+    "version": 2,
+    "last_modified": "2025-12-30T03:48:30.533Z",
+    "revision_notes": [
+      "Fourth world variant: Experiential Architecture",
+      "Bidirectional neural interfaces with stimulation capability",
+      "Direct experience design and psychological state manipulation",
+      "Art world split on intervention ethics and viewer agency",
+      "High regulation and emphasis on safety and consent"
+    ]
+  },
+  "changelog": [
+    {
+      "version": 2,
+      "timestamp": "2025-12-30T03:48:30.533Z",
+      "changes": [
+        "Fourth world variant: Experiential Architecture",
+        "Bidirectional neural interfaces with stimulation capability",
+        "Direct experience design and psychological state manipulation",
+        "Art world split on intervention ethics and viewer agency",
+        "High regulation and emphasis on safety and consent"
+      ],
+      "reason": "Fourth world variant: Experiential Architecture; Bidirectional neural interfaces with stimulation capability; Direct experience design and psychological state manipulation; Art world split on intervention ethics and viewer agency; High regulation and emphasis on safety and consent"
+    }
+  ]
+}

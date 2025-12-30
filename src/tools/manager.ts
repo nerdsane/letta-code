@@ -67,6 +67,7 @@ export const ANTHROPIC_DEFAULT_TOOLS: ToolName[] = [
   "Task",
   "TodoWrite",
   "Write",
+  "world_manager",
 ];
 
 export const OPENAI_DEFAULT_TOOLS: ToolName[] = [
@@ -185,6 +186,8 @@ const TOOL_PERMISSIONS: Record<ToolName, { requiresApproval: boolean }> = {
   WriteFileGemini: { requiresApproval: true },
   WriteTodos: { requiresApproval: false },
   ReadManyFiles: { requiresApproval: false },
+  // DSF (Deep Sci-Fi) worldbuilding tools
+  world_manager: { requiresApproval: false },
 };
 
 interface JsonSchema {
