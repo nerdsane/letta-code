@@ -134,13 +134,14 @@ Use `world_manager` to save each scenario as a separate checkpoint.
 
 **Generate world cover image:**
 After saving each world, generate a cover image that visually represents the world's essence:
-1. Use `image_generator` with `save_as_asset: true` and a detailed prompt capturing:
+
+1. **Generate with correct organization**: Use `world_checkpoint` parameter in `image_generator`, NOT `story_id`
    - The world's physical setting and atmosphere
    - Key technological or scientific elements
    - The mood and tone of the world
-   - **Visual style**: Always use "watercolor illustration" style - not comic book, not photorealistic, but watercolor rendering with soft edges, layered colors, and illustrative quality. **IMPORTANT**: Specify "edge-to-edge composition, no borders, no paper texture, no white background, full bleed" to ensure images display well on dark backgrounds
-2. The image will be automatically saved to `.dsf/assets/worlds/{checkpoint}/cover.png`
-3. Update the world's `asset` field with the returned asset metadata and save again
+   - **Visual style**: Clean illustration style with geometric shapes and pixel elements. **Color palette**: Use neon cyan (#00ffcc), bright cyan (#00ffff), neon magenta/purple (#aa00ff), pure black (#000000), and light grays to match the UI. Not photorealistic or comic book style. **IMPORTANT**: Specify "edge-to-edge composition, no borders, no paper texture, no white background, full bleed, dark background" to ensure images display well on the black UI background
+
+2. **Update the world JSON**: After generating, add the `asset` field to the world using `world_manager`
 
 Example workflow:
 ```
@@ -150,19 +151,36 @@ world_data = {
   # ... rest of world data
 }
 
-# 2. Generate cover image with watercolor illustration style
+# 2. Save world first (becomes v1)
+world_manager(operation="save", checkpoint_name="orbital_artists", world=world_data)
+
+# 3. Generate cover image with clean geometric illustration style and world_checkpoint parameter
 image_result = image_generator(
-  prompt="Orbital art station in low Earth orbit, large observation windows showing Earth below, holographic displays with abstract neural art, soft blue lighting, watercolor illustration style with soft edges and layered colors, edge-to-edge composition, no borders, no paper texture, no white background, full bleed, wide cinematic composition",
+  prompt="Orbital art station in low Earth orbit, large observation windows showing Earth below, holographic displays with abstract neural art, clean illustration style with geometric shapes and pixel elements, color palette: neon cyan (#00ffcc), bright cyan (#00ffff), neon magenta (#aa00ff), pure black, light grays, edge-to-edge composition, no borders, no paper texture, no white background, full bleed, dark background, wide cinematic composition",
   save_as_asset=true,
-  world_checkpoint="orbital_artists",
+  world_checkpoint="orbital_artists",  # Use this, not story_id!
   asset_id="cover",
   asset_description="Cover image for orbital artists world"
 )
 
-# 3. Add image to world and save once (will be v1)
-world_data.asset = image_result.asset
-world_manager(operation="save", checkpoint_name="orbital_artists", world=world_data)
+# 4. Update world with asset reference (becomes v2)
+world_manager(
+  operation="update",
+  current_checkpoint="orbital_artists",
+  updates=[{
+    "path": "asset",
+    "operation": "update",
+    "value": {
+      "id": "cover",
+      "type": "image",
+      "path": "worlds/orbital_artists/cover.png",
+      "description": "Cover image for orbital artists world"
+    }
+  }]
+)
 ```
+
+**Remember**: Worlds use `world_checkpoint`, stories use `story_id` - they're different organizational schemes. The UI gallery reads `world.asset.path` to display covers.
 
 Present options to user, let them choose or guide you toward what resonates.
 

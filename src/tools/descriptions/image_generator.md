@@ -80,6 +80,56 @@ image_generator({
 })
 ```
 
+## Organizational Parameters
+
+When saving images as assets, you can organize them by story or world:
+
+### For Story Assets (use `story_id`)
+
+```typescript
+image_generator({
+  prompt: "A dimly lit studio with neural interface equipment",
+  save_as_asset: true,
+  story_id: "neural_canvas",
+  asset_id: "studio_scene"
+})
+```
+
+Saves to: `.dsf/assets/neural_canvas/studio_scene.png`
+
+### For World Assets (use `world_checkpoint`)
+
+```typescript
+image_generator({
+  prompt: "Watercolor illustration of a Brooklyn warehouse art studio",
+  save_as_asset: true,
+  world_checkpoint: "affective_resonance",
+  asset_id: "cover"
+})
+```
+
+Saves to: `.dsf/assets/worlds/affective_resonance/cover.png`
+
+**When to use which:**
+- `story_id`: Assets that belong to a specific story
+- `world_checkpoint`: Assets that belong to a world (like cover images)
+- Neither: Flat structure in `.dsf/assets/`
+
+### Custom Paths (use `asset_path`)
+
+```typescript
+image_generator({
+  prompt: "Character portrait",
+  save_as_asset: true,
+  story_id: "my_story",
+  asset_path: "characters/protagonist.png"  // Nested path within story
+})
+```
+
+Saves to: `.dsf/assets/my_story/characters/protagonist.png`
+
+**Note:** Don't include the organizational prefix (story_id/world_checkpoint) in `asset_path` - it's added automatically.
+
 ## Integration with Stories
 
 ### Workflow

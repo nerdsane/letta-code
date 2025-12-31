@@ -18,6 +18,21 @@ Navigate to your project directory and run `deep-scifi` (see various command-lin
 > [!NOTE]
 >  By default, Deep Sci-Fi will connect to the [Letta Developer Platform](https://app.letta.com/) (includes a free tier), which you can connect to via OAuth or setting a `LETTA_API_KEY`. You can also connect it to a [self-hosted Letta server](https://docs.letta.com/letta-code/configuration#self-hosted-server) by setting `LETTA_BASE_URL`
 
+## Configuration
+Deep Sci-Fi can be configured using environment variables. Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Key configuration options:
+- **`LETTA_API_KEY`** - For Letta Cloud authentication (or use OAuth)
+- **`LETTA_BASE_URL`** - For self-hosted Letta server
+- **`OPENAI_API_KEY`** - For DALL-E image generation (`image_generator` tool)
+- **`GOOGLE_API_KEY`** - For Gemini/Imagen image generation (alternative)
+
+See `.env.example` for all available options including Notion integration, debug flags, and more.
+
 ## Philosophy
 Deep Sci-Fi is built around long-lived agents that persist across sessions and improve with use. Rather than working in independent sessions, each session is tied to a persisted agent that learns.
 

@@ -23,7 +23,9 @@ export interface ImageGeneratorArgs {
   model?: string; // For Google: "gemini-2.0-flash-exp", "imagen-3.0-generate-001", etc.
   save_as_asset?: boolean;
   story_id?: string;
+  world_checkpoint?: string;
   asset_id?: string;
+  asset_path?: string; // Custom path within organizational root (optional)
   asset_description?: string;
   number_of_images?: number; // For Google: 1-4, default 1
 }
@@ -93,7 +95,13 @@ export async function image_generator(
     if (revisedPrompt) {
       toolReturn += `\nRevised prompt: ${revisedPrompt}`;
     }
-    toolReturn += `\nImage URL: ${imageUrl}`;
+
+    // Don't dump base64 data into chat - just indicate the type
+    if (imageUrl.startsWith('data:')) {
+      toolReturn += `\nImage: base64 data (${Math.round(imageUrl.length / 1024)}KB)`;
+    } else {
+      toolReturn += `\nImage URL: ${imageUrl}`;
+    }
 
     // Optionally save as asset
     let asset: StoryAsset | undefined;
@@ -273,7 +281,7 @@ async function saveAsAsset(
   const asset: StoryAsset = {
     id: assetId,
     type: "image",
-    path: args.story_id ? `${args.story_id}/${fileName}` : fileName,
+    path: args.asset_path || fileName,
     description: args.asset_description || `Generated image: ${args.prompt.slice(0, 100)}`,
     generated: true,
     prompt: args.prompt,
@@ -283,6 +291,7 @@ async function saveAsAsset(
   const result = await asset_manager({
     operation: "save",
     story_id: args.story_id,
+    world_checkpoint: args.world_checkpoint,
     asset,
     data: dataUrl,
   });

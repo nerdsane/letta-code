@@ -31387,13 +31387,14 @@ Use \`world_manager\` to save each scenario as a separate checkpoint.
 
 **Generate world cover image:**
 After saving each world, generate a cover image that visually represents the world's essence:
-1. Use \`image_generator\` with a detailed prompt capturing:
+
+1. **Generate with correct organization**: Use \`world_checkpoint\` parameter in \`image_generator\`, NOT \`story_id\`
    - The world's physical setting and atmosphere
    - Key technological or scientific elements
    - The mood and tone of the world
-   - **Visual style**: Always use "tasteful watercolor illustration" style - not comic book, not photorealistic, but artistic watercolor rendering with soft edges, layered colors, and illustrative quality
-2. Save the image using \`asset_manager\` with \`world_checkpoint\` parameter
-3. Update the world's \`asset\` field with the image metadata and save again
+   - **Visual style**: Clean illustration style with geometric shapes and pixel elements. **Color palette**: Use neon cyan (#00ffcc), bright cyan (#00ffff), neon magenta/purple (#aa00ff), pure black (#000000), and light grays to match the UI. Not photorealistic or comic book style. **IMPORTANT**: Specify "edge-to-edge composition, no borders, no paper texture, no white background, full bleed, dark background" to ensure images display well on the black UI background
+
+2. **Update the world JSON**: After generating, add the \`asset\` field to the world using \`world_manager\`
 
 Example workflow:
 \`\`\`
@@ -31403,19 +31404,36 @@ world_data = {
   # ... rest of world data
 }
 
-# 2. Generate cover image with watercolor illustration style
+# 2. Save world first (becomes v1)
+world_manager(operation="save", checkpoint_name="orbital_artists", world=world_data)
+
+# 3. Generate cover image with clean geometric illustration style and world_checkpoint parameter
 image_result = image_generator(
-  prompt="Orbital art station in low Earth orbit, large observation windows showing Earth below, holographic displays with abstract neural art, soft blue lighting, tasteful watercolor illustration style, artistic rendering with soft edges and layered colors, wide composition",
+  prompt="Orbital art station in low Earth orbit, large observation windows showing Earth below, holographic displays with abstract neural art, clean illustration style with geometric shapes and pixel elements, color palette: neon cyan (#00ffcc), bright cyan (#00ffff), neon magenta (#aa00ff), pure black, light grays, edge-to-edge composition, no borders, no paper texture, no white background, full bleed, dark background, wide cinematic composition",
   save_as_asset=true,
-  world_checkpoint="orbital_artists",
+  world_checkpoint="orbital_artists",  # Use this, not story_id!
   asset_id="cover",
   asset_description="Cover image for orbital artists world"
 )
 
-# 3. Add image to world and save once (will be v1)
-world_data.asset = image_result.asset
-world_manager(operation="save", checkpoint_name="orbital_artists", world=world_data)
+# 4. Update world with asset reference (becomes v2)
+world_manager(
+  operation="update",
+  current_checkpoint="orbital_artists",
+  updates=[{
+    "path": "asset",
+    "operation": "update",
+    "value": {
+      "id": "cover",
+      "type": "image",
+      "path": "worlds/orbital_artists/cover.png",
+      "description": "Cover image for orbital artists world"
+    }
+  }]
+)
 \`\`\`
+
+**Remember**: Worlds use \`world_checkpoint\`, stories use \`story_id\` - they're different organizational schemes. The UI gallery reads \`world.asset.path\` to display covers.
 
 Present options to user, let them choose or guide you toward what resonates.
 
@@ -34088,17 +34106,10 @@ var image_generator_default = `Generates images from text prompts using AI model
 
 ## Basic Usage
 
-### Simple Generation
+**⚠️ IMPORTANT: Always use \`save_as_asset: true\` for story/world images!**
+OpenAI URLs expire in 1 hour, so images must be saved as assets to be permanent.
 
-\`\`\`typescript
-image_generator({
-  prompt: "A futuristic art studio with neural interface equipment, soft blue lighting, cinematic"
-})
-\`\`\`
-
-Returns image URL. For Google, image is returned as base64 data URL immediately. For OpenAI, URL expires in 1 hour.
-
-### Generate and Save as Asset
+### Generate and Save as Asset (Recommended)
 
 \`\`\`typescript
 image_generator({
@@ -34111,6 +34122,16 @@ image_generator({
 \`\`\`
 
 Downloads the image and saves it to \`.dsf/assets/my_story/city_street_night.png\`, then returns asset metadata to include in your story segment.
+
+### Quick Preview (URL only, expires in 1 hour)
+
+\`\`\`typescript
+image_generator({
+  prompt: "A futuristic art studio with neural interface equipment, soft blue lighting, cinematic"
+})
+\`\`\`
+
+Returns temporary image URL. For Google, image is returned as base64 data URL immediately. For OpenAI, URL expires in 1 hour.
 
 ## Advanced Options
 
@@ -34147,6 +34168,56 @@ image_generator({
   asset_description: "Orbital station exterior view"
 })
 \`\`\`
+
+## Organizational Parameters
+
+When saving images as assets, you can organize them by story or world:
+
+### For Story Assets (use \`story_id\`)
+
+\`\`\`typescript
+image_generator({
+  prompt: "A dimly lit studio with neural interface equipment",
+  save_as_asset: true,
+  story_id: "neural_canvas",
+  asset_id: "studio_scene"
+})
+\`\`\`
+
+Saves to: \`.dsf/assets/neural_canvas/studio_scene.png\`
+
+### For World Assets (use \`world_checkpoint\`)
+
+\`\`\`typescript
+image_generator({
+  prompt: "Watercolor illustration of a Brooklyn warehouse art studio",
+  save_as_asset: true,
+  world_checkpoint: "affective_resonance",
+  asset_id: "cover"
+})
+\`\`\`
+
+Saves to: \`.dsf/assets/worlds/affective_resonance/cover.png\`
+
+**When to use which:**
+- \`story_id\`: Assets that belong to a specific story
+- \`world_checkpoint\`: Assets that belong to a world (like cover images)
+- Neither: Flat structure in \`.dsf/assets/\`
+
+### Custom Paths (use \`asset_path\`)
+
+\`\`\`typescript
+image_generator({
+  prompt: "Character portrait",
+  save_as_asset: true,
+  story_id: "my_story",
+  asset_path: "characters/protagonist.png"  // Nested path within story
+})
+\`\`\`
+
+Saves to: \`.dsf/assets/my_story/characters/protagonist.png\`
+
+**Note:** Don't include the organizational prefix (story_id/world_checkpoint) in \`asset_path\` - it's added automatically.
 
 ## Integration with Stories
 
@@ -46781,8 +46852,13 @@ Prompt: ${args.prompt}`;
       toolReturn += `
 Revised prompt: ${revisedPrompt}`;
     }
-    toolReturn += `
+    if (imageUrl.startsWith("data:")) {
+      toolReturn += `
+Image: base64 data (${Math.round(imageUrl.length / 1024)}KB)`;
+    } else {
+      toolReturn += `
 Image URL: ${imageUrl}`;
+    }
     let asset;
     if (args.save_as_asset) {
       asset = await saveAsAsset(imageUrl, args);
@@ -46905,7 +46981,7 @@ async function saveAsAsset(imageUrl, args) {
   const asset = {
     id: assetId,
     type: "image",
-    path: args.story_id ? `${args.story_id}/${fileName}` : fileName,
+    path: args.asset_path || fileName,
     description: args.asset_description || `Generated image: ${args.prompt.slice(0, 100)}`,
     generated: true,
     prompt: args.prompt
@@ -46913,6 +46989,7 @@ async function saveAsAsset(imageUrl, args) {
   const result = await asset_manager({
     operation: "save",
     story_id: args.story_id,
+    world_checkpoint: args.world_checkpoint,
     asset,
     data: dataUrl
   });
@@ -53992,7 +54069,13 @@ class SessionStats {
       totalTokens: 0,
       cachedTokens: 0,
       reasoningTokens: 0,
-      stepCount: 0
+      stepCount: 0,
+      inputCost: 0,
+      outputCost: 0,
+      cachedInputCost: 0,
+      cacheWriteCost: 0,
+      reasoningCost: 0,
+      totalCost: 0
     };
   }
   endTurn(apiDurationMs) {
@@ -54019,7 +54102,13 @@ class SessionStats {
       totalTokens: 0,
       cachedTokens: 0,
       reasoningTokens: 0,
-      stepCount: 0
+      stepCount: 0,
+      inputCost: 0,
+      outputCost: 0,
+      cachedInputCost: 0,
+      cacheWriteCost: 0,
+      reasoningCost: 0,
+      totalCost: 0
     };
   }
 }
@@ -54047,7 +54136,13 @@ function createBuffers() {
       totalTokens: 0,
       cachedTokens: 0,
       reasoningTokens: 0,
-      stepCount: 0
+      stepCount: 0,
+      inputCost: 0,
+      outputCost: 0,
+      cachedInputCost: 0,
+      cacheWriteCost: 0,
+      reasoningCost: 0,
+      totalCost: 0
     }
   };
 }
@@ -54260,6 +54355,24 @@ function onChunk(b, chunk) {
       }
       if (chunk.step_count !== undefined) {
         b.usage.stepCount += chunk.step_count;
+      }
+      if (chunk.input_cost !== undefined && chunk.input_cost !== null) {
+        b.usage.inputCost = (b.usage.inputCost || 0) + chunk.input_cost;
+      }
+      if (chunk.output_cost !== undefined && chunk.output_cost !== null) {
+        b.usage.outputCost = (b.usage.outputCost || 0) + chunk.output_cost;
+      }
+      if (chunk.cached_input_cost !== undefined && chunk.cached_input_cost !== null) {
+        b.usage.cachedInputCost = (b.usage.cachedInputCost || 0) + chunk.cached_input_cost;
+      }
+      if (chunk.cache_write_cost !== undefined && chunk.cache_write_cost !== null) {
+        b.usage.cacheWriteCost = (b.usage.cacheWriteCost || 0) + chunk.cache_write_cost;
+      }
+      if (chunk.reasoning_cost !== undefined && chunk.reasoning_cost !== null) {
+        b.usage.reasoningCost = (b.usage.reasoningCost || 0) + chunk.reasoning_cost;
+      }
+      if (chunk.total_cost !== undefined && chunk.total_cost !== null) {
+        b.usage.totalCost = (b.usage.totalCost || 0) + chunk.total_cost;
       }
       break;
     }
@@ -69964,9 +70077,30 @@ function formatUsageStats({
   const outputLines = [
     `Total duration (API):  ${formatDuration(stats.totalApiMs)}`,
     `Total duration (wall): ${formatDuration(stats.totalWallMs)}`,
-    `Session usage:         ${stats.usage.stepCount} steps, ${formatCompact(stats.usage.promptTokens)} input, ${formatCompact(stats.usage.completionTokens)} output`,
-    ""
+    `Session usage:         ${stats.usage.stepCount} steps, ${formatCompact(stats.usage.promptTokens)} input, ${formatCompact(stats.usage.completionTokens)} output`
   ];
+  if (stats.usage.totalCost !== undefined && stats.usage.totalCost !== null && stats.usage.totalCost > 0) {
+    const formatCost = (cost) => `$${cost.toFixed(4)}`;
+    let costLine = `Session cost:          ${formatCost(stats.usage.totalCost)}`;
+    const costParts = [];
+    if (stats.usage.inputCost && stats.usage.inputCost > 0) {
+      costParts.push(`${formatCost(stats.usage.inputCost)} input`);
+    }
+    if (stats.usage.outputCost && stats.usage.outputCost > 0) {
+      costParts.push(`${formatCost(stats.usage.outputCost)} output`);
+    }
+    if (stats.usage.cachedInputCost && stats.usage.cachedInputCost > 0) {
+      costParts.push(`${formatCost(stats.usage.cachedInputCost)} cached`);
+    }
+    if (stats.usage.reasoningCost && stats.usage.reasoningCost > 0) {
+      costParts.push(`${formatCost(stats.usage.reasoningCost)} reasoning`);
+    }
+    if (costParts.length > 0) {
+      costLine += ` (${costParts.join(", ")})`;
+    }
+    outputLines.push(costLine);
+  }
+  outputLines.push("");
   if (balance) {
     const totalCredits = Math.round(balance.total_balance);
     const monthlyCredits = Math.round(balance.monthly_credit_balance);
@@ -80606,4 +80740,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=493B73030690D9F764756E2164756E21
+//# debugId=8D5400A628DAC57D64756E2164756E21
