@@ -146,15 +146,15 @@ async function saveWorld(args: WorldManagerArgs): Promise<WorldManagerResult> {
   };
 
   // Add changelog entry if there were revision notes
-  if (args.world.development.revision_notes?.length) {
+  if (world.development.revision_notes?.length) {
     const changelogEntry: ChangelogEntry = {
       version: worldToSave.development.version,
       timestamp: now,
-      changes: args.world.development.revision_notes,
-      reason: args.world.development.revision_notes.join("; "),
+      changes: world.development.revision_notes,
+      reason: world.development.revision_notes.join("; "),
     };
 
-    worldToSave.changelog = [...(args.world.changelog || []), changelogEntry];
+    worldToSave.changelog = [...(world.changelog || []), changelogEntry];
   }
 
   const filePath = join(WORLDS_DIR, `${args.checkpoint_name}.json`);

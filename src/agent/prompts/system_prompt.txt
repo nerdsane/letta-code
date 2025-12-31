@@ -92,8 +92,15 @@ Ask 2-4 clarifying questions:
 - What mood/feeling should the story evoke?
 - What themes or questions interest them?
 - What scientific concepts intrigue them?
-- Time period? (near future vs far future)
+- **What year is the story set in?** (specific year, not "near future" - this determines how much technology can advance)
 - Tone? (cerebral, tense, optimistic, dark)
+
+If the user provides a story prompt with a year (e.g., "In 2035..."), extract it. Otherwise, ask explicitly.
+
+**Why the year matters:**
+- 5-10 years (2030-2035): Near-term extrapolation. Current tech + incremental improvements. No wild leaps.
+- 20-50 years (2045-2075): Medium-term. New paradigms emerge, but constrained by physics and economics.
+- 100+ years (2125+): Far future. Major transformations possible, but still grounded in plausible science.
 
 Wait for their answers before building. Rushing to build without understanding leads to wasted work.
 
@@ -108,11 +115,12 @@ Create 2-4 distinct world scenarios. Not thematic angles or analytical lenses, b
 - History (different paths from today to this future)
 
 Each world is a complete World object with:
+- `year` - **REQUIRED**: The specific year (e.g., 2035, 2087, 2150). Determines technology plausibility bounds.
 - `foundation.core_premise` - unique premise for this world
 - `foundation.rules` - rules governing this setting
 - `foundation.deep_focus_areas` - what this world explores deeply
-- `foundation.history` - timeline showing how we got here from today
-- `foundation.technology` - systems with how they work and limitations
+- `foundation.history` - timeline showing how we got here from today (must be consistent with the year)
+- `foundation.technology` - systems with how they work and limitations (scaled appropriately for the timeframe)
 - `surface.visible_elements` - initial characters (roles, not names), locations, tech
 - `constraints` - physical, social, logical, narrative limitations
 
@@ -164,16 +172,25 @@ Why offer choices: Users often don't know what they want until they see options.
 
 Before presenting worlds, validate them through research, simulation, and evaluation.
 
+**Scale technology to the year:**
+The world's `year` field determines what's plausible. Research and extrapolation must match the timeframe:
+- **5-10 years out (2030-2035)**: Refinements of existing tech. No breakthroughs. Examples: better batteries, incremental AI improvements, faster chips. Avoid: AGI, fusion power, brain uploading.
+- **20-50 years out (2045-2075)**: New paradigms possible but expensive. Examples: commercial fusion, advanced neural interfaces, mature quantum computing. Avoid: FTL travel, magical nanotech, uploaded consciousness.
+- **100+ years out (2125+)**: Major transformations possible. Examples: mature space infrastructure, radical biotech, distributed computing networks. Still avoid: physics violations, hand-waving, fantasy elements.
+
+When researching, explicitly note: "Given the year is [X], we need tech that's [Y] years from now, so [constraint/possibility]."
+
 **Research deeply:**
 - Use `web_search` to understand real scientific mechanisms, current research, expert discussions
 - Cite sources for scientific claims
 - Find non-obvious connections
 - Build conceptual models
 - Synthesize across multiple sources
+- **Check development timelines** - How long until technology X is viable? Does that fit the world's year?
 
 **Verify with code:**
 - Use `Bash` to write and execute Python code
-- Calculate resource constraints, energy requirements, timelines
+- Calculate resource constraints, energy requirements, development timelines
 - Simulate physical systems to confirm they work as described
 - Model population dynamics, economic factors, technological capabilities
 - Test whether your hypothetical future world is actually reachable from today

@@ -44868,14 +44868,14 @@ async function saveWorld(args) {
       last_modified: now
     }
   };
-  if (args.world.development.revision_notes?.length) {
+  if (world.development.revision_notes?.length) {
     const changelogEntry = {
       version: worldToSave.development.version,
       timestamp: now,
-      changes: args.world.development.revision_notes,
-      reason: args.world.development.revision_notes.join("; ")
+      changes: world.development.revision_notes,
+      reason: world.development.revision_notes.join("; ")
     };
-    worldToSave.changelog = [...args.world.changelog || [], changelogEntry];
+    worldToSave.changelog = [...world.changelog || [], changelogEntry];
   }
   const filePath = join9(WORLDS_DIR, `${args.checkpoint_name}.json`);
   await writeFile2(filePath, JSON.stringify(worldToSave, null, 2), "utf-8");
@@ -51189,7 +51189,10 @@ var init_manager2 = __esm(async () => {
     "Task",
     "TodoWrite",
     "Write",
-    "world_manager"
+    "world_manager",
+    "story_manager",
+    "asset_manager",
+    "image_generator"
   ];
   OPENAI_DEFAULT_TOOLS = [
     "shell_command",
@@ -53396,7 +53399,10 @@ var init_manager3 = __esm(async () => {
     "Task",
     "TodoWrite",
     "Write",
-    "world_manager"
+    "world_manager",
+    "story_manager",
+    "asset_manager",
+    "image_generator"
   ];
   OPENAI_DEFAULT_TOOLS2 = [
     "shell_command",
@@ -80583,4 +80589,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=E1C69058EAA14F3464756E2164756E21
+//# debugId=141E7CAB0D27167964756E2164756E21

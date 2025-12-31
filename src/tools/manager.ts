@@ -68,6 +68,9 @@ export const ANTHROPIC_DEFAULT_TOOLS: ToolName[] = [
   "TodoWrite",
   "Write",
   "world_manager",
+  "story_manager",
+  "asset_manager",
+  "image_generator",
 ];
 
 export const OPENAI_DEFAULT_TOOLS: ToolName[] = [

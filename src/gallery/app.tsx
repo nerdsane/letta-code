@@ -374,6 +374,7 @@ function WorldView({
     <div className="world-view">
       <div className="world-header">
         <div className="world-meta">
+          {world.year && <span className="world-year">{world.year}</span>}
           <span className="world-version">v{world.development.version}</span>
           <span className="world-state">{world.development.state}</span>
         </div>
@@ -615,7 +616,10 @@ function WorldCard({ world, onClick }: { world: World; onClick: () => void }) {
       )}
       <div className="world-card-header">
         <h3 className="world-card-title">{getWorldTitle(world)}</h3>
-        <span className="world-card-version">v{world.development.version}</span>
+        <div className="world-card-badges">
+          {world.year && <span className="world-card-year">{world.year}</span>}
+          <span className="world-card-version">v{world.development.version}</span>
+        </div>
       </div>
       <p className="world-card-premise">{world.foundation.core_premise}</p>
       <div className="world-card-footer">

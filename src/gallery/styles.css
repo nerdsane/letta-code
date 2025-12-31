@@ -344,7 +344,14 @@ body {
   font-family: var(--font-mono);
 }
 
+.world-card-badges {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
 .world-card-version,
+.world-card-year,
 .story-card-status {
   font-size: var(--text-xs);
   color: var(--text-tertiary);
@@ -354,6 +361,14 @@ body {
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.world-card-year,
+.world-year {
+  background: rgba(0, 255, 204, 0.08);
+  color: var(--neon-cyan);
+  border-color: rgba(0, 255, 204, 0.2);
+  font-weight: 600;
 }
 
 .story-card[data-status="active"] .story-card-status {
