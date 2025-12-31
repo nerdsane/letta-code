@@ -109,16 +109,38 @@ async function saveWorld(args: WorldManagerArgs): Promise<WorldManagerResult> {
     };
   }
 
+  // Parse world if it's a string
+  let world: World;
+  if (typeof args.world === 'string') {
+    try {
+      world = JSON.parse(args.world);
+    } catch (error) {
+      return {
+        toolReturn: `Failed to parse world JSON: ${error instanceof Error ? error.message : String(error)}`,
+        status: "error",
+      };
+    }
+  } else {
+    world = args.world;
+  }
+
   // Ensure .dsf/worlds directory exists
   await mkdir(WORLDS_DIR, { recursive: true });
 
-  // Auto-increment version and update timestamp
+  // Auto-increment version only if there are revision notes (actual updates)
+  // or if version is already > 0 (not initial creation)
   const now = new Date().toISOString();
+  const shouldIncrementVersion =
+    (world.development.revision_notes?.length ?? 0) > 0 &&
+    world.development.version > 0;
+
   const worldToSave: World = {
-    ...args.world,
+    ...world,
     development: {
-      ...args.world.development,
-      version: args.world.development.version + 1,
+      ...world.development,
+      version: shouldIncrementVersion
+        ? world.development.version + 1
+        : Math.max(1, world.development.version), // Ensure minimum version 1
       last_modified: now,
     },
   };

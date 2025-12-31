@@ -188,6 +188,9 @@ const TOOL_PERMISSIONS: Record<ToolName, { requiresApproval: boolean }> = {
   ReadManyFiles: { requiresApproval: false },
   // DSF (Deep Sci-Fi) worldbuilding tools
   world_manager: { requiresApproval: false },
+  story_manager: { requiresApproval: false },
+  asset_manager: { requiresApproval: false },
+  image_generator: { requiresApproval: false },
 };
 
 interface JsonSchema {
@@ -613,7 +616,7 @@ export async function upsertToolsToServer(client: Letta): Promise<void> {
           const fullJsonSchema = {
             name: serverName,
             description: tool.schema.description,
-            parameters: tool.schema.input_schema,
+            input_schema: tool.schema.input_schema,
           };
 
           await client.tools.upsert({

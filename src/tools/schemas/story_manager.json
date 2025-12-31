@@ -1,0 +1,162 @@
+{
+  "type": "object",
+  "properties": {
+      "operation": {
+        "type": "string",
+        "enum": ["create", "save_segment", "load", "list", "branch", "continue", "update_metadata"],
+        "description": "The operation to perform: create (new story), save_segment (add segment), load (restore story), list (all stories), branch (create branch), continue (get context), update_metadata (update story info)"
+      },
+      "story_id": {
+        "type": "string",
+        "description": "Unique identifier for the story (required for most operations)"
+      },
+      "world_checkpoint": {
+        "type": "string",
+        "description": "Name of the world checkpoint this story belongs to (required for create)"
+      },
+      "title": {
+        "type": "string",
+        "description": "Title of the story (required for create operation)"
+      },
+      "segment": {
+        "type": "object",
+        "description": "Story segment to add (for save_segment operation)",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The story text content"
+          },
+          "word_count": {
+            "type": "number",
+            "description": "Number of words in this segment"
+          },
+          "parent_segment": {
+            "type": ["string", "null"],
+            "description": "ID of parent segment, or null for first segment"
+          },
+          "world_evolution": {
+            "type": "object",
+            "description": "How this segment affects the world",
+            "properties": {
+              "elements_introduced": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Element IDs introduced in this segment"
+              },
+              "rules_applied": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Rule IDs applied in this segment"
+              },
+              "rules_challenged": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Rules that were tested or bent"
+              },
+              "new_questions": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Questions raised for worldbuilding"
+              },
+              "world_changes": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "How this segment changed the world"
+              }
+            }
+          },
+          "assets": {
+            "type": "array",
+            "description": "Multimedia assets for this segment",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["image", "audio", "video", "document"]
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Path relative to .dsf/assets/"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "generated": {
+                  "type": "boolean"
+                },
+                "prompt": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "type", "path"]
+            }
+          },
+          "branches": {
+            "type": "array",
+            "description": "Possible story branches from this segment",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["active", "pending", "completed", "abandoned"]
+                },
+                "segment_id": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "prompt", "status"]
+            }
+          }
+        },
+        "required": ["content", "word_count", "parent_segment", "world_evolution"]
+      },
+      "branch": {
+        "type": "object",
+        "description": "Story branch to create (for branch operation)",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "What this branch explores"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "pending", "completed", "abandoned"],
+            "description": "Status of this branch"
+          }
+        },
+        "required": ["prompt", "status"]
+      },
+      "metadata": {
+        "type": "object",
+        "description": "Story metadata to update (for update_metadata operation)",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "completed", "abandoned", "paused"]
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "author_notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+  "required": ["operation"]
+}

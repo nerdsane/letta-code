@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "properties": {
+      "prompt": {
+        "type": "string",
+        "description": "Detailed description of the image to generate. Be specific about style, mood, composition, lighting, etc."
+      },
+      "provider": {
+        "type": "string",
+        "enum": ["openai", "google"],
+        "description": "Image generation provider. 'openai' uses DALL-E (default), 'google' uses Gemini/Imagen (Nano Banana)."
+      },
+      "size": {
+        "type": "string",
+        "enum": ["1024x1024", "1792x1024", "1024x1792", "512x512", "256x256"],
+        "description": "Image dimensions. DALL-E 3 supports 1024x1024, 1792x1024, 1024x1792. DALL-E 2 supports 256x256, 512x512, 1024x1024. Default: 1024x1024"
+      },
+      "quality": {
+        "type": "string",
+        "enum": ["standard", "hd"],
+        "description": "Image quality (DALL-E 3 only). 'hd' creates more detailed images but takes longer. Default: standard"
+      },
+      "style": {
+        "type": "string",
+        "enum": ["vivid", "natural"],
+        "description": "Image style (DALL-E 3 only). 'vivid' is more dramatic and artistic, 'natural' is more realistic. Default: vivid"
+      },
+      "model": {
+        "type": "string",
+        "description": "Model to use (Google only). Examples: 'gemini-2.0-flash-exp' (Nano Banana, fast, free), 'imagen-3.0-generate-001'. Default: gemini-2.0-flash-exp"
+      },
+      "number_of_images": {
+        "type": "number",
+        "description": "Number of images to generate (Google only, 1-4). Default: 1"
+      },
+      "save_as_asset": {
+        "type": "boolean",
+        "description": "If true, automatically saves the generated image as a story asset. Default: false"
+      },
+      "story_id": {
+        "type": "string",
+        "description": "Story ID to associate the asset with (required if save_as_asset is true)"
+      },
+      "asset_id": {
+        "type": "string",
+        "description": "Custom asset ID. If not provided, auto-generates one."
+      },
+      "asset_description": {
+        "type": "string",
+        "description": "Description of what the asset shows (used in story metadata)"
+      }
+    },
+  "required": ["prompt"]
+}

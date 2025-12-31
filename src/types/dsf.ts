@@ -16,6 +16,7 @@ export interface World {
   foundation: Foundation;
   constraints: Constraint[];
   changelog?: ChangelogEntry[];
+  asset?: StoryAsset;  // Cover image for the world
 }
 
 export interface DevelopmentMetadata {
@@ -279,3 +280,134 @@ export type EvaluationResult =
   | NoveltyReport
   | AbstractionReport
   | NarrativeEvaluation;
+
+// ============================================================================
+// Story Management Types
+// ============================================================================
+
+export interface Story {
+  id: string;
+  world_checkpoint: string;
+  world_version: number;
+
+  metadata: StoryMetadata;
+  segments: StorySegment[];
+  endpoints: StoryEndpoint[];
+  world_contributions: WorldContributions;
+}
+
+export interface StoryMetadata {
+  title: string;
+  created: string;           // ISO timestamp
+  last_updated: string;      // ISO timestamp
+  status: "active" | "completed" | "abandoned" | "paused";
+  tags?: string[];
+  author_notes?: string;
+}
+
+export interface StorySegment {
+  id: string;
+  content: string;
+  word_count: number;
+  created: string;           // ISO timestamp
+  parent_segment: string | null;  // null for first segment
+
+  // World evolution tracking
+  world_evolution: SegmentWorldEvolution;
+
+  // Multimedia assets
+  assets?: StoryAsset[];
+
+  // Branching
+  branches?: StoryBranch[];
+}
+
+export interface SegmentWorldEvolution {
+  elements_introduced?: string[];   // Element IDs
+  rules_applied?: string[];         // Rule IDs
+  rules_challenged?: string[];      // Rules that were tested/bent
+  new_questions?: string[];         // Questions raised for worldbuilding
+  world_changes?: string[];         // How this segment changed the world
+}
+
+export interface StoryAsset {
+  id: string;
+  type: "image" | "audio" | "video" | "document";
+  path: string;              // Relative to .dsf/assets/
+  description?: string;
+  generated?: boolean;       // Was this AI-generated?
+  prompt?: string;           // Generation prompt if applicable
+}
+
+export interface StoryBranch {
+  id: string;
+  prompt: string;            // What this branch is about
+  status: "active" | "pending" | "completed" | "abandoned";
+  segment_id?: string;       // If this branch has been written
+}
+
+export interface StoryEndpoint {
+  segment_id: string;
+  branch_id?: string;        // If this is a branch endpoint
+  status: "active" | "pending" | "completed";
+  continuation_prompt?: string;  // Suggested next direction
+}
+
+export interface WorldContributions {
+  characters_developed: string[];    // Element IDs
+  locations_explored: string[];      // Element IDs
+  rules_tested: string[];            // Rule IDs
+  new_rules_discovered: string[];    // Rules created through story
+  contradictions_found: string[];    // Issues discovered
+  themes_explored: string[];
+}
+
+// ============================================================================
+// Story Manager Tool Types
+// ============================================================================
+
+export interface StoryManagerArgs {
+  operation: "create" | "save_segment" | "load" | "list" | "branch" | "continue" | "update_metadata";
+  story_id?: string;
+  world_checkpoint?: string;
+  title?: string;
+  segment?: Omit<StorySegment, "id" | "created">;
+  branch?: Omit<StoryBranch, "id">;
+  metadata?: Partial<StoryMetadata>;
+  continuation_context?: ContinuationContext;
+}
+
+export interface StoryManagerResult {
+  toolReturn: string;
+  status: "success" | "error";
+  data?: Story | Story[] | StorySegment | ContinuationContext;
+}
+
+export interface ContinuationContext {
+  story: Story;
+  world: World;
+  last_segment: StorySegment;
+  active_endpoints: StoryEndpoint[];
+  suggested_directions: string[];
+  rules_to_consider: Rule[];
+  elements_in_play: Element[];
+}
+
+// ============================================================================
+// Asset Management Types
+// ============================================================================
+
+export interface AssetManagerArgs {
+  operation: "save" | "load" | "list" | "delete";
+  asset?: StoryAsset;
+  asset_id?: string;
+  story_id?: string;
+  world_checkpoint?: string;
+  data?: string;             // Base64 or file path
+}
+
+export interface AssetManagerResult {
+  toolReturn: string;
+  status: "success" | "error";
+  data?: StoryAsset | StoryAsset[];
+}

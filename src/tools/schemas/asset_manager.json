@@ -1,0 +1,59 @@
+{
+  "type": "object",
+  "properties": {
+      "operation": {
+        "type": "string",
+        "enum": ["save", "load", "list", "delete"],
+        "description": "The operation to perform: save (store asset), load (retrieve asset), list (all assets), delete (remove asset)"
+      },
+      "asset": {
+        "type": "object",
+        "description": "Asset metadata (for save/load/delete operations)",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the asset"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["image", "audio", "video", "document"],
+            "description": "Type of asset"
+          },
+          "path": {
+            "type": "string",
+            "description": "Path relative to .dsf/assets/ where asset will be stored"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of the asset"
+          },
+          "generated": {
+            "type": "boolean",
+            "description": "Whether this asset was AI-generated"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Generation prompt if asset was AI-generated"
+          }
+        },
+        "required": ["id", "type", "path"]
+      },
+      "asset_id": {
+        "type": "string",
+        "description": "Asset ID (for load/delete operations)"
+      },
+      "story_id": {
+        "type": "string",
+        "description": "Story ID to organize assets by story"
+      },
+      "world_checkpoint": {
+        "type": "string",
+        "description": "World checkpoint to filter assets (for list operation)"
+      },
+      "data": {
+        "type": "string",
+        "description": "Asset data as base64 string, data URL, or file path (for save operation)"
+      }
+    },
+  "required": ["operation"]
+}

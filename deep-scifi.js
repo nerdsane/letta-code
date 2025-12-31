@@ -390,11 +390,11 @@ function getDefaultFetch() {
   throw new Error("`fetch` is not defined as a global; Either pass `fetch` to the client, `new Letta({ fetch })` or polyfill the global, `globalThis.fetch = fetch`");
 }
 function makeReadableStream(...args) {
-  const ReadableStream = globalThis.ReadableStream;
-  if (typeof ReadableStream === "undefined") {
+  const ReadableStream2 = globalThis.ReadableStream;
+  if (typeof ReadableStream2 === "undefined") {
     throw new Error("`ReadableStream` is not defined as a global; You will need to polyfill it, `globalThis.ReadableStream = ReadableStream`");
   }
-  return new ReadableStream(...args);
+  return new ReadableStream2(...args);
 }
 function ReadableStreamFrom(iterable) {
   let iter = Symbol.asyncIterator in iterable ? iterable[Symbol.asyncIterator]() : iterable[Symbol.iterator]();
@@ -3257,10 +3257,13 @@ var init_package = __esm(() => {
       access: "public"
     },
     dependencies: {
+      "@google/generative-ai": "^0.24.1",
       "@letta-ai/letta-client": "1.6.1",
       glob: "^13.0.0",
       "ink-link": "^5.0.0",
-      open: "^10.2.0"
+      open: "^10.2.0",
+      react: "^18.3.1",
+      "react-dom": "^18.3.1"
     },
     optionalDependencies: {
       "@vscode/ripgrep": "^1.17.0"
@@ -3277,7 +3280,6 @@ var init_package = __esm(() => {
       "lint-staged": "16.2.4",
       minimatch: "^10.0.3",
       picomatch: "^2.3.1",
-      react: "18.2.0",
       typescript: "^5.0.0"
     },
     scripts: {
@@ -3286,6 +3288,7 @@ var init_package = __esm(() => {
       typecheck: "tsc --noEmit",
       check: "bun run scripts/check.js",
       dev: "bun --loader:.md=text --loader:.mdx=text --loader:.txt=text run src/index.ts",
+      gallery: "bun run src/gallery/server.ts",
       build: "node scripts/postinstall-patches.js && bun run build.js",
       prepare: "bun run build",
       postinstall: "node scripts/postinstall-patches.js"
@@ -4685,7 +4688,7 @@ var require_react_development = __commonJS((exports, module) => {
       if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
         __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error);
       }
-      var ReactVersion = "18.2.0";
+      var ReactVersion = "18.3.1";
       var REACT_ELEMENT_TYPE = Symbol.for("react.element");
       var REACT_PORTAL_TYPE = Symbol.for("react.portal");
       var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
@@ -6446,6 +6449,7 @@ Check the top-level render call using <` + parentName + ">.";
       exports.StrictMode = REACT_STRICT_MODE_TYPE;
       exports.Suspense = REACT_SUSPENSE_TYPE;
       exports.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = ReactSharedInternals;
+      exports.act = act;
       exports.cloneElement = cloneElement$1;
       exports.createContext = createContext;
       exports.createElement = createElement$1;
@@ -29716,6 +29720,7 @@ Check the top-level render call using <` + parentName + ">.";
           }
         }
       }
+      var didWarnAboutKeySpread = {};
       function jsxWithValidation(type, props, key, isStaticChildren, source, self) {
         {
           var validType = isValidElementType(type);
@@ -29763,6 +29768,25 @@ Check the top-level render call using <` + parentName + ">.";
                 }
               } else {
                 validateChildKeys(children, type);
+              }
+            }
+          }
+          {
+            if (hasOwnProperty.call(props, "key")) {
+              var componentName = getComponentNameFromType(type);
+              var keys = Object.keys(props).filter(function(k) {
+                return k !== "key";
+              });
+              var beforeExample = keys.length > 0 ? "{key: someKey, " + keys.join(": ..., ") + ": ...}" : "{key: someKey}";
+              if (!didWarnAboutKeySpread[componentName + beforeExample]) {
+                var afterExample = keys.length > 0 ? "{" + keys.join(": ..., ") + ": ...}" : "{}";
+                error(`A props object containing a "key" prop is being spread into JSX:
+` + `  let props = %s;
+` + `  <%s {...props} />
+` + `React keys must be passed directly to JSX without using spread:
+` + `  let props = %s;
+` + "  <%s key={someKey} {...props} />", beforeExample, componentName, afterExample, componentName);
+                didWarnAboutKeySpread[componentName + beforeExample] = true;
               }
             }
           }
@@ -31351,7 +31375,41 @@ What makes worlds distinct (not just variations on a theme):
 - Different societal consequences and daily life experiences
 - Research-informed but pursuing different scientific extrapolations
 
-Use \`world_manager\` to save each scenario as a separate checkpoint. Present options to user, let them choose or guide you toward what resonates.
+Use \`world_manager\` to save each scenario as a separate checkpoint.
+
+**Generate world cover image:**
+After saving each world, generate a cover image that visually represents the world's essence:
+1. Use \`image_generator\` with a detailed prompt capturing:
+   - The world's physical setting and atmosphere
+   - Key technological or scientific elements
+   - The mood and tone of the world
+   - **Visual style**: Always use "tasteful watercolor illustration" style - not comic book, not photorealistic, but artistic watercolor rendering with soft edges, layered colors, and illustrative quality
+2. Save the image using \`asset_manager\` with \`world_checkpoint\` parameter
+3. Update the world's \`asset\` field with the image metadata and save again
+
+Example workflow:
+\`\`\`
+# 1. Create world data with version: 0 (will become v1 on first save)
+world_data = {
+  development: { state: "sketch", version: 0, created: now, last_modified: now },
+  # ... rest of world data
+}
+
+# 2. Generate cover image with watercolor illustration style
+image_result = image_generator(
+  prompt="Orbital art station in low Earth orbit, large observation windows showing Earth below, holographic displays with abstract neural art, soft blue lighting, tasteful watercolor illustration style, artistic rendering with soft edges and layered colors, wide composition",
+  save_as_asset=true,
+  world_checkpoint="orbital_artists",
+  asset_id="cover",
+  asset_description="Cover image for orbital artists world"
+)
+
+# 3. Add image to world and save once (will be v1)
+world_data.asset = image_result.asset
+world_manager(operation="save", checkpoint_name="orbital_artists", world=world_data)
+\`\`\`
+
+Present options to user, let them choose or guide you toward what resonates.
 
 Why offer choices: Users often don't know what they want until they see options. Multiple distinct scenarios prevent building the wrong thing.
 
@@ -33444,6 +33502,745 @@ Worlds support progressive elaboration - start with a sketch and add detail as t
 \`\`\`
 `;
 var init_world_manager = () => {};
+
+// src/tools/descriptions/story_manager.md
+var story_manager_default = `Manages DSF (Deep Sci-Fi) stories: create, continue, branch, and track how stories evolve worlds.
+
+## Operations
+
+### create
+Start a new story in a world.
+
+\`\`\`typescript
+story_manager({
+  operation: "create",
+  world_checkpoint: "my_world",
+  title: "The First Contact"
+})
+\`\`\`
+
+- Creates a new story linked to a world
+- Generates story ID from title
+- Records world version
+- Initializes empty segments and endpoints
+- Saves to \`.dsf/stories/{world_checkpoint}/{story_id}.json\`
+
+### save_segment
+Add a story segment (continuation or branch).
+
+\`\`\`typescript
+story_manager({
+  operation: "save_segment",
+  story_id: "the_first_contact",
+  segment: {
+    content: "The ship descended through the atmosphere...",
+    word_count: 850,
+    parent_segment: "seg_001",  // or null for first segment
+    world_evolution: {
+      elements_introduced: ["char_captain", "loc_landing_site"],
+      rules_applied: ["rule_1", "rule_3"],
+      rules_challenged: [],
+      new_questions: ["How do aliens perceive time?"],
+      world_changes: ["First contact protocols established"]
+    },
+    assets: [
+      {
+        id: "asset_001",
+        type: "image",
+        path: "the_first_contact/landing_site.png",
+        description: "The alien landing site at dawn"
+      }
+    ],
+    branches: [
+      {
+        id: "branch_a",
+        prompt: "Captain accepts the alien invitation",
+        status: "pending"
+      },
+      {
+        id: "branch_b",
+        prompt: "Captain returns to ship for consultation",
+        status: "pending"
+      }
+    ]
+  }
+})
+\`\`\`
+
+- Adds segment to story
+- Auto-generates segment ID
+- Updates story endpoints
+- Tracks world contributions
+- Updates last_modified timestamp
+
+### load
+Restore a story from storage.
+
+\`\`\`typescript
+story_manager({
+  operation: "load",
+  story_id: "the_first_contact"
+})
+\`\`\`
+
+Returns the complete story object with all segments and metadata.
+
+### list
+Get all stories, optionally filtered by world.
+
+\`\`\`typescript
+// List all stories
+story_manager({
+  operation: "list"
+})
+
+// List stories for a specific world
+story_manager({
+  operation: "list",
+  world_checkpoint: "my_world"
+})
+\`\`\`
+
+Returns array of stories with summary info.
+
+### branch
+Create a story branch from the last segment.
+
+\`\`\`typescript
+story_manager({
+  operation: "branch",
+  story_id: "the_first_contact",
+  branch: {
+    prompt: "An alternate timeline where the captain refuses contact",
+    status: "pending"
+  }
+})
+\`\`\`
+
+- Adds branch to the last segment
+- Creates new endpoint
+- Branch can be written as a new segment later
+
+### continue
+Get continuation context for writing the next segment.
+
+\`\`\`typescript
+story_manager({
+  operation: "continue",
+  story_id: "the_first_contact"
+})
+\`\`\`
+
+Returns rich context including:
+- Full story and world data
+- Last segment
+- Active endpoints
+- Suggested directions (branches, questions, unused rules)
+- Rules in play
+- Elements introduced so far
+
+Use this before writing the next segment to understand the story state.
+
+### update_metadata
+Update story metadata (title, status, tags, notes).
+
+\`\`\`typescript
+story_manager({
+  operation: "update_metadata",
+  story_id: "the_first_contact",
+  metadata: {
+    status: "completed",
+    tags: ["first-contact", "hard-sf", "character-driven"],
+    author_notes: "This story explores the theme of communication barriers"
+  }
+})
+\`\`\`
+
+- Updates only the specified metadata fields
+- Auto-updates last_modified timestamp
+
+## Story Structure
+
+Stories follow a segment-based model that supports:
+- **Linear narratives**: Each segment follows from the previous
+- **Branching narratives**: Segments can have multiple possible continuations
+- **World evolution tracking**: Each segment records how it affects the world
+- **Multimedia integration**: Segments can have associated assets
+
+### Complete Story Example
+
+\`\`\`typescript
+{
+  id: "the_first_contact",
+  world_checkpoint: "my_world",
+  world_version: 3,
+
+  metadata: {
+    title: "The First Contact",
+    created: "2025-12-30T18:00:00Z",
+    last_updated: "2025-12-30T20:30:00Z",
+    status: "active",
+    tags: ["first-contact", "hard-sf"],
+    author_notes: "Exploring communication barriers"
+  },
+
+  segments: [
+    {
+      id: "seg_001",
+      content: "The ship descended through the atmosphere...",
+      word_count: 850,
+      created: "2025-12-30T18:00:00Z",
+      parent_segment: null,  // First segment
+
+      world_evolution: {
+        elements_introduced: ["char_captain", "loc_landing_site"],
+        rules_applied: ["rule_1"],
+        new_questions: ["How do aliens perceive time?"]
+      },
+
+      assets: [
+        {
+          id: "asset_001",
+          type: "image",
+          path: "the_first_contact/landing_site.png",
+          description: "Alien landing site"
+        }
+      ]
+    },
+    {
+      id: "seg_002",
+      content: "The captain stepped onto alien soil...",
+      word_count: 650,
+      created: "2025-12-30T19:30:00Z",
+      parent_segment: "seg_001",
+
+      world_evolution: {
+        rules_applied: ["rule_1", "rule_3"],
+        rules_challenged: ["rule_2"]
+      },
+
+      branches: [
+        {
+          id: "branch_a",
+          prompt: "Accept alien invitation",
+          status: "active"
+        },
+        {
+          id: "branch_b",
+          prompt: "Return to ship",
+          status: "pending"
+        }
+      ]
+    }
+  ],
+
+  endpoints: [
+    {
+      segment_id: "seg_002",
+      branch_id: "branch_a",
+      status: "active"
+    },
+    {
+      segment_id: "seg_002",
+      branch_id: "branch_b",
+      status: "pending"
+    }
+  ],
+
+  world_contributions: {
+    characters_developed: ["char_captain"],
+    locations_explored: ["loc_landing_site"],
+    rules_tested: ["rule_1", "rule_3"],
+    new_rules_discovered: [],
+    contradictions_found: [],
+    themes_explored: ["communication", "first-contact"]
+  }
+}
+\`\`\`
+
+## Usage Notes
+
+- Stories are always linked to a specific world checkpoint
+- Each segment tracks its contribution to world evolution
+- Use \`continue\` operation to get context before writing next segment
+- Branches allow exploring alternative story paths
+- World contributions accumulate across all segments
+- Endpoints track where the story can continue
+
+## Integration with world_manager
+
+Stories and worlds evolve together:
+1. Create a world with \`world_manager\`
+2. Start a story with \`story_manager.create\`
+3. Write segments that apply/test world rules
+4. If story reveals new worldbuilding, update world with \`world_manager.update\`
+5. Continue the story with new context from evolved world
+6. Use \`world_manager.diff\` to see how the world changed through storytelling
+
+## Workflow Example
+
+\`\`\`typescript
+// 1. Create story
+story_manager({
+  operation: "create",
+  world_checkpoint: "neural_art_2035",
+  title: "The Neural Canvas"
+})
+
+// 2. Write first segment
+story_manager({
+  operation: "save_segment",
+  story_id: "the_neural_canvas",
+  segment: {
+    content: "Nia adjusted her neural interface...",
+    word_count: 800,
+    parent_segment: null,
+    world_evolution: {
+      elements_introduced: ["char_nia"],
+      rules_applied: ["rule_1"],
+      new_questions: ["How does Nia handle creative blocks?"]
+    }
+  }
+})
+
+// 3. Get context for continuation
+story_manager({
+  operation: "continue",
+  story_id: "the_neural_canvas"
+})
+// Returns context with suggested directions
+
+// 4. Write next segment based on context
+story_manager({
+  operation: "save_segment",
+  story_id: "the_neural_canvas",
+  segment: { ... }
+})
+
+// 5. Mark complete when done
+story_manager({
+  operation: "update_metadata",
+  story_id: "the_neural_canvas",
+  metadata: { status: "completed" }
+})
+\`\`\`
+`;
+var init_story_manager = () => {};
+
+// src/tools/descriptions/asset_manager.md
+var asset_manager_default = `Manages multimedia assets for DSF stories: save images, audio, video, and documents.
+
+## Operations
+
+### save
+Store an asset file to the filesystem.
+
+\`\`\`typescript
+asset_manager({
+  operation: "save",
+  story_id: "the_first_contact",
+  asset: {
+    id: "asset_001",
+    type: "image",
+    path: "landing_site.png",  // Will be stored in .dsf/assets/the_first_contact/landing_site.png
+    description: "Alien landing site at dawn",
+    generated: true,
+    prompt: "A misty alien landscape with bioluminescent plants at dawn"
+  },
+  data: "data:image/png;base64,iVBORw0KG..."  // Base64 data URL, raw base64, or file path
+})
+\`\`\`
+
+- Creates asset directory if needed
+- Organizes assets by story_id (optional)
+- Accepts data as base64 string, data URL, or file path
+- Returns asset metadata with file info
+
+### load
+Retrieve an asset from storage.
+
+\`\`\`typescript
+// By asset metadata
+asset_manager({
+  operation: "load",
+  asset: {
+    id: "asset_001",
+    type: "image",
+    path: "the_first_contact/landing_site.png"
+  }
+})
+
+// By asset ID (searches for file)
+asset_manager({
+  operation: "load",
+  asset_id: "asset_001"
+})
+\`\`\`
+
+Returns asset data (as base64) and metadata.
+
+### list
+Get all assets, optionally filtered by story or world.
+
+\`\`\`typescript
+// List all assets
+asset_manager({
+  operation: "list"
+})
+
+// List assets for a specific story
+asset_manager({
+  operation: "list",
+  story_id: "the_first_contact"
+})
+
+// List assets for a world
+asset_manager({
+  operation: "list",
+  world_checkpoint: "my_world"
+})
+\`\`\`
+
+Returns list of asset paths.
+
+### delete
+Remove an asset from storage.
+
+\`\`\`typescript
+asset_manager({
+  operation: "delete",
+  asset_id: "asset_001"
+})
+\`\`\`
+
+Permanently deletes the asset file.
+
+## Asset Structure
+
+Assets are stored in \`.dsf/assets/\` with optional organization by story:
+
+\`\`\`
+.dsf/
+  assets/
+    {story_id}/
+      landing_site.png
+      theme_music.mp3
+      concept_art.jpg
+    shared/
+      logo.png
+\`\`\`
+
+## Asset Types
+
+- **image**: PNG, JPG, GIF, WebP, SVG
+- **audio**: MP3, WAV, OGG
+- **video**: MP4, WebM
+- **document**: PDF, TXT, MD
+
+## Integration with story_manager
+
+Assets are referenced in story segments:
+
+\`\`\`typescript
+story_manager({
+  operation: "save_segment",
+  story_id: "my_story",
+  segment: {
+    content: "The ship descended...",
+    word_count: 850,
+    parent_segment: null,
+    world_evolution: { ... },
+    assets: [
+      {
+        id: "asset_001",
+        type: "image",
+        path: "my_story/ship_descent.png",
+        description: "The ship entering atmosphere"
+      }
+    ]
+  }
+})
+\`\`\`
+
+The story segment stores asset metadata, while asset_manager handles the actual file storage and retrieval.
+
+## Workflow Example
+
+\`\`\`typescript
+// 1. Generate or receive asset data
+const imageData = "data:image/png;base64,iVBORw0KG...";
+
+// 2. Save asset
+asset_manager({
+  operation: "save",
+  story_id: "neural_canvas",
+  asset: {
+    id: "studio_interior",
+    type: "image",
+    path: "studio.png",
+    description: "Nia's neural art studio",
+    generated: true,
+    prompt: "A high-tech art studio with neural interface equipment"
+  },
+  data: imageData
+})
+
+// 3. Reference asset in story segment
+story_manager({
+  operation: "save_segment",
+  story_id: "neural_canvas",
+  segment: {
+    content: "Nia entered her studio...",
+    word_count: 500,
+    parent_segment: null,
+    world_evolution: { ... },
+    assets: [
+      {
+        id: "studio_interior",
+        type: "image",
+        path: "neural_canvas/studio.png",
+        description: "Nia's neural art studio"
+      }
+    ]
+  }
+})
+
+// 4. Asset is now viewable in Story Explorer UI
+\`\`\`
+
+## Usage Notes
+
+- Assets are organized by story for better management
+- Supports both AI-generated and user-provided assets
+- Asset metadata (description, prompt) helps with context
+- Gallery UI automatically displays assets inline with story segments
+- Use descriptive file names for better organization
+- Large assets should be compressed before saving
+
+## AI Image Generation Integration
+
+For AI-generated images:
+
+\`\`\`typescript
+// 1. Generate prompt based on story context
+const prompt = "A cyberpunk city street with neon signs and rain, cinematic lighting";
+
+// 2. Call image generation API (e.g., DALL-E, Midjourney)
+const imageUrl = await generateImage(prompt);
+
+// 3. Download and convert to base64
+const imageData = await fetchAsBase64(imageUrl);
+
+// 4. Save with generation metadata
+asset_manager({
+  operation: "save",
+  story_id: "cyberpunk_story",
+  asset: {
+    id: "city_street_01",
+    type: "image",
+    path: "city_street.png",
+    description: "Neon-lit city street in the rain",
+    generated: true,
+    prompt: prompt
+  },
+  data: imageData
+})
+\`\`\`
+
+Storing the generation prompt allows regenerating or iterating on the image later.
+`;
+var init_asset_manager = () => {};
+
+// src/tools/descriptions/image_generator.md
+var image_generator_default = `Generates images from text prompts using AI models and optionally saves them as story assets.
+
+## Providers
+
+### OpenAI DALL-E (Default)
+- **DALL-E 3**: High quality, best prompt understanding, automatic prompt enhancement
+- **DALL-E 2**: Smaller sizes (256x256, 512x512), faster, cheaper
+- **Cost**: ~$0.040/image (DALL-E 3 standard), ~$0.080/image (DALL-E 3 HD)
+- **Requires**: \`OPENAI_API_KEY\` environment variable
+
+### Google Gemini/Imagen (Nano Banana)
+- **Gemini 2.0 Flash**: Fast, free tier available, aka "Nano Banana"
+- **Imagen 3/4**: High quality, photorealistic
+- **Cost**: Free tier available, then pay-per-use
+- **Requires**: \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` environment variable
+- **Get key**: https://aistudio.google.com/apikey
+
+## Basic Usage
+
+### Simple Generation
+
+\`\`\`typescript
+image_generator({
+  prompt: "A futuristic art studio with neural interface equipment, soft blue lighting, cinematic"
+})
+\`\`\`
+
+Returns image URL. For Google, image is returned as base64 data URL immediately. For OpenAI, URL expires in 1 hour.
+
+### Generate and Save as Asset
+
+\`\`\`typescript
+image_generator({
+  prompt: "A cyberpunk city street at night, neon signs reflecting in puddles, rain",
+  save_as_asset: true,
+  story_id: "my_story",
+  asset_id: "city_street_night",
+  asset_description: "The city street where the protagonist first arrives"
+})
+\`\`\`
+
+Downloads the image and saves it to \`.dsf/assets/my_story/city_street_night.png\`, then returns asset metadata to include in your story segment.
+
+## Advanced Options
+
+### High Quality DALL-E 3
+
+\`\`\`typescript
+image_generator({
+  prompt: "Portrait of a neural artist, detailed face, studio lighting, professional photography",
+  provider: "openai",
+  size: "1024x1024",
+  quality: "hd",
+  style: "natural"
+})
+\`\`\`
+
+### Google Gemini (Nano Banana)
+
+\`\`\`typescript
+image_generator({
+  prompt: "Abstract visualization of consciousness, flowing data streams, ethereal glow",
+  provider: "google",
+  model: "gemini-2.0-flash-exp"
+})
+\`\`\`
+
+### Wide Format
+
+\`\`\`typescript
+image_generator({
+  prompt: "Panoramic view of a sprawling space station orbiting Earth",
+  size: "1792x1024",  // Wide landscape
+  save_as_asset: true,
+  story_id: "space_story",
+  asset_description: "Orbital station exterior view"
+})
+\`\`\`
+
+## Integration with Stories
+
+### Workflow
+
+1. **Write story segment** with description of scene
+2. **Generate image** based on scene description
+3. **Save as asset** with same story_id
+4. **Reference asset** in story segment metadata
+
+### Example
+
+\`\`\`typescript
+// 1. Generate and save image
+const result = await image_generator({
+  prompt: "A dimly lit neural art studio, monitors glowing with abstract patterns, artist wearing interface headset",
+  save_as_asset: true,
+  story_id: "neural_canvas",
+  asset_id: "nia_studio_interior",
+  asset_description: "Nia's studio during a creative session"
+});
+
+// 2. Use the asset in story segment
+await story_manager({
+  operation: "save_segment",
+  story_id: "neural_canvas",
+  segment: {
+    content: "The studio hummed with quiet energy as Nia prepared for another session...",
+    word_count: 500,
+    parent_segment: null,
+    world_evolution: { ... },
+    assets: [
+      {
+        id: "nia_studio_interior",
+        type: "image",
+        path: "neural_canvas/nia_studio_interior.png",
+        description: "Nia's studio during a creative session",
+        generated: true,
+        prompt: "A dimly lit neural art studio, monitors glowing with abstract patterns, artist wearing interface headset"
+      }
+    ]
+  }
+});
+\`\`\`
+
+The image will now display inline with the story segment in the Story Explorer gallery.
+
+## Prompt Engineering Tips
+
+### For Story Illustrations
+
+- **Be specific about mood and atmosphere**: "melancholic", "tense", "serene"
+- **Specify lighting**: "golden hour", "harsh fluorescent", "moonlight"
+- **Include style references**: "cinematic", "like a Blade Runner scene", "studio photography"
+- **Mention composition**: "close-up", "wide shot", "bird's eye view"
+
+### Good Prompts
+
+✅ "A neural interface artist in her studio, surrounded by holographic displays showing abstract emotional patterns, soft blue lighting, contemplative mood, cinematic composition"
+
+✅ "First-person view of wearing a neural interface headset, seeing through it to a workspace with glowing AI-generated art, near-future aesthetic, cool color palette"
+
+### Avoid
+
+❌ "art studio" (too generic)
+❌ "person working" (not specific enough)
+
+## Configuration
+
+Set environment variables in \`.env\`:
+
+\`\`\`bash
+# Required for OpenAI (default provider)
+OPENAI_API_KEY=sk-...
+
+# Optional: For Google Gemini/Imagen (Nano Banana)
+GOOGLE_API_KEY=AIza...
+# Or alternatively:
+GEMINI_API_KEY=AIza...
+\`\`\`
+
+## Cost Optimization
+
+**OpenAI:**
+- Use \`quality: "standard"\` instead of \`"hd"\` (50% cheaper)
+- Use smaller sizes when possible
+- Use DALL-E 2 for quick iterations (\`size: "512x512"\`)
+
+**Google:**
+- Gemini 2.0 Flash has generous free tier
+- Only charged for actual usage
+- Free for experimentation and low-volume use
+
+## Error Handling
+
+Common errors:
+- \`OPENAI_API_KEY not set\`: Add API key to \`.env\`
+- \`GOOGLE_API_KEY not set\`: Add API key or switch to OpenAI provider
+- \`Content policy violation\`: Prompt violates safety guidelines, rephrase
+- \`No image data found\`: API returned unexpected format, try again
+- \`Image generation failed\`: Service issue, retry
+
+## Limitations
+
+- **OpenAI URLs expire in 1 hour** - always save important images as assets
+- **Google returns base64 directly** - no expiration but larger response
+- **Content policies apply** - both providers filter inappropriate content
+- **Size limits**: DALL-E 3 max 1792x1024, Google varies by model
+- **Rate limits**: Depend on your API tier and usage
+`;
+var init_image_generator = () => {};
 
 // src/tools/descriptions/WriteFileGemini.md
 var WriteFileGemini_default = `Writes content to a specified file in the local filesystem.
@@ -44047,13 +44844,27 @@ async function saveWorld(args) {
       status: "error"
     };
   }
+  let world;
+  if (typeof args.world === "string") {
+    try {
+      world = JSON.parse(args.world);
+    } catch (error) {
+      return {
+        toolReturn: `Failed to parse world JSON: ${error instanceof Error ? error.message : String(error)}`,
+        status: "error"
+      };
+    }
+  } else {
+    world = args.world;
+  }
   await mkdir2(WORLDS_DIR, { recursive: true });
   const now = new Date().toISOString();
+  const shouldIncrementVersion = (world.development.revision_notes?.length ?? 0) > 0 && world.development.version > 0;
   const worldToSave = {
-    ...args.world,
+    ...world,
     development: {
-      ...args.world.development,
-      version: args.world.development.version + 1,
+      ...world.development,
+      version: shouldIncrementVersion ? world.development.version + 1 : Math.max(1, world.development.version),
       last_modified: now
     }
   };
@@ -44374,6 +45185,1730 @@ function applyUpdate(world, update) {
 }
 var WORLDS_DIR = ".dsf/worlds";
 var init_world_manager2 = () => {};
+
+// src/tools/impl/story_manager.ts
+import { mkdir as mkdir3, readFile as readFile6, writeFile as writeFile3, readdir as readdir5 } from "node:fs/promises";
+import { existsSync as existsSync7 } from "node:fs";
+import { join as join10 } from "node:path";
+async function story_manager(args) {
+  try {
+    console.error("story_manager called with args:", JSON.stringify(args, null, 2));
+    if (!args || typeof args !== "object") {
+      return {
+        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
+        status: "error"
+      };
+    }
+    if (!args.operation) {
+      return {
+        toolReturn: `Missing required parameter: operation. Received args: ${JSON.stringify(Object.keys(args))}`,
+        status: "error"
+      };
+    }
+    switch (args.operation) {
+      case "create":
+        return await createStory(args);
+      case "save_segment":
+        return await saveSegment(args);
+      case "load":
+        return await loadStory(args);
+      case "list":
+        return await listStories(args);
+      case "branch":
+        return await createBranch(args);
+      case "continue":
+        return await getContinuationContext(args);
+      case "update_metadata":
+        return await updateMetadata(args);
+      default:
+        return {
+          toolReturn: `Unknown operation: ${args.operation}. Valid operations: create, save_segment, load, list, branch, continue, update_metadata`,
+          status: "error"
+        };
+    }
+  } catch (error) {
+    return {
+      toolReturn: `Error in story_manager: ${error instanceof Error ? error.message : String(error)}`,
+      status: "error"
+    };
+  }
+}
+async function createStory(args) {
+  if (!args.world_checkpoint) {
+    return {
+      toolReturn: "world_checkpoint is required for create operation",
+      status: "error"
+    };
+  }
+  if (!args.title) {
+    return {
+      toolReturn: "title is required for create operation",
+      status: "error"
+    };
+  }
+  const worldResult = await world_manager({
+    operation: "load",
+    checkpoint_name: args.world_checkpoint
+  });
+  if (worldResult.status === "error") {
+    return {
+      toolReturn: `Failed to load world: ${worldResult.toolReturn}`,
+      status: "error"
+    };
+  }
+  const world = worldResult.data;
+  const storyId = generateId(args.title);
+  const now = new Date().toISOString();
+  const story = {
+    id: storyId,
+    world_checkpoint: args.world_checkpoint,
+    world_version: world.development.version,
+    metadata: {
+      title: args.title,
+      created: now,
+      last_updated: now,
+      status: "active",
+      tags: []
+    },
+    segments: [],
+    endpoints: [],
+    world_contributions: {
+      characters_developed: [],
+      locations_explored: [],
+      rules_tested: [],
+      new_rules_discovered: [],
+      contradictions_found: [],
+      themes_explored: []
+    }
+  };
+  const worldDir = join10(STORIES_DIR, args.world_checkpoint);
+  await mkdir3(worldDir, { recursive: true });
+  const filePath = join10(worldDir, `${storyId}.json`);
+  await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
+  return {
+    toolReturn: `Story created: ${args.title}
+ID: ${storyId}
+World: ${args.world_checkpoint} (v${world.development.version})
+Path: ${filePath}`,
+    status: "success",
+    data: story
+  };
+}
+async function saveSegment(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for save_segment operation",
+      status: "error"
+    };
+  }
+  if (!args.segment) {
+    return {
+      toolReturn: "segment is required for save_segment operation",
+      status: "error"
+    };
+  }
+  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
+  if (loadResult.status === "error") {
+    return loadResult;
+  }
+  const story = loadResult.data;
+  const now = new Date().toISOString();
+  const segmentId = `seg_${String(story.segments.length + 1).padStart(3, "0")}`;
+  const segment = {
+    id: segmentId,
+    created: now,
+    ...args.segment
+  };
+  story.segments.push(segment);
+  story.metadata.last_updated = now;
+  updateEndpoints(story, segment);
+  updateWorldContributions(story, segment);
+  const worldDir = join10(STORIES_DIR, story.world_checkpoint);
+  const filePath = join10(worldDir, `${story.id}.json`);
+  await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
+  return {
+    toolReturn: `Segment saved to story "${story.metadata.title}"
+Segment ID: ${segmentId}
+Word count: ${segment.word_count}
+Total segments: ${story.segments.length}`,
+    status: "success",
+    data: segment
+  };
+}
+async function loadStory(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for load operation",
+      status: "error"
+    };
+  }
+  const storyFile = await findStoryFile(args.story_id);
+  if (!storyFile) {
+    return {
+      toolReturn: `Story not found: ${args.story_id}`,
+      status: "error"
+    };
+  }
+  const content = await readFile6(storyFile, "utf-8");
+  const story = JSON.parse(content);
+  return {
+    toolReturn: `Story loaded: "${story.metadata.title}"
+World: ${story.world_checkpoint} (v${story.world_version})
+Segments: ${story.segments.length}
+Status: ${story.metadata.status}`,
+    status: "success",
+    data: story
+  };
+}
+async function listStories(args) {
+  const stories = [];
+  if (!existsSync7(STORIES_DIR)) {
+    return {
+      toolReturn: "No stories found (stories directory doesn't exist yet)",
+      status: "success",
+      data: []
+    };
+  }
+  if (args.world_checkpoint) {
+    const worldDir = join10(STORIES_DIR, args.world_checkpoint);
+    if (existsSync7(worldDir)) {
+      const files = await readdir5(worldDir);
+      for (const file of files) {
+        if (file.endsWith(".json")) {
+          const content = await readFile6(join10(worldDir, file), "utf-8");
+          stories.push(JSON.parse(content));
+        }
+      }
+    }
+  } else {
+    const worldDirs = await readdir5(STORIES_DIR);
+    for (const worldDir of worldDirs) {
+      const worldPath = join10(STORIES_DIR, worldDir);
+      const stat2 = await readFile6(worldPath).catch(() => null);
+      if (!stat2)
+        continue;
+      const files = await readdir5(worldPath);
+      for (const file of files) {
+        if (file.endsWith(".json")) {
+          const content = await readFile6(join10(worldPath, file), "utf-8");
+          stories.push(JSON.parse(content));
+        }
+      }
+    }
+  }
+  const summary = stories.map((s) => `- ${s.metadata.title} (${s.id})
+  World: ${s.world_checkpoint}, Segments: ${s.segments.length}, Status: ${s.metadata.status}`).join(`
+`);
+  return {
+    toolReturn: `Found ${stories.length} stories:
+${summary}`,
+    status: "success",
+    data: stories
+  };
+}
+async function createBranch(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for branch operation",
+      status: "error"
+    };
+  }
+  if (!args.branch) {
+    return {
+      toolReturn: "branch is required for branch operation",
+      status: "error"
+    };
+  }
+  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
+  if (loadResult.status === "error") {
+    return loadResult;
+  }
+  const story = loadResult.data;
+  const lastSegment = story.segments[story.segments.length - 1];
+  if (!lastSegment) {
+    return {
+      toolReturn: "Cannot create branch: story has no segments yet",
+      status: "error"
+    };
+  }
+  const branchId = `branch_${String((lastSegment.branches?.length || 0) + 1).padStart(2, "0")}`;
+  const branch = {
+    id: branchId,
+    ...args.branch
+  };
+  if (!lastSegment.branches) {
+    lastSegment.branches = [];
+  }
+  lastSegment.branches.push(branch);
+  const endpoint = {
+    segment_id: lastSegment.id,
+    branch_id: branchId,
+    status: "pending"
+  };
+  story.endpoints.push(endpoint);
+  const worldDir = join10(STORIES_DIR, story.world_checkpoint);
+  const filePath = join10(worldDir, `${story.id}.json`);
+  await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
+  return {
+    toolReturn: `Branch created in story "${story.metadata.title}"
+Branch ID: ${branchId}
+Prompt: ${branch.prompt}
+Segment: ${lastSegment.id}`,
+    status: "success",
+    data: story
+  };
+}
+async function getContinuationContext(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for continue operation",
+      status: "error"
+    };
+  }
+  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
+  if (loadResult.status === "error") {
+    return loadResult;
+  }
+  const story = loadResult.data;
+  const worldResult = await world_manager({
+    operation: "load",
+    checkpoint_name: story.world_checkpoint
+  });
+  if (worldResult.status === "error") {
+    return {
+      toolReturn: `Failed to load world: ${worldResult.toolReturn}`,
+      status: "error"
+    };
+  }
+  const world = worldResult.data;
+  const lastSegment = story.segments[story.segments.length - 1];
+  if (!lastSegment) {
+    return {
+      toolReturn: "Cannot continue: story has no segments yet. Use save_segment to add the first segment.",
+      status: "error"
+    };
+  }
+  const activeEndpoints = story.endpoints.filter((ep) => ep.status === "active" || ep.status === "pending");
+  const appliedRuleIds = new Set;
+  for (const segment of story.segments) {
+    segment.world_evolution.rules_applied?.forEach((id) => appliedRuleIds.add(id));
+  }
+  const rulesInPlay = world.foundation.rules.filter((r) => appliedRuleIds.has(r.id));
+  const introducedElementIds = new Set;
+  for (const segment of story.segments) {
+    segment.world_evolution.elements_introduced?.forEach((id) => introducedElementIds.add(id));
+  }
+  const elementsInPlay = world.surface.visible_elements.filter((e) => introducedElementIds.has(e.id));
+  const suggestedDirections = [];
+  if (lastSegment.branches && lastSegment.branches.length > 0) {
+    lastSegment.branches.forEach((b) => {
+      if (b.status === "pending") {
+        suggestedDirections.push(`Branch: ${b.prompt}`);
+      }
+    });
+  }
+  if (lastSegment.world_evolution.new_questions && lastSegment.world_evolution.new_questions.length > 0) {
+    suggestedDirections.push(`Explore questions: ${lastSegment.world_evolution.new_questions.join(", ")}`);
+  }
+  const unusedRules = world.foundation.rules.filter((r) => !appliedRuleIds.has(r.id));
+  if (unusedRules.length > 0) {
+    suggestedDirections.push(`Test rules: ${unusedRules.slice(0, 3).map((r) => r.id).join(", ")}`);
+  }
+  const context3 = {
+    story,
+    world,
+    last_segment: lastSegment,
+    active_endpoints: activeEndpoints,
+    suggested_directions: suggestedDirections,
+    rules_to_consider: rulesInPlay,
+    elements_in_play: elementsInPlay
+  };
+  return {
+    toolReturn: `Continuation context for "${story.metadata.title}"
+
+Last segment: ${lastSegment.id} (${lastSegment.word_count} words)
+Active endpoints: ${activeEndpoints.length}
+Suggested directions:
+${suggestedDirections.map((d) => `  - ${d}`).join(`
+`)}
+
+Rules in play: ${rulesInPlay.length}
+Elements in play: ${elementsInPlay.length}`,
+    status: "success",
+    data: context3
+  };
+}
+async function updateMetadata(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for update_metadata operation",
+      status: "error"
+    };
+  }
+  if (!args.metadata) {
+    return {
+      toolReturn: "metadata is required for update_metadata operation",
+      status: "error"
+    };
+  }
+  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
+  if (loadResult.status === "error") {
+    return loadResult;
+  }
+  const story = loadResult.data;
+  story.metadata = {
+    ...story.metadata,
+    ...args.metadata,
+    last_updated: new Date().toISOString()
+  };
+  const worldDir = join10(STORIES_DIR, story.world_checkpoint);
+  const filePath = join10(worldDir, `${story.id}.json`);
+  await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
+  return {
+    toolReturn: `Metadata updated for story "${story.metadata.title}"
+Status: ${story.metadata.status}`,
+    status: "success",
+    data: story
+  };
+}
+function generateId(title) {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 50);
+}
+async function findStoryFile(storyId) {
+  if (!existsSync7(STORIES_DIR)) {
+    return null;
+  }
+  const worldDirs = await readdir5(STORIES_DIR);
+  for (const worldDir of worldDirs) {
+    const filePath = join10(STORIES_DIR, worldDir, `${storyId}.json`);
+    if (existsSync7(filePath)) {
+      return filePath;
+    }
+  }
+  return null;
+}
+function updateEndpoints(story, newSegment) {
+  if (newSegment.parent_segment) {
+    story.endpoints = story.endpoints.filter((ep) => ep.segment_id !== newSegment.parent_segment);
+  }
+  if (newSegment.branches && newSegment.branches.length > 0) {
+    for (const branch of newSegment.branches) {
+      story.endpoints.push({
+        segment_id: newSegment.id,
+        branch_id: branch.id,
+        status: "pending"
+      });
+    }
+  } else {
+    story.endpoints.push({
+      segment_id: newSegment.id,
+      status: "active"
+    });
+  }
+}
+function updateWorldContributions(story, segment) {
+  const contrib = story.world_contributions;
+  if (segment.world_evolution.elements_introduced) {
+    for (const elemId of segment.world_evolution.elements_introduced) {
+      if (!contrib.characters_developed.includes(elemId) && !contrib.locations_explored.includes(elemId)) {
+        contrib.characters_developed.push(elemId);
+      }
+    }
+  }
+  if (segment.world_evolution.rules_applied) {
+    for (const ruleId of segment.world_evolution.rules_applied) {
+      if (!contrib.rules_tested.includes(ruleId)) {
+        contrib.rules_tested.push(ruleId);
+      }
+    }
+  }
+}
+var STORIES_DIR = ".dsf/stories";
+var init_story_manager2 = __esm(() => {
+  init_world_manager2();
+});
+
+// src/tools/impl/asset_manager.ts
+import { mkdir as mkdir4, readFile as readFile7, writeFile as writeFile4, readdir as readdir6, unlink } from "node:fs/promises";
+import { existsSync as existsSync8 } from "node:fs";
+import { join as join11 } from "node:path";
+async function asset_manager(args) {
+  try {
+    console.error("asset_manager called with args:", JSON.stringify(args, null, 2));
+    if (!args || typeof args !== "object") {
+      return {
+        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
+        status: "error"
+      };
+    }
+    if (!args.operation) {
+      return {
+        toolReturn: `Missing required parameter: operation`,
+        status: "error"
+      };
+    }
+    switch (args.operation) {
+      case "save":
+        return await saveAsset(args);
+      case "load":
+        return await loadAsset(args);
+      case "list":
+        return await listAssets(args);
+      case "delete":
+        return await deleteAsset(args);
+      default:
+        return {
+          toolReturn: `Unknown operation: ${args.operation}. Valid operations: save, load, list, delete`,
+          status: "error"
+        };
+    }
+  } catch (error) {
+    return {
+      toolReturn: `Error in asset_manager: ${error instanceof Error ? error.message : String(error)}`,
+      status: "error"
+    };
+  }
+}
+async function saveAsset(args) {
+  if (!args.asset) {
+    return {
+      toolReturn: "asset is required for save operation",
+      status: "error"
+    };
+  }
+  if (!args.data) {
+    return {
+      toolReturn: "data is required for save operation (base64 or file path)",
+      status: "error"
+    };
+  }
+  await mkdir4(ASSETS_DIR, { recursive: true });
+  let assetPath;
+  if (args.story_id) {
+    const storyDir = join11(ASSETS_DIR, args.story_id);
+    await mkdir4(storyDir, { recursive: true });
+    assetPath = join11(storyDir, args.asset.path);
+  } else if (args.world_checkpoint) {
+    const worldDir = join11(ASSETS_DIR, "worlds", args.world_checkpoint);
+    await mkdir4(worldDir, { recursive: true });
+    assetPath = join11(worldDir, args.asset.path);
+  } else {
+    assetPath = join11(ASSETS_DIR, args.asset.path);
+  }
+  let fileData;
+  if (args.data.startsWith("data:")) {
+    const base64Data = args.data.split(",")[1] || "";
+    fileData = Buffer.from(base64Data, "base64");
+  } else if (args.data.startsWith("/") || args.data.startsWith("./")) {
+    fileData = await readFile7(args.data);
+  } else {
+    fileData = Buffer.from(args.data, "base64");
+  }
+  await writeFile4(assetPath, fileData);
+  return {
+    toolReturn: `Asset saved: ${args.asset.id}
+Type: ${args.asset.type}
+Path: ${assetPath}
+Size: ${fileData.length} bytes`,
+    status: "success",
+    data: args.asset
+  };
+}
+async function loadAsset(args) {
+  if (!args.asset_id && !args.asset) {
+    return {
+      toolReturn: "asset_id or asset is required for load operation",
+      status: "error"
+    };
+  }
+  const assetPath = args.asset ? join11(ASSETS_DIR, args.asset.path) : await findAssetPath(args.asset_id);
+  if (!assetPath || !existsSync8(assetPath)) {
+    return {
+      toolReturn: `Asset not found: ${args.asset_id || args.asset?.path}`,
+      status: "error"
+    };
+  }
+  const data = await readFile7(assetPath);
+  const base64 = data.toString("base64");
+  if (args.asset) {
+    return {
+      toolReturn: `Asset loaded: ${args.asset.id}
+Size: ${data.length} bytes`,
+      status: "success",
+      data: {
+        ...args.asset
+      }
+    };
+  }
+  return {
+    toolReturn: `Asset loaded from ${assetPath}
+Size: ${data.length} bytes`,
+    status: "success"
+  };
+}
+async function listAssets(args) {
+  if (!existsSync8(ASSETS_DIR)) {
+    return {
+      toolReturn: "No assets found (assets directory doesn't exist yet)",
+      status: "success",
+      data: []
+    };
+  }
+  const assets = [];
+  if (args.story_id) {
+    const storyDir = join11(ASSETS_DIR, args.story_id);
+    if (existsSync8(storyDir)) {
+      const files = await readdir6(storyDir);
+      assets.push(...files.map((f) => join11(args.story_id, f)));
+    }
+  } else if (args.world_checkpoint) {
+    const worldDir = join11(ASSETS_DIR, "worlds", args.world_checkpoint);
+    if (existsSync8(worldDir)) {
+      const files = await readdir6(worldDir);
+      assets.push(...files.map((f) => join11("worlds", args.world_checkpoint, f)));
+    }
+  } else {
+    const files = await readdir6(ASSETS_DIR, { recursive: true });
+    assets.push(...files.filter((f) => typeof f === "string"));
+  }
+  const summary = assets.length > 0 ? `Found ${assets.length} assets:
+${assets.map((a) => `  - ${a}`).join(`
+`)}` : "No assets found";
+  return {
+    toolReturn: summary,
+    status: "success",
+    data: assets
+  };
+}
+async function deleteAsset(args) {
+  if (!args.asset_id && !args.asset) {
+    return {
+      toolReturn: "asset_id or asset is required for delete operation",
+      status: "error"
+    };
+  }
+  const assetPath = args.asset ? join11(ASSETS_DIR, args.asset.path) : await findAssetPath(args.asset_id);
+  if (!assetPath || !existsSync8(assetPath)) {
+    return {
+      toolReturn: `Asset not found: ${args.asset_id || args.asset?.path}`,
+      status: "error"
+    };
+  }
+  await unlink(assetPath);
+  return {
+    toolReturn: `Asset deleted: ${assetPath}`,
+    status: "success"
+  };
+}
+async function findAssetPath(assetId) {
+  if (!existsSync8(ASSETS_DIR)) {
+    return null;
+  }
+  const files = await readdir6(ASSETS_DIR, { recursive: true });
+  for (const file of files) {
+    if (typeof file === "string" && file.includes(assetId)) {
+      return join11(ASSETS_DIR, file);
+    }
+  }
+  return null;
+}
+var ASSETS_DIR = ".dsf/assets";
+var init_asset_manager2 = () => {};
+
+// node_modules/@google/generative-ai/dist/index.mjs
+class RequestUrl {
+  constructor(model, task2, apiKey, stream2, requestOptions) {
+    this.model = model;
+    this.task = task2;
+    this.apiKey = apiKey;
+    this.stream = stream2;
+    this.requestOptions = requestOptions;
+  }
+  toString() {
+    var _a2, _b;
+    const apiVersion = ((_a2 = this.requestOptions) === null || _a2 === undefined ? undefined : _a2.apiVersion) || DEFAULT_API_VERSION;
+    const baseUrl = ((_b = this.requestOptions) === null || _b === undefined ? undefined : _b.baseUrl) || DEFAULT_BASE_URL;
+    let url = `${baseUrl}/${apiVersion}/${this.model}:${this.task}`;
+    if (this.stream) {
+      url += "?alt=sse";
+    }
+    return url;
+  }
+}
+function getClientHeaders(requestOptions) {
+  const clientHeaders = [];
+  if (requestOptions === null || requestOptions === undefined ? undefined : requestOptions.apiClient) {
+    clientHeaders.push(requestOptions.apiClient);
+  }
+  clientHeaders.push(`${PACKAGE_LOG_HEADER}/${PACKAGE_VERSION}`);
+  return clientHeaders.join(" ");
+}
+async function getHeaders(url) {
+  var _a2;
+  const headers = new Headers;
+  headers.append("Content-Type", "application/json");
+  headers.append("x-goog-api-client", getClientHeaders(url.requestOptions));
+  headers.append("x-goog-api-key", url.apiKey);
+  let customHeaders = (_a2 = url.requestOptions) === null || _a2 === undefined ? undefined : _a2.customHeaders;
+  if (customHeaders) {
+    if (!(customHeaders instanceof Headers)) {
+      try {
+        customHeaders = new Headers(customHeaders);
+      } catch (e) {
+        throw new GoogleGenerativeAIRequestInputError(`unable to convert customHeaders value ${JSON.stringify(customHeaders)} to Headers: ${e.message}`);
+      }
+    }
+    for (const [headerName, headerValue] of customHeaders.entries()) {
+      if (headerName === "x-goog-api-key") {
+        throw new GoogleGenerativeAIRequestInputError(`Cannot set reserved header name ${headerName}`);
+      } else if (headerName === "x-goog-api-client") {
+        throw new GoogleGenerativeAIRequestInputError(`Header name ${headerName} can only be set using the apiClient field`);
+      }
+      headers.append(headerName, headerValue);
+    }
+  }
+  return headers;
+}
+async function constructModelRequest(model, task2, apiKey, stream2, body, requestOptions) {
+  const url = new RequestUrl(model, task2, apiKey, stream2, requestOptions);
+  return {
+    url: url.toString(),
+    fetchOptions: Object.assign(Object.assign({}, buildFetchOptions(requestOptions)), { method: "POST", headers: await getHeaders(url), body })
+  };
+}
+async function makeModelRequest(model, task2, apiKey, stream2, body, requestOptions = {}, fetchFn = fetch) {
+  const { url, fetchOptions } = await constructModelRequest(model, task2, apiKey, stream2, body, requestOptions);
+  return makeRequest(url, fetchOptions, fetchFn);
+}
+async function makeRequest(url, fetchOptions, fetchFn = fetch) {
+  let response;
+  try {
+    response = await fetchFn(url, fetchOptions);
+  } catch (e) {
+    handleResponseError(e, url);
+  }
+  if (!response.ok) {
+    await handleResponseNotOk(response, url);
+  }
+  return response;
+}
+function handleResponseError(e, url) {
+  let err = e;
+  if (err.name === "AbortError") {
+    err = new GoogleGenerativeAIAbortError(`Request aborted when fetching ${url.toString()}: ${e.message}`);
+    err.stack = e.stack;
+  } else if (!(e instanceof GoogleGenerativeAIFetchError || e instanceof GoogleGenerativeAIRequestInputError)) {
+    err = new GoogleGenerativeAIError(`Error fetching from ${url.toString()}: ${e.message}`);
+    err.stack = e.stack;
+  }
+  throw err;
+}
+async function handleResponseNotOk(response, url) {
+  let message = "";
+  let errorDetails;
+  try {
+    const json = await response.json();
+    message = json.error.message;
+    if (json.error.details) {
+      message += ` ${JSON.stringify(json.error.details)}`;
+      errorDetails = json.error.details;
+    }
+  } catch (e) {}
+  throw new GoogleGenerativeAIFetchError(`Error fetching from ${url.toString()}: [${response.status} ${response.statusText}] ${message}`, response.status, response.statusText, errorDetails);
+}
+function buildFetchOptions(requestOptions) {
+  const fetchOptions = {};
+  if ((requestOptions === null || requestOptions === undefined ? undefined : requestOptions.signal) !== undefined || (requestOptions === null || requestOptions === undefined ? undefined : requestOptions.timeout) >= 0) {
+    const controller = new AbortController;
+    if ((requestOptions === null || requestOptions === undefined ? undefined : requestOptions.timeout) >= 0) {
+      setTimeout(() => controller.abort(), requestOptions.timeout);
+    }
+    if (requestOptions === null || requestOptions === undefined ? undefined : requestOptions.signal) {
+      requestOptions.signal.addEventListener("abort", () => {
+        controller.abort();
+      });
+    }
+    fetchOptions.signal = controller.signal;
+  }
+  return fetchOptions;
+}
+function addHelpers(response) {
+  response.text = () => {
+    if (response.candidates && response.candidates.length > 0) {
+      if (response.candidates.length > 1) {
+        console.warn(`This response had ${response.candidates.length} ` + `candidates. Returning text from the first candidate only. ` + `Access response.candidates directly to use the other candidates.`);
+      }
+      if (hadBadFinishReason(response.candidates[0])) {
+        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
+      }
+      return getText(response);
+    } else if (response.promptFeedback) {
+      throw new GoogleGenerativeAIResponseError(`Text not available. ${formatBlockErrorMessage(response)}`, response);
+    }
+    return "";
+  };
+  response.functionCall = () => {
+    if (response.candidates && response.candidates.length > 0) {
+      if (response.candidates.length > 1) {
+        console.warn(`This response had ${response.candidates.length} ` + `candidates. Returning function calls from the first candidate only. ` + `Access response.candidates directly to use the other candidates.`);
+      }
+      if (hadBadFinishReason(response.candidates[0])) {
+        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
+      }
+      console.warn(`response.functionCall() is deprecated. ` + `Use response.functionCalls() instead.`);
+      return getFunctionCalls(response)[0];
+    } else if (response.promptFeedback) {
+      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
+    }
+    return;
+  };
+  response.functionCalls = () => {
+    if (response.candidates && response.candidates.length > 0) {
+      if (response.candidates.length > 1) {
+        console.warn(`This response had ${response.candidates.length} ` + `candidates. Returning function calls from the first candidate only. ` + `Access response.candidates directly to use the other candidates.`);
+      }
+      if (hadBadFinishReason(response.candidates[0])) {
+        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
+      }
+      return getFunctionCalls(response);
+    } else if (response.promptFeedback) {
+      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
+    }
+    return;
+  };
+  return response;
+}
+function getText(response) {
+  var _a2, _b, _c, _d;
+  const textStrings = [];
+  if ((_b = (_a2 = response.candidates) === null || _a2 === undefined ? undefined : _a2[0].content) === null || _b === undefined ? undefined : _b.parts) {
+    for (const part of (_d = (_c = response.candidates) === null || _c === undefined ? undefined : _c[0].content) === null || _d === undefined ? undefined : _d.parts) {
+      if (part.text) {
+        textStrings.push(part.text);
+      }
+      if (part.executableCode) {
+        textStrings.push("\n```" + part.executableCode.language + `
+` + part.executableCode.code + "\n```\n");
+      }
+      if (part.codeExecutionResult) {
+        textStrings.push("\n```\n" + part.codeExecutionResult.output + "\n```\n");
+      }
+    }
+  }
+  if (textStrings.length > 0) {
+    return textStrings.join("");
+  } else {
+    return "";
+  }
+}
+function getFunctionCalls(response) {
+  var _a2, _b, _c, _d;
+  const functionCalls = [];
+  if ((_b = (_a2 = response.candidates) === null || _a2 === undefined ? undefined : _a2[0].content) === null || _b === undefined ? undefined : _b.parts) {
+    for (const part of (_d = (_c = response.candidates) === null || _c === undefined ? undefined : _c[0].content) === null || _d === undefined ? undefined : _d.parts) {
+      if (part.functionCall) {
+        functionCalls.push(part.functionCall);
+      }
+    }
+  }
+  if (functionCalls.length > 0) {
+    return functionCalls;
+  } else {
+    return;
+  }
+}
+function hadBadFinishReason(candidate) {
+  return !!candidate.finishReason && badFinishReasons.includes(candidate.finishReason);
+}
+function formatBlockErrorMessage(response) {
+  var _a2, _b, _c;
+  let message = "";
+  if ((!response.candidates || response.candidates.length === 0) && response.promptFeedback) {
+    message += "Response was blocked";
+    if ((_a2 = response.promptFeedback) === null || _a2 === undefined ? undefined : _a2.blockReason) {
+      message += ` due to ${response.promptFeedback.blockReason}`;
+    }
+    if ((_b = response.promptFeedback) === null || _b === undefined ? undefined : _b.blockReasonMessage) {
+      message += `: ${response.promptFeedback.blockReasonMessage}`;
+    }
+  } else if ((_c = response.candidates) === null || _c === undefined ? undefined : _c[0]) {
+    const firstCandidate = response.candidates[0];
+    if (hadBadFinishReason(firstCandidate)) {
+      message += `Candidate was blocked due to ${firstCandidate.finishReason}`;
+      if (firstCandidate.finishMessage) {
+        message += `: ${firstCandidate.finishMessage}`;
+      }
+    }
+  }
+  return message;
+}
+function __await(v) {
+  return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+function __asyncGenerator(thisArg, _arguments, generator) {
+  if (!Symbol.asyncIterator)
+    throw new TypeError("Symbol.asyncIterator is not defined.");
+  var g = generator.apply(thisArg, _arguments || []), i, q = [];
+  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
+    return this;
+  }, i;
+  function verb(n) {
+    if (g[n])
+      i[n] = function(v) {
+        return new Promise(function(a, b) {
+          q.push([n, v, a, b]) > 1 || resume(n, v);
+        });
+      };
+  }
+  function resume(n, v) {
+    try {
+      step(g[n](v));
+    } catch (e) {
+      settle(q[0][3], e);
+    }
+  }
+  function step(r) {
+    r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
+  }
+  function fulfill(value) {
+    resume("next", value);
+  }
+  function reject(value) {
+    resume("throw", value);
+  }
+  function settle(f, v) {
+    if (f(v), q.shift(), q.length)
+      resume(q[0][0], q[0][1]);
+  }
+}
+function processStream(response) {
+  const inputStream = response.body.pipeThrough(new TextDecoderStream("utf8", { fatal: true }));
+  const responseStream = getResponseStream(inputStream);
+  const [stream1, stream2] = responseStream.tee();
+  return {
+    stream: generateResponseSequence(stream1),
+    response: getResponsePromise(stream2)
+  };
+}
+async function getResponsePromise(stream2) {
+  const allResponses = [];
+  const reader = stream2.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      return addHelpers(aggregateResponses(allResponses));
+    }
+    allResponses.push(value);
+  }
+}
+function generateResponseSequence(stream2) {
+  return __asyncGenerator(this, arguments, function* generateResponseSequence_1() {
+    const reader = stream2.getReader();
+    while (true) {
+      const { value, done } = yield __await(reader.read());
+      if (done) {
+        break;
+      }
+      yield yield __await(addHelpers(value));
+    }
+  });
+}
+function getResponseStream(inputStream) {
+  const reader = inputStream.getReader();
+  const stream2 = new ReadableStream({
+    start(controller) {
+      let currentText = "";
+      return pump();
+      function pump() {
+        return reader.read().then(({ value, done }) => {
+          if (done) {
+            if (currentText.trim()) {
+              controller.error(new GoogleGenerativeAIError("Failed to parse stream"));
+              return;
+            }
+            controller.close();
+            return;
+          }
+          currentText += value;
+          let match2 = currentText.match(responseLineRE);
+          let parsedResponse;
+          while (match2) {
+            try {
+              parsedResponse = JSON.parse(match2[1]);
+            } catch (e) {
+              controller.error(new GoogleGenerativeAIError(`Error parsing JSON response: "${match2[1]}"`));
+              return;
+            }
+            controller.enqueue(parsedResponse);
+            currentText = currentText.substring(match2[0].length);
+            match2 = currentText.match(responseLineRE);
+          }
+          return pump();
+        }).catch((e) => {
+          let err = e;
+          err.stack = e.stack;
+          if (err.name === "AbortError") {
+            err = new GoogleGenerativeAIAbortError("Request aborted when reading from the stream");
+          } else {
+            err = new GoogleGenerativeAIError("Error reading from the stream");
+          }
+          throw err;
+        });
+      }
+    }
+  });
+  return stream2;
+}
+function aggregateResponses(responses) {
+  const lastResponse = responses[responses.length - 1];
+  const aggregatedResponse = {
+    promptFeedback: lastResponse === null || lastResponse === undefined ? undefined : lastResponse.promptFeedback
+  };
+  for (const response of responses) {
+    if (response.candidates) {
+      let candidateIndex = 0;
+      for (const candidate of response.candidates) {
+        if (!aggregatedResponse.candidates) {
+          aggregatedResponse.candidates = [];
+        }
+        if (!aggregatedResponse.candidates[candidateIndex]) {
+          aggregatedResponse.candidates[candidateIndex] = {
+            index: candidateIndex
+          };
+        }
+        aggregatedResponse.candidates[candidateIndex].citationMetadata = candidate.citationMetadata;
+        aggregatedResponse.candidates[candidateIndex].groundingMetadata = candidate.groundingMetadata;
+        aggregatedResponse.candidates[candidateIndex].finishReason = candidate.finishReason;
+        aggregatedResponse.candidates[candidateIndex].finishMessage = candidate.finishMessage;
+        aggregatedResponse.candidates[candidateIndex].safetyRatings = candidate.safetyRatings;
+        if (candidate.content && candidate.content.parts) {
+          if (!aggregatedResponse.candidates[candidateIndex].content) {
+            aggregatedResponse.candidates[candidateIndex].content = {
+              role: candidate.content.role || "user",
+              parts: []
+            };
+          }
+          const newPart = {};
+          for (const part of candidate.content.parts) {
+            if (part.text) {
+              newPart.text = part.text;
+            }
+            if (part.functionCall) {
+              newPart.functionCall = part.functionCall;
+            }
+            if (part.executableCode) {
+              newPart.executableCode = part.executableCode;
+            }
+            if (part.codeExecutionResult) {
+              newPart.codeExecutionResult = part.codeExecutionResult;
+            }
+            if (Object.keys(newPart).length === 0) {
+              newPart.text = "";
+            }
+            aggregatedResponse.candidates[candidateIndex].content.parts.push(newPart);
+          }
+        }
+      }
+      candidateIndex++;
+    }
+    if (response.usageMetadata) {
+      aggregatedResponse.usageMetadata = response.usageMetadata;
+    }
+  }
+  return aggregatedResponse;
+}
+async function generateContentStream(apiKey, model, params, requestOptions) {
+  const response = await makeModelRequest(model, Task.STREAM_GENERATE_CONTENT, apiKey, true, JSON.stringify(params), requestOptions);
+  return processStream(response);
+}
+async function generateContent(apiKey, model, params, requestOptions) {
+  const response = await makeModelRequest(model, Task.GENERATE_CONTENT, apiKey, false, JSON.stringify(params), requestOptions);
+  const responseJson = await response.json();
+  const enhancedResponse = addHelpers(responseJson);
+  return {
+    response: enhancedResponse
+  };
+}
+function formatSystemInstruction(input) {
+  if (input == null) {
+    return;
+  } else if (typeof input === "string") {
+    return { role: "system", parts: [{ text: input }] };
+  } else if (input.text) {
+    return { role: "system", parts: [input] };
+  } else if (input.parts) {
+    if (!input.role) {
+      return { role: "system", parts: input.parts };
+    } else {
+      return input;
+    }
+  }
+}
+function formatNewContent(request) {
+  let newParts = [];
+  if (typeof request === "string") {
+    newParts = [{ text: request }];
+  } else {
+    for (const partOrString of request) {
+      if (typeof partOrString === "string") {
+        newParts.push({ text: partOrString });
+      } else {
+        newParts.push(partOrString);
+      }
+    }
+  }
+  return assignRoleToPartsAndValidateSendMessageRequest(newParts);
+}
+function assignRoleToPartsAndValidateSendMessageRequest(parts) {
+  const userContent = { role: "user", parts: [] };
+  const functionContent = { role: "function", parts: [] };
+  let hasUserContent = false;
+  let hasFunctionContent = false;
+  for (const part of parts) {
+    if ("functionResponse" in part) {
+      functionContent.parts.push(part);
+      hasFunctionContent = true;
+    } else {
+      userContent.parts.push(part);
+      hasUserContent = true;
+    }
+  }
+  if (hasUserContent && hasFunctionContent) {
+    throw new GoogleGenerativeAIError("Within a single message, FunctionResponse cannot be mixed with other type of part in the request for sending chat message.");
+  }
+  if (!hasUserContent && !hasFunctionContent) {
+    throw new GoogleGenerativeAIError("No content is provided for sending chat message.");
+  }
+  if (hasUserContent) {
+    return userContent;
+  }
+  return functionContent;
+}
+function formatCountTokensInput(params, modelParams) {
+  var _a2;
+  let formattedGenerateContentRequest = {
+    model: modelParams === null || modelParams === undefined ? undefined : modelParams.model,
+    generationConfig: modelParams === null || modelParams === undefined ? undefined : modelParams.generationConfig,
+    safetySettings: modelParams === null || modelParams === undefined ? undefined : modelParams.safetySettings,
+    tools: modelParams === null || modelParams === undefined ? undefined : modelParams.tools,
+    toolConfig: modelParams === null || modelParams === undefined ? undefined : modelParams.toolConfig,
+    systemInstruction: modelParams === null || modelParams === undefined ? undefined : modelParams.systemInstruction,
+    cachedContent: (_a2 = modelParams === null || modelParams === undefined ? undefined : modelParams.cachedContent) === null || _a2 === undefined ? undefined : _a2.name,
+    contents: []
+  };
+  const containsGenerateContentRequest = params.generateContentRequest != null;
+  if (params.contents) {
+    if (containsGenerateContentRequest) {
+      throw new GoogleGenerativeAIRequestInputError("CountTokensRequest must have one of contents or generateContentRequest, not both.");
+    }
+    formattedGenerateContentRequest.contents = params.contents;
+  } else if (containsGenerateContentRequest) {
+    formattedGenerateContentRequest = Object.assign(Object.assign({}, formattedGenerateContentRequest), params.generateContentRequest);
+  } else {
+    const content = formatNewContent(params);
+    formattedGenerateContentRequest.contents = [content];
+  }
+  return { generateContentRequest: formattedGenerateContentRequest };
+}
+function formatGenerateContentInput(params) {
+  let formattedRequest;
+  if (params.contents) {
+    formattedRequest = params;
+  } else {
+    const content = formatNewContent(params);
+    formattedRequest = { contents: [content] };
+  }
+  if (params.systemInstruction) {
+    formattedRequest.systemInstruction = formatSystemInstruction(params.systemInstruction);
+  }
+  return formattedRequest;
+}
+function formatEmbedContentInput(params) {
+  if (typeof params === "string" || Array.isArray(params)) {
+    const content = formatNewContent(params);
+    return { content };
+  }
+  return params;
+}
+function validateChatHistory(history) {
+  let prevContent = false;
+  for (const currContent of history) {
+    const { role, parts } = currContent;
+    if (!prevContent && role !== "user") {
+      throw new GoogleGenerativeAIError(`First content should be with role 'user', got ${role}`);
+    }
+    if (!POSSIBLE_ROLES.includes(role)) {
+      throw new GoogleGenerativeAIError(`Each item should include role field. Got ${role} but valid roles are: ${JSON.stringify(POSSIBLE_ROLES)}`);
+    }
+    if (!Array.isArray(parts)) {
+      throw new GoogleGenerativeAIError("Content should have 'parts' property with an array of Parts");
+    }
+    if (parts.length === 0) {
+      throw new GoogleGenerativeAIError("Each Content should have at least one part");
+    }
+    const countFields = {
+      text: 0,
+      inlineData: 0,
+      functionCall: 0,
+      functionResponse: 0,
+      fileData: 0,
+      executableCode: 0,
+      codeExecutionResult: 0
+    };
+    for (const part of parts) {
+      for (const key of VALID_PART_FIELDS) {
+        if (key in part) {
+          countFields[key] += 1;
+        }
+      }
+    }
+    const validParts = VALID_PARTS_PER_ROLE[role];
+    for (const key of VALID_PART_FIELDS) {
+      if (!validParts.includes(key) && countFields[key] > 0) {
+        throw new GoogleGenerativeAIError(`Content with role '${role}' can't contain '${key}' part`);
+      }
+    }
+    prevContent = true;
+  }
+}
+function isValidResponse(response) {
+  var _a2;
+  if (response.candidates === undefined || response.candidates.length === 0) {
+    return false;
+  }
+  const content = (_a2 = response.candidates[0]) === null || _a2 === undefined ? undefined : _a2.content;
+  if (content === undefined) {
+    return false;
+  }
+  if (content.parts === undefined || content.parts.length === 0) {
+    return false;
+  }
+  for (const part of content.parts) {
+    if (part === undefined || Object.keys(part).length === 0) {
+      return false;
+    }
+    if (part.text !== undefined && part.text === "") {
+      return false;
+    }
+  }
+  return true;
+}
+
+class ChatSession {
+  constructor(apiKey, model, params, _requestOptions = {}) {
+    this.model = model;
+    this.params = params;
+    this._requestOptions = _requestOptions;
+    this._history = [];
+    this._sendPromise = Promise.resolve();
+    this._apiKey = apiKey;
+    if (params === null || params === undefined ? undefined : params.history) {
+      validateChatHistory(params.history);
+      this._history = params.history;
+    }
+  }
+  async getHistory() {
+    await this._sendPromise;
+    return this._history;
+  }
+  async sendMessage(request, requestOptions = {}) {
+    var _a2, _b, _c, _d, _e, _f;
+    await this._sendPromise;
+    const newContent = formatNewContent(request);
+    const generateContentRequest = {
+      safetySettings: (_a2 = this.params) === null || _a2 === undefined ? undefined : _a2.safetySettings,
+      generationConfig: (_b = this.params) === null || _b === undefined ? undefined : _b.generationConfig,
+      tools: (_c = this.params) === null || _c === undefined ? undefined : _c.tools,
+      toolConfig: (_d = this.params) === null || _d === undefined ? undefined : _d.toolConfig,
+      systemInstruction: (_e = this.params) === null || _e === undefined ? undefined : _e.systemInstruction,
+      cachedContent: (_f = this.params) === null || _f === undefined ? undefined : _f.cachedContent,
+      contents: [...this._history, newContent]
+    };
+    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    let finalResult;
+    this._sendPromise = this._sendPromise.then(() => generateContent(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions)).then((result) => {
+      var _a3;
+      if (isValidResponse(result.response)) {
+        this._history.push(newContent);
+        const responseContent = Object.assign({
+          parts: [],
+          role: "model"
+        }, (_a3 = result.response.candidates) === null || _a3 === undefined ? undefined : _a3[0].content);
+        this._history.push(responseContent);
+      } else {
+        const blockErrorMessage = formatBlockErrorMessage(result.response);
+        if (blockErrorMessage) {
+          console.warn(`sendMessage() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
+        }
+      }
+      finalResult = result;
+    }).catch((e) => {
+      this._sendPromise = Promise.resolve();
+      throw e;
+    });
+    await this._sendPromise;
+    return finalResult;
+  }
+  async sendMessageStream(request, requestOptions = {}) {
+    var _a2, _b, _c, _d, _e, _f;
+    await this._sendPromise;
+    const newContent = formatNewContent(request);
+    const generateContentRequest = {
+      safetySettings: (_a2 = this.params) === null || _a2 === undefined ? undefined : _a2.safetySettings,
+      generationConfig: (_b = this.params) === null || _b === undefined ? undefined : _b.generationConfig,
+      tools: (_c = this.params) === null || _c === undefined ? undefined : _c.tools,
+      toolConfig: (_d = this.params) === null || _d === undefined ? undefined : _d.toolConfig,
+      systemInstruction: (_e = this.params) === null || _e === undefined ? undefined : _e.systemInstruction,
+      cachedContent: (_f = this.params) === null || _f === undefined ? undefined : _f.cachedContent,
+      contents: [...this._history, newContent]
+    };
+    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    const streamPromise = generateContentStream(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions);
+    this._sendPromise = this._sendPromise.then(() => streamPromise).catch((_ignored) => {
+      throw new Error(SILENT_ERROR);
+    }).then((streamResult) => streamResult.response).then((response) => {
+      if (isValidResponse(response)) {
+        this._history.push(newContent);
+        const responseContent = Object.assign({}, response.candidates[0].content);
+        if (!responseContent.role) {
+          responseContent.role = "model";
+        }
+        this._history.push(responseContent);
+      } else {
+        const blockErrorMessage = formatBlockErrorMessage(response);
+        if (blockErrorMessage) {
+          console.warn(`sendMessageStream() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
+        }
+      }
+    }).catch((e) => {
+      if (e.message !== SILENT_ERROR) {
+        console.error(e);
+      }
+    });
+    return streamPromise;
+  }
+}
+async function countTokens(apiKey, model, params, singleRequestOptions) {
+  const response = await makeModelRequest(model, Task.COUNT_TOKENS, apiKey, false, JSON.stringify(params), singleRequestOptions);
+  return response.json();
+}
+async function embedContent(apiKey, model, params, requestOptions) {
+  const response = await makeModelRequest(model, Task.EMBED_CONTENT, apiKey, false, JSON.stringify(params), requestOptions);
+  return response.json();
+}
+async function batchEmbedContents(apiKey, model, params, requestOptions) {
+  const requestsWithModel = params.requests.map((request) => {
+    return Object.assign(Object.assign({}, request), { model });
+  });
+  const response = await makeModelRequest(model, Task.BATCH_EMBED_CONTENTS, apiKey, false, JSON.stringify({ requests: requestsWithModel }), requestOptions);
+  return response.json();
+}
+
+class GenerativeModel {
+  constructor(apiKey, modelParams, _requestOptions = {}) {
+    this.apiKey = apiKey;
+    this._requestOptions = _requestOptions;
+    if (modelParams.model.includes("/")) {
+      this.model = modelParams.model;
+    } else {
+      this.model = `models/${modelParams.model}`;
+    }
+    this.generationConfig = modelParams.generationConfig || {};
+    this.safetySettings = modelParams.safetySettings || [];
+    this.tools = modelParams.tools;
+    this.toolConfig = modelParams.toolConfig;
+    this.systemInstruction = formatSystemInstruction(modelParams.systemInstruction);
+    this.cachedContent = modelParams.cachedContent;
+  }
+  async generateContent(request, requestOptions = {}) {
+    var _a2;
+    const formattedParams = formatGenerateContentInput(request);
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return generateContent(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a2 = this.cachedContent) === null || _a2 === undefined ? undefined : _a2.name }, formattedParams), generativeModelRequestOptions);
+  }
+  async generateContentStream(request, requestOptions = {}) {
+    var _a2;
+    const formattedParams = formatGenerateContentInput(request);
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return generateContentStream(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a2 = this.cachedContent) === null || _a2 === undefined ? undefined : _a2.name }, formattedParams), generativeModelRequestOptions);
+  }
+  startChat(startChatParams) {
+    var _a2;
+    return new ChatSession(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a2 = this.cachedContent) === null || _a2 === undefined ? undefined : _a2.name }, startChatParams), this._requestOptions);
+  }
+  async countTokens(request, requestOptions = {}) {
+    const formattedParams = formatCountTokensInput(request, {
+      model: this.model,
+      generationConfig: this.generationConfig,
+      safetySettings: this.safetySettings,
+      tools: this.tools,
+      toolConfig: this.toolConfig,
+      systemInstruction: this.systemInstruction,
+      cachedContent: this.cachedContent
+    });
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return countTokens(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
+  }
+  async embedContent(request, requestOptions = {}) {
+    const formattedParams = formatEmbedContentInput(request);
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return embedContent(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
+  }
+  async batchEmbedContents(batchEmbedContentRequest, requestOptions = {}) {
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return batchEmbedContents(this.apiKey, this.model, batchEmbedContentRequest, generativeModelRequestOptions);
+  }
+}
+
+class GoogleGenerativeAI {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+  }
+  getGenerativeModel(modelParams, requestOptions) {
+    if (!modelParams.model) {
+      throw new GoogleGenerativeAIError(`Must provide a model name. ` + `Example: genai.getGenerativeModel({ model: 'my-model-name' })`);
+    }
+    return new GenerativeModel(this.apiKey, modelParams, requestOptions);
+  }
+  getGenerativeModelFromCachedContent(cachedContent, modelParams, requestOptions) {
+    if (!cachedContent.name) {
+      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `name` field.");
+    }
+    if (!cachedContent.model) {
+      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `model` field.");
+    }
+    const disallowedDuplicates = ["model", "systemInstruction"];
+    for (const key of disallowedDuplicates) {
+      if ((modelParams === null || modelParams === undefined ? undefined : modelParams[key]) && cachedContent[key] && (modelParams === null || modelParams === undefined ? undefined : modelParams[key]) !== cachedContent[key]) {
+        if (key === "model") {
+          const modelParamsComp = modelParams.model.startsWith("models/") ? modelParams.model.replace("models/", "") : modelParams.model;
+          const cachedContentComp = cachedContent.model.startsWith("models/") ? cachedContent.model.replace("models/", "") : cachedContent.model;
+          if (modelParamsComp === cachedContentComp) {
+            continue;
+          }
+        }
+        throw new GoogleGenerativeAIRequestInputError(`Different value for "${key}" specified in modelParams` + ` (${modelParams[key]}) and cachedContent (${cachedContent[key]})`);
+      }
+    }
+    const modelParamsFromCache = Object.assign(Object.assign({}, modelParams), { model: cachedContent.model, tools: cachedContent.tools, toolConfig: cachedContent.toolConfig, systemInstruction: cachedContent.systemInstruction, cachedContent });
+    return new GenerativeModel(this.apiKey, modelParamsFromCache, requestOptions);
+  }
+}
+var SchemaType, ExecutableCodeLanguage, Outcome, POSSIBLE_ROLES, HarmCategory, HarmBlockThreshold, HarmProbability, BlockReason, FinishReason, TaskType, FunctionCallingMode, DynamicRetrievalMode, GoogleGenerativeAIError, GoogleGenerativeAIResponseError, GoogleGenerativeAIFetchError, GoogleGenerativeAIRequestInputError, GoogleGenerativeAIAbortError, DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com", DEFAULT_API_VERSION = "v1beta", PACKAGE_VERSION = "0.24.1", PACKAGE_LOG_HEADER = "genai-js", Task, badFinishReasons, responseLineRE, VALID_PART_FIELDS, VALID_PARTS_PER_ROLE, SILENT_ERROR = "SILENT_ERROR";
+var init_dist4 = __esm(() => {
+  (function(SchemaType2) {
+    SchemaType2["STRING"] = "string";
+    SchemaType2["NUMBER"] = "number";
+    SchemaType2["INTEGER"] = "integer";
+    SchemaType2["BOOLEAN"] = "boolean";
+    SchemaType2["ARRAY"] = "array";
+    SchemaType2["OBJECT"] = "object";
+  })(SchemaType || (SchemaType = {}));
+  (function(ExecutableCodeLanguage2) {
+    ExecutableCodeLanguage2["LANGUAGE_UNSPECIFIED"] = "language_unspecified";
+    ExecutableCodeLanguage2["PYTHON"] = "python";
+  })(ExecutableCodeLanguage || (ExecutableCodeLanguage = {}));
+  (function(Outcome2) {
+    Outcome2["OUTCOME_UNSPECIFIED"] = "outcome_unspecified";
+    Outcome2["OUTCOME_OK"] = "outcome_ok";
+    Outcome2["OUTCOME_FAILED"] = "outcome_failed";
+    Outcome2["OUTCOME_DEADLINE_EXCEEDED"] = "outcome_deadline_exceeded";
+  })(Outcome || (Outcome = {}));
+  POSSIBLE_ROLES = ["user", "model", "function", "system"];
+  (function(HarmCategory2) {
+    HarmCategory2["HARM_CATEGORY_UNSPECIFIED"] = "HARM_CATEGORY_UNSPECIFIED";
+    HarmCategory2["HARM_CATEGORY_HATE_SPEECH"] = "HARM_CATEGORY_HATE_SPEECH";
+    HarmCategory2["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = "HARM_CATEGORY_SEXUALLY_EXPLICIT";
+    HarmCategory2["HARM_CATEGORY_HARASSMENT"] = "HARM_CATEGORY_HARASSMENT";
+    HarmCategory2["HARM_CATEGORY_DANGEROUS_CONTENT"] = "HARM_CATEGORY_DANGEROUS_CONTENT";
+    HarmCategory2["HARM_CATEGORY_CIVIC_INTEGRITY"] = "HARM_CATEGORY_CIVIC_INTEGRITY";
+  })(HarmCategory || (HarmCategory = {}));
+  (function(HarmBlockThreshold2) {
+    HarmBlockThreshold2["HARM_BLOCK_THRESHOLD_UNSPECIFIED"] = "HARM_BLOCK_THRESHOLD_UNSPECIFIED";
+    HarmBlockThreshold2["BLOCK_LOW_AND_ABOVE"] = "BLOCK_LOW_AND_ABOVE";
+    HarmBlockThreshold2["BLOCK_MEDIUM_AND_ABOVE"] = "BLOCK_MEDIUM_AND_ABOVE";
+    HarmBlockThreshold2["BLOCK_ONLY_HIGH"] = "BLOCK_ONLY_HIGH";
+    HarmBlockThreshold2["BLOCK_NONE"] = "BLOCK_NONE";
+  })(HarmBlockThreshold || (HarmBlockThreshold = {}));
+  (function(HarmProbability2) {
+    HarmProbability2["HARM_PROBABILITY_UNSPECIFIED"] = "HARM_PROBABILITY_UNSPECIFIED";
+    HarmProbability2["NEGLIGIBLE"] = "NEGLIGIBLE";
+    HarmProbability2["LOW"] = "LOW";
+    HarmProbability2["MEDIUM"] = "MEDIUM";
+    HarmProbability2["HIGH"] = "HIGH";
+  })(HarmProbability || (HarmProbability = {}));
+  (function(BlockReason2) {
+    BlockReason2["BLOCKED_REASON_UNSPECIFIED"] = "BLOCKED_REASON_UNSPECIFIED";
+    BlockReason2["SAFETY"] = "SAFETY";
+    BlockReason2["OTHER"] = "OTHER";
+  })(BlockReason || (BlockReason = {}));
+  (function(FinishReason2) {
+    FinishReason2["FINISH_REASON_UNSPECIFIED"] = "FINISH_REASON_UNSPECIFIED";
+    FinishReason2["STOP"] = "STOP";
+    FinishReason2["MAX_TOKENS"] = "MAX_TOKENS";
+    FinishReason2["SAFETY"] = "SAFETY";
+    FinishReason2["RECITATION"] = "RECITATION";
+    FinishReason2["LANGUAGE"] = "LANGUAGE";
+    FinishReason2["BLOCKLIST"] = "BLOCKLIST";
+    FinishReason2["PROHIBITED_CONTENT"] = "PROHIBITED_CONTENT";
+    FinishReason2["SPII"] = "SPII";
+    FinishReason2["MALFORMED_FUNCTION_CALL"] = "MALFORMED_FUNCTION_CALL";
+    FinishReason2["OTHER"] = "OTHER";
+  })(FinishReason || (FinishReason = {}));
+  (function(TaskType2) {
+    TaskType2["TASK_TYPE_UNSPECIFIED"] = "TASK_TYPE_UNSPECIFIED";
+    TaskType2["RETRIEVAL_QUERY"] = "RETRIEVAL_QUERY";
+    TaskType2["RETRIEVAL_DOCUMENT"] = "RETRIEVAL_DOCUMENT";
+    TaskType2["SEMANTIC_SIMILARITY"] = "SEMANTIC_SIMILARITY";
+    TaskType2["CLASSIFICATION"] = "CLASSIFICATION";
+    TaskType2["CLUSTERING"] = "CLUSTERING";
+  })(TaskType || (TaskType = {}));
+  (function(FunctionCallingMode2) {
+    FunctionCallingMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
+    FunctionCallingMode2["AUTO"] = "AUTO";
+    FunctionCallingMode2["ANY"] = "ANY";
+    FunctionCallingMode2["NONE"] = "NONE";
+  })(FunctionCallingMode || (FunctionCallingMode = {}));
+  (function(DynamicRetrievalMode2) {
+    DynamicRetrievalMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
+    DynamicRetrievalMode2["MODE_DYNAMIC"] = "MODE_DYNAMIC";
+  })(DynamicRetrievalMode || (DynamicRetrievalMode = {}));
+  GoogleGenerativeAIError = class GoogleGenerativeAIError extends Error {
+    constructor(message) {
+      super(`[GoogleGenerativeAI Error]: ${message}`);
+    }
+  };
+  GoogleGenerativeAIResponseError = class GoogleGenerativeAIResponseError extends GoogleGenerativeAIError {
+    constructor(message, response) {
+      super(message);
+      this.response = response;
+    }
+  };
+  GoogleGenerativeAIFetchError = class GoogleGenerativeAIFetchError extends GoogleGenerativeAIError {
+    constructor(message, status, statusText, errorDetails) {
+      super(message);
+      this.status = status;
+      this.statusText = statusText;
+      this.errorDetails = errorDetails;
+    }
+  };
+  GoogleGenerativeAIRequestInputError = class GoogleGenerativeAIRequestInputError extends GoogleGenerativeAIError {
+  };
+  GoogleGenerativeAIAbortError = class GoogleGenerativeAIAbortError extends GoogleGenerativeAIError {
+  };
+  (function(Task2) {
+    Task2["GENERATE_CONTENT"] = "generateContent";
+    Task2["STREAM_GENERATE_CONTENT"] = "streamGenerateContent";
+    Task2["COUNT_TOKENS"] = "countTokens";
+    Task2["EMBED_CONTENT"] = "embedContent";
+    Task2["BATCH_EMBED_CONTENTS"] = "batchEmbedContents";
+  })(Task || (Task = {}));
+  badFinishReasons = [
+    FinishReason.RECITATION,
+    FinishReason.SAFETY,
+    FinishReason.LANGUAGE
+  ];
+  responseLineRE = /^data\: (.*)(?:\n\n|\r\r|\r\n\r\n)/;
+  VALID_PART_FIELDS = [
+    "text",
+    "inlineData",
+    "functionCall",
+    "functionResponse",
+    "executableCode",
+    "codeExecutionResult"
+  ];
+  VALID_PARTS_PER_ROLE = {
+    user: ["text", "inlineData"],
+    function: ["functionResponse"],
+    model: ["text", "functionCall", "executableCode", "codeExecutionResult"],
+    system: ["text"]
+  };
+});
+
+// src/tools/impl/image_generator.ts
+async function image_generator(args) {
+  try {
+    console.error("image_generator called with args:", JSON.stringify(args, null, 2));
+    if (!args || typeof args !== "object") {
+      return {
+        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
+        status: "error"
+      };
+    }
+    if (!args.prompt) {
+      return {
+        toolReturn: "prompt is required",
+        status: "error"
+      };
+    }
+    const provider = args.provider || DEFAULT_PROVIDER;
+    let imageUrl;
+    let revisedPrompt;
+    switch (provider) {
+      case "openai":
+        ({ imageUrl, revisedPrompt } = await generateWithOpenAI(args));
+        break;
+      case "google":
+        ({ imageUrl } = await generateWithGoogle(args));
+        break;
+      default:
+        return {
+          toolReturn: `Unknown provider: ${provider}. Valid providers: openai, google`,
+          status: "error"
+        };
+    }
+    let toolReturn = `Image generated successfully!
+Provider: ${provider}
+Prompt: ${args.prompt}`;
+    if (revisedPrompt) {
+      toolReturn += `
+Revised prompt: ${revisedPrompt}`;
+    }
+    toolReturn += `
+Image URL: ${imageUrl}`;
+    let asset;
+    if (args.save_as_asset) {
+      asset = await saveAsAsset(imageUrl, args);
+      toolReturn += `
+
+Saved as asset: ${asset.id}
+Path: ${asset.path}`;
+    } else {
+      toolReturn += `
+
+To save this image, use the asset_manager tool or set save_as_asset: true`;
+    }
+    return {
+      toolReturn,
+      status: "success",
+      image_url: imageUrl,
+      revised_prompt: revisedPrompt,
+      asset
+    };
+  } catch (error) {
+    return {
+      toolReturn: `Error generating image: ${error instanceof Error ? error.message : String(error)}`,
+      status: "error"
+    };
+  }
+}
+async function generateWithOpenAI(args) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY environment variable not set");
+  }
+  const size = args.size || DEFAULT_SIZE;
+  const quality = args.quality || DEFAULT_QUALITY;
+  const style = args.style || DEFAULT_STYLE;
+  const model = size === "256x256" || size === "512x512" ? "dall-e-2" : "dall-e-3";
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      prompt: args.prompt,
+      n: 1,
+      size,
+      quality: model === "dall-e-3" ? quality : undefined,
+      style: model === "dall-e-3" ? style : undefined
+    })
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`OpenAI API error (${response.status}): ${error}`);
+  }
+  const data = await response.json();
+  if (!data.data || data.data.length === 0) {
+    throw new Error("No image returned from OpenAI");
+  }
+  return {
+    imageUrl: data.data[0].url,
+    revisedPrompt: data.data[0].revised_prompt
+  };
+}
+async function generateWithGoogle(args) {
+  const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set. Get one at https://aistudio.google.com/apikey");
+  }
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const modelName = args.model || "gemini-2.0-flash-exp";
+  const model = genAI.getGenerativeModel({
+    model: modelName
+  });
+  const numberOfImages = args.number_of_images || 1;
+  const result = await model.generateContent({
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: args.prompt
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      responseModalities: ["image"],
+      maxOutputTokens: 8192
+    }
+  });
+  const response = result.response;
+  if (!response.candidates || response.candidates.length === 0) {
+    throw new Error("No image generated by Google");
+  }
+  const candidate = response.candidates[0];
+  if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+    throw new Error("No image data in response");
+  }
+  const imagePart = candidate.content.parts.find((part) => part.inlineData?.mimeType?.startsWith("image/"));
+  if (!imagePart || !imagePart.inlineData) {
+    throw new Error("No image data found in response");
+  }
+  const base64Data = imagePart.inlineData.data;
+  const mimeType = imagePart.inlineData.mimeType || "image/png";
+  const dataUrl = `data:${mimeType};base64,${base64Data}`;
+  return {
+    imageUrl: dataUrl
+  };
+}
+async function saveAsAsset(imageUrl, args) {
+  const imageResponse = await fetch(imageUrl);
+  if (!imageResponse.ok) {
+    throw new Error(`Failed to download image: ${imageResponse.status}`);
+  }
+  const imageBuffer = await imageResponse.arrayBuffer();
+  const base64Data = Buffer.from(imageBuffer).toString("base64");
+  const dataUrl = `data:image/png;base64,${base64Data}`;
+  const assetId = args.asset_id || `img_${Date.now()}`;
+  const fileName = `${assetId}.png`;
+  const asset = {
+    id: assetId,
+    type: "image",
+    path: args.story_id ? `${args.story_id}/${fileName}` : fileName,
+    description: args.asset_description || `Generated image: ${args.prompt.slice(0, 100)}`,
+    generated: true,
+    prompt: args.prompt
+  };
+  const result = await asset_manager({
+    operation: "save",
+    story_id: args.story_id,
+    asset,
+    data: dataUrl
+  });
+  if (result.status === "error") {
+    throw new Error(`Failed to save asset: ${result.toolReturn}`);
+  }
+  return asset;
+}
+var DEFAULT_PROVIDER = "openai", DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard", DEFAULT_STYLE = "vivid";
+var init_image_generator2 = __esm(() => {
+  init_asset_manager2();
+  init_dist4();
+});
 
 // src/tools/schemas/ApplyPatch.json
 var ApplyPatch_default2;
@@ -45360,7 +47895,6 @@ var init_WriteTodosGemini2 = __esm(() => {
 var world_manager_default2;
 var init_world_manager3 = __esm(() => {
   world_manager_default2 = {
-    $schema: "http://json-schema.org/draft-07/schema#",
     type: "object",
     properties: {
       operation: {
@@ -45411,8 +47945,297 @@ var init_world_manager3 = __esm(() => {
         description: "Current checkpoint to load and update (for update operation)"
       }
     },
-    required: ["operation"],
-    additionalProperties: false
+    required: ["operation"]
+  };
+});
+
+// src/tools/schemas/story_manager.json
+var story_manager_default2;
+var init_story_manager3 = __esm(() => {
+  story_manager_default2 = {
+    type: "object",
+    properties: {
+      operation: {
+        type: "string",
+        enum: ["create", "save_segment", "load", "list", "branch", "continue", "update_metadata"],
+        description: "The operation to perform: create (new story), save_segment (add segment), load (restore story), list (all stories), branch (create branch), continue (get context), update_metadata (update story info)"
+      },
+      story_id: {
+        type: "string",
+        description: "Unique identifier for the story (required for most operations)"
+      },
+      world_checkpoint: {
+        type: "string",
+        description: "Name of the world checkpoint this story belongs to (required for create)"
+      },
+      title: {
+        type: "string",
+        description: "Title of the story (required for create operation)"
+      },
+      segment: {
+        type: "object",
+        description: "Story segment to add (for save_segment operation)",
+        properties: {
+          content: {
+            type: "string",
+            description: "The story text content"
+          },
+          word_count: {
+            type: "number",
+            description: "Number of words in this segment"
+          },
+          parent_segment: {
+            type: ["string", "null"],
+            description: "ID of parent segment, or null for first segment"
+          },
+          world_evolution: {
+            type: "object",
+            description: "How this segment affects the world",
+            properties: {
+              elements_introduced: {
+                type: "array",
+                items: { type: "string" },
+                description: "Element IDs introduced in this segment"
+              },
+              rules_applied: {
+                type: "array",
+                items: { type: "string" },
+                description: "Rule IDs applied in this segment"
+              },
+              rules_challenged: {
+                type: "array",
+                items: { type: "string" },
+                description: "Rules that were tested or bent"
+              },
+              new_questions: {
+                type: "array",
+                items: { type: "string" },
+                description: "Questions raised for worldbuilding"
+              },
+              world_changes: {
+                type: "array",
+                items: { type: "string" },
+                description: "How this segment changed the world"
+              }
+            }
+          },
+          assets: {
+            type: "array",
+            description: "Multimedia assets for this segment",
+            items: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string"
+                },
+                type: {
+                  type: "string",
+                  enum: ["image", "audio", "video", "document"]
+                },
+                path: {
+                  type: "string",
+                  description: "Path relative to .dsf/assets/"
+                },
+                description: {
+                  type: "string"
+                },
+                generated: {
+                  type: "boolean"
+                },
+                prompt: {
+                  type: "string"
+                }
+              },
+              required: ["id", "type", "path"]
+            }
+          },
+          branches: {
+            type: "array",
+            description: "Possible story branches from this segment",
+            items: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string"
+                },
+                prompt: {
+                  type: "string"
+                },
+                status: {
+                  type: "string",
+                  enum: ["active", "pending", "completed", "abandoned"]
+                },
+                segment_id: {
+                  type: "string"
+                }
+              },
+              required: ["id", "prompt", "status"]
+            }
+          }
+        },
+        required: ["content", "word_count", "parent_segment", "world_evolution"]
+      },
+      branch: {
+        type: "object",
+        description: "Story branch to create (for branch operation)",
+        properties: {
+          prompt: {
+            type: "string",
+            description: "What this branch explores"
+          },
+          status: {
+            type: "string",
+            enum: ["active", "pending", "completed", "abandoned"],
+            description: "Status of this branch"
+          }
+        },
+        required: ["prompt", "status"]
+      },
+      metadata: {
+        type: "object",
+        description: "Story metadata to update (for update_metadata operation)",
+        properties: {
+          title: {
+            type: "string"
+          },
+          status: {
+            type: "string",
+            enum: ["active", "completed", "abandoned", "paused"]
+          },
+          tags: {
+            type: "array",
+            items: { type: "string" }
+          },
+          author_notes: {
+            type: "string"
+          }
+        }
+      }
+    },
+    required: ["operation"]
+  };
+});
+
+// src/tools/schemas/asset_manager.json
+var asset_manager_default2;
+var init_asset_manager3 = __esm(() => {
+  asset_manager_default2 = {
+    type: "object",
+    properties: {
+      operation: {
+        type: "string",
+        enum: ["save", "load", "list", "delete"],
+        description: "The operation to perform: save (store asset), load (retrieve asset), list (all assets), delete (remove asset)"
+      },
+      asset: {
+        type: "object",
+        description: "Asset metadata (for save/load/delete operations)",
+        properties: {
+          id: {
+            type: "string",
+            description: "Unique identifier for the asset"
+          },
+          type: {
+            type: "string",
+            enum: ["image", "audio", "video", "document"],
+            description: "Type of asset"
+          },
+          path: {
+            type: "string",
+            description: "Path relative to .dsf/assets/ where asset will be stored"
+          },
+          description: {
+            type: "string",
+            description: "Human-readable description of the asset"
+          },
+          generated: {
+            type: "boolean",
+            description: "Whether this asset was AI-generated"
+          },
+          prompt: {
+            type: "string",
+            description: "Generation prompt if asset was AI-generated"
+          }
+        },
+        required: ["id", "type", "path"]
+      },
+      asset_id: {
+        type: "string",
+        description: "Asset ID (for load/delete operations)"
+      },
+      story_id: {
+        type: "string",
+        description: "Story ID to organize assets by story"
+      },
+      world_checkpoint: {
+        type: "string",
+        description: "World checkpoint to filter assets (for list operation)"
+      },
+      data: {
+        type: "string",
+        description: "Asset data as base64 string, data URL, or file path (for save operation)"
+      }
+    },
+    required: ["operation"]
+  };
+});
+
+// src/tools/schemas/image_generator.json
+var image_generator_default2;
+var init_image_generator3 = __esm(() => {
+  image_generator_default2 = {
+    type: "object",
+    properties: {
+      prompt: {
+        type: "string",
+        description: "Detailed description of the image to generate. Be specific about style, mood, composition, lighting, etc."
+      },
+      provider: {
+        type: "string",
+        enum: ["openai", "google"],
+        description: "Image generation provider. 'openai' uses DALL-E (default), 'google' uses Gemini/Imagen (Nano Banana)."
+      },
+      size: {
+        type: "string",
+        enum: ["1024x1024", "1792x1024", "1024x1792", "512x512", "256x256"],
+        description: "Image dimensions. DALL-E 3 supports 1024x1024, 1792x1024, 1024x1792. DALL-E 2 supports 256x256, 512x512, 1024x1024. Default: 1024x1024"
+      },
+      quality: {
+        type: "string",
+        enum: ["standard", "hd"],
+        description: "Image quality (DALL-E 3 only). 'hd' creates more detailed images but takes longer. Default: standard"
+      },
+      style: {
+        type: "string",
+        enum: ["vivid", "natural"],
+        description: "Image style (DALL-E 3 only). 'vivid' is more dramatic and artistic, 'natural' is more realistic. Default: vivid"
+      },
+      model: {
+        type: "string",
+        description: "Model to use (Google only). Examples: 'gemini-2.0-flash-exp' (Nano Banana, fast, free), 'imagen-3.0-generate-001'. Default: gemini-2.0-flash-exp"
+      },
+      number_of_images: {
+        type: "number",
+        description: "Number of images to generate (Google only, 1-4). Default: 1"
+      },
+      save_as_asset: {
+        type: "boolean",
+        description: "If true, automatically saves the generated image as a story asset. Default: false"
+      },
+      story_id: {
+        type: "string",
+        description: "Story ID to associate the asset with (required if save_as_asset is true)"
+      },
+      asset_id: {
+        type: "string",
+        description: "Custom asset ID. If not provided, auto-generates one."
+      },
+      asset_description: {
+        type: "string",
+        description: "Description of what the asset shows (used in story metadata)"
+      }
+    },
+    required: ["prompt"]
   };
 });
 
@@ -45450,6 +48273,9 @@ var init_toolDefinitions = __esm(async () => {
   init_UpdatePlan();
   init_Write();
   init_world_manager();
+  init_story_manager();
+  init_asset_manager();
+  init_image_generator();
   init_WriteFileGemini();
   init_WriteTodosGemini();
   init_ApplyPatch2();
@@ -45480,6 +48306,9 @@ var init_toolDefinitions = __esm(async () => {
   init_Write2();
   init_WriteFileGemini2();
   init_world_manager2();
+  init_story_manager2();
+  init_asset_manager2();
+  init_image_generator2();
   init_ApplyPatch3();
   init_AskUserQuestion3();
   init_Bash3();
@@ -45513,6 +48342,9 @@ var init_toolDefinitions = __esm(async () => {
   init_WriteFileGemini3();
   init_WriteTodosGemini2();
   init_world_manager3();
+  init_story_manager3();
+  init_asset_manager3();
+  init_image_generator3();
   await __promiseAll([
     init_Skill2(),
     init_Task2()
@@ -45602,6 +48434,21 @@ var init_toolDefinitions = __esm(async () => {
       schema: world_manager_default2,
       description: world_manager_default.trim(),
       impl: world_manager
+    },
+    story_manager: {
+      schema: story_manager_default2,
+      description: story_manager_default.trim(),
+      impl: story_manager
+    },
+    asset_manager: {
+      schema: asset_manager_default2,
+      description: asset_manager_default.trim(),
+      impl: asset_manager
+    },
+    image_generator: {
+      schema: image_generator_default2,
+      description: image_generator_default.trim(),
+      impl: image_generator
     },
     shell_command: {
       schema: ShellCommand_default2,
@@ -47344,7 +50191,7 @@ __export(exports_loader, {
   loadPermissions: () => loadPermissions
 });
 import { homedir as homedir5 } from "node:os";
-import { join as join10 } from "node:path";
+import { join as join12 } from "node:path";
 async function loadPermissions(workingDirectory = process.cwd()) {
   const merged = {
     allow: [],
@@ -47353,10 +50200,10 @@ async function loadPermissions(workingDirectory = process.cwd()) {
     additionalDirectories: []
   };
   const sources = [
-    join10(process.env.XDG_CONFIG_HOME || join10(homedir5(), ".config"), "letta", "settings.json"),
-    join10(homedir5(), ".letta", "settings.json"),
-    join10(workingDirectory, ".letta", "settings.json"),
-    join10(workingDirectory, ".letta", "settings.local.json")
+    join12(process.env.XDG_CONFIG_HOME || join12(homedir5(), ".config"), "letta", "settings.json"),
+    join12(homedir5(), ".letta", "settings.json"),
+    join12(workingDirectory, ".letta", "settings.json"),
+    join12(workingDirectory, ".letta", "settings.local.json")
   ];
   for (const settingsPath of sources) {
     try {
@@ -47392,13 +50239,13 @@ async function savePermissionRule(rule, ruleType, scope, workingDirectory = proc
   let settingsPath;
   switch (scope) {
     case "user":
-      settingsPath = join10(process.env.XDG_CONFIG_HOME || join10(homedir5(), ".config"), "letta", "settings.json");
+      settingsPath = join12(process.env.XDG_CONFIG_HOME || join12(homedir5(), ".config"), "letta", "settings.json");
       break;
     case "project":
-      settingsPath = join10(workingDirectory, ".letta", "settings.json");
+      settingsPath = join12(workingDirectory, ".letta", "settings.json");
       break;
     case "local":
-      settingsPath = join10(workingDirectory, ".letta", "settings.local.json");
+      settingsPath = join12(workingDirectory, ".letta", "settings.local.json");
       break;
   }
   let settings = {};
@@ -47423,7 +50270,7 @@ async function savePermissionRule(rule, ruleType, scope, workingDirectory = proc
   }
 }
 async function ensureLocalSettingsIgnored(workingDirectory) {
-  const gitignorePath = join10(workingDirectory, ".gitignore");
+  const gitignorePath = join12(workingDirectory, ".gitignore");
   const pattern = ".letta/settings.local.json";
   try {
     let content = "";
@@ -48089,7 +50936,7 @@ async function upsertToolsToServer(client) {
         const fullJsonSchema = {
           name: serverName,
           description: tool.schema.description,
-          parameters: tool.schema.input_schema
+          input_schema: tool.schema.input_schema
         };
         await client.tools.upsert({
           default_requires_approval: true,
@@ -48447,7 +51294,10 @@ var init_manager2 = __esm(async () => {
     WriteFileGemini: { requiresApproval: true },
     WriteTodos: { requiresApproval: false },
     ReadManyFiles: { requiresApproval: false },
-    world_manager: { requiresApproval: false }
+    world_manager: { requiresApproval: false },
+    story_manager: { requiresApproval: false },
+    asset_manager: { requiresApproval: false },
+    image_generator: { requiresApproval: false }
   };
   REGISTRY_KEY = Symbol.for("@letta/toolRegistry");
   toolRegistry = getRegistry();
@@ -48474,16 +51324,16 @@ __export(exports_skills2, {
   SKILLS_DIR: () => SKILLS_DIR2,
   GLOBAL_SKILLS_DIR: () => GLOBAL_SKILLS_DIR2
 });
-import { existsSync as existsSync7 } from "node:fs";
-import { readdir as readdir5, readFile as readFile6 } from "node:fs/promises";
-import { dirname as dirname7, join as join11 } from "node:path";
+import { existsSync as existsSync9 } from "node:fs";
+import { readdir as readdir7, readFile as readFile8 } from "node:fs/promises";
+import { dirname as dirname7, join as join13 } from "node:path";
 import { fileURLToPath as fileURLToPath7 } from "node:url";
 function getBundledSkillsPath2() {
   const thisDir = dirname7(fileURLToPath7(import.meta.url));
   if (thisDir.includes("src/agent") || thisDir.includes("src\\agent")) {
-    return join11(thisDir, "../skills/builtin");
+    return join13(thisDir, "../skills/builtin");
   }
-  return join11(thisDir, "skills");
+  return join13(thisDir, "skills");
 }
 async function getBundledSkills2() {
   const bundledPath = getBundledSkillsPath2();
@@ -48492,7 +51342,7 @@ async function getBundledSkills2() {
 }
 async function discoverSkillsFromDir2(skillsPath, source) {
   const errors = [];
-  if (!existsSync7(skillsPath)) {
+  if (!existsSync9(skillsPath)) {
     return { skills: [], errors: [] };
   }
   const skills = [];
@@ -48506,7 +51356,7 @@ async function discoverSkillsFromDir2(skillsPath, source) {
   }
   return { skills, errors };
 }
-async function discoverSkills2(projectSkillsPath = join11(process.cwd(), SKILLS_DIR2)) {
+async function discoverSkills2(projectSkillsPath = join13(process.cwd(), SKILLS_DIR2)) {
   const allErrors = [];
   const skillsById = new Map;
   const bundledSkills = await getBundledSkills2();
@@ -48530,9 +51380,9 @@ async function discoverSkills2(projectSkillsPath = join11(process.cwd(), SKILLS_
 }
 async function findSkillFiles2(currentPath, rootPath, skills, errors, source) {
   try {
-    const entries = await readdir5(currentPath, { withFileTypes: true });
+    const entries = await readdir7(currentPath, { withFileTypes: true });
     for (const entry of entries) {
-      const fullPath = join11(currentPath, entry.name);
+      const fullPath = join13(currentPath, entry.name);
       if (entry.isDirectory()) {
         await findSkillFiles2(fullPath, rootPath, skills, errors, source);
       } else if (entry.isFile() && entry.name.toUpperCase() === "SKILL.MD") {
@@ -48557,7 +51407,7 @@ async function findSkillFiles2(currentPath, rootPath, skills, errors, source) {
   }
 }
 async function parseSkillFile2(filePath, rootPath, source) {
-  const content = await readFile6(filePath, "utf-8");
+  const content = await readFile8(filePath, "utf-8");
   const { frontmatter, body } = parseFrontmatter(content);
   const normalizedRoot = rootPath.endsWith("/") ? rootPath.slice(0, -1) : rootPath;
   const relativePath = filePath.slice(normalizedRoot.length + 1);
@@ -48718,51 +51568,51 @@ function formatSkillsForMemory2(skills, skillsDirectory) {
 }
 var SKILLS_DIR2 = ".skills", GLOBAL_SKILLS_DIR2, SKILLS_BLOCK_CHAR_LIMIT2 = 20000;
 var init_skills3 = __esm(() => {
-  GLOBAL_SKILLS_DIR2 = join11(process.env.HOME || process.env.USERPROFILE || "~", ".letta/skills");
+  GLOBAL_SKILLS_DIR2 = join13(process.env.HOME || process.env.USERPROFILE || "~", ".letta/skills");
 });
 
 // src/utils/fs.ts
 var exports_fs = {};
 __export(exports_fs, {
   writeJsonFile: () => writeJsonFile,
-  writeFile: () => writeFile3,
+  writeFile: () => writeFile5,
   readJsonFile: () => readJsonFile,
-  readFile: () => readFile7,
-  mkdir: () => mkdir3,
+  readFile: () => readFile9,
+  mkdir: () => mkdir5,
   exists: () => exists2
 });
 import {
-  existsSync as existsSync8,
+  existsSync as existsSync10,
   readFileSync as fsReadFileSync2,
   writeFileSync as fsWriteFileSync2,
   mkdirSync as mkdirSync2
 } from "node:fs";
 import { dirname as dirname8 } from "node:path";
-async function readFile7(path15) {
+async function readFile9(path15) {
   return fsReadFileSync2(path15, { encoding: "utf-8" });
 }
-async function writeFile3(path15, content) {
+async function writeFile5(path15, content) {
   const dir = dirname8(path15);
-  if (!existsSync8(dir)) {
+  if (!existsSync10(dir)) {
     mkdirSync2(dir, { recursive: true });
   }
   fsWriteFileSync2(path15, content, { encoding: "utf-8", flush: true });
 }
 function exists2(path15) {
-  return existsSync8(path15);
+  return existsSync10(path15);
 }
-async function mkdir3(path15, options) {
+async function mkdir5(path15, options) {
   mkdirSync2(path15, options);
 }
 async function readJsonFile(path15) {
-  const text = await readFile7(path15);
+  const text = await readFile9(path15);
   return JSON.parse(text);
 }
 async function writeJsonFile(path15, data, options) {
   const indent = options?.indent ?? 2;
   const content = `${JSON.stringify(data, null, indent)}
 `;
-  await writeFile3(path15, content);
+  await writeFile5(path15, content);
 }
 var init_fs2 = () => {};
 
@@ -49010,9 +51860,9 @@ __export(exports_subagents2, {
   GLOBAL_AGENTS_DIR: () => GLOBAL_AGENTS_DIR2,
   AGENTS_DIR: () => AGENTS_DIR2
 });
-import { existsSync as existsSync9 } from "node:fs";
-import { readdir as readdir6, readFile as readFile8 } from "node:fs/promises";
-import { join as join12 } from "node:path";
+import { existsSync as existsSync11 } from "node:fs";
+import { readdir as readdir8, readFile as readFile10 } from "node:fs/promises";
+import { join as join14 } from "node:path";
 function isValidName2(name) {
   return /^[a-z][a-z0-9-]*$/.test(name);
 }
@@ -49070,7 +51920,7 @@ function parseSubagentContent2(content) {
   };
 }
 async function parseSubagentFile2(filePath) {
-  const content = await readFile8(filePath, "utf-8");
+  const content = await readFile10(filePath, "utf-8");
   return parseSubagentContent2(content);
 }
 function getBuiltinSubagents2() {
@@ -49093,16 +51943,16 @@ function getBuiltinSubagentNames2() {
   return new Set(Object.keys(getBuiltinSubagents2()));
 }
 async function discoverSubagentsFromDir2(agentsDir, seenNames, subagents, errors) {
-  if (!existsSync9(agentsDir)) {
+  if (!existsSync11(agentsDir)) {
     return;
   }
   try {
-    const entries = await readdir6(agentsDir, { withFileTypes: true });
+    const entries = await readdir8(agentsDir, { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isFile() || !entry.name.endsWith(".md")) {
         continue;
       }
-      const filePath = join12(agentsDir, entry.name);
+      const filePath = join14(agentsDir, entry.name);
       try {
         const config = await parseSubagentFile2(filePath);
         if (config) {
@@ -49134,7 +51984,7 @@ async function discoverSubagents2(workingDirectory = process.cwd()) {
   const subagents = [];
   const seenNames = new Set;
   await discoverSubagentsFromDir2(GLOBAL_AGENTS_DIR2, seenNames, subagents, errors);
-  const projectAgentsDir = join12(workingDirectory, AGENTS_DIR2);
+  const projectAgentsDir = join14(workingDirectory, AGENTS_DIR2);
   await discoverSubagentsFromDir2(projectAgentsDir, seenNames, subagents, errors);
   return { subagents, errors };
 }
@@ -49165,7 +52015,7 @@ var init_subagents2 = __esm(() => {
   init_general_purpose();
   init_plan();
   BUILTIN_SOURCES2 = [explore_default, general_purpose_default, plan_default];
-  GLOBAL_AGENTS_DIR2 = join12(process.env.HOME || process.env.USERPROFILE || "~", ".letta/agents");
+  GLOBAL_AGENTS_DIR2 = join14(process.env.HOME || process.env.USERPROFILE || "~", ".letta/agents");
   VALID_MEMORY_BLOCKS2 = new Set(MEMORY_BLOCK_LABELS);
   cache4 = {
     builtins: null,
@@ -50293,7 +53143,7 @@ async function upsertToolsToServer2(client) {
         const fullJsonSchema = {
           name: serverName,
           description: tool.schema.description,
-          parameters: tool.schema.input_schema
+          input_schema: tool.schema.input_schema
         };
         await client.tools.upsert({
           default_requires_approval: true,
@@ -50651,7 +53501,10 @@ var init_manager3 = __esm(async () => {
     WriteFileGemini: { requiresApproval: true },
     WriteTodos: { requiresApproval: false },
     ReadManyFiles: { requiresApproval: false },
-    world_manager: { requiresApproval: false }
+    world_manager: { requiresApproval: false },
+    story_manager: { requiresApproval: false },
+    asset_manager: { requiresApproval: false },
+    image_generator: { requiresApproval: false }
   };
   REGISTRY_KEY2 = Symbol.for("@letta/toolRegistry");
   toolRegistry2 = getRegistry2();
@@ -50935,7 +53788,7 @@ var SLEEPTIME_MEMORY_PERSONA = `I am a sleep-time memory management agent. I obs
 - Continue using memory policies that don't serve the user's actual needs`;
 
 // src/agent/create.ts
-import { join as join13 } from "node:path";
+import { join as join15 } from "node:path";
 async function createAgent(name = DEFAULT_AGENT_NAME, model, embeddingModel = "openai/text-embedding-3-small", updateArgs, skillsDirectory, parallelToolCalls = true, enableSleeptime = false, systemPromptId, initBlocks, baseTools) {
   let modelHandle;
   if (model) {
@@ -50991,7 +53844,7 @@ async function createAgent(name = DEFAULT_AGENT_NAME, model, embeddingModel = "o
     }
   }
   const filteredMemoryBlocks = allowedBlockLabels && allowedBlockLabels.size > 0 ? defaultMemoryBlocks.filter((b) => allowedBlockLabels.has(b.label)) : defaultMemoryBlocks;
-  const resolvedSkillsDirectory = skillsDirectory || join13(process.cwd(), SKILLS_DIR);
+  const resolvedSkillsDirectory = skillsDirectory || join15(process.cwd(), SKILLS_DIR);
   try {
     const { skills, errors } = await discoverSkills(resolvedSkillsDirectory);
     if (errors.length > 0) {
@@ -52250,8 +55103,8 @@ async function handleHeadlessCommand(argv, model, skillsDirectory) {
   await initializeLoadedSkillsFlag2();
   try {
     const { discoverSkills: discoverSkills3, formatSkillsForMemory: formatSkillsForMemory3, SKILLS_DIR: SKILLS_DIR3 } = await Promise.resolve().then(() => (init_skills2(), exports_skills));
-    const { join: join14 } = await import("node:path");
-    const resolvedSkillsDirectory = skillsDirectory || join14(process.cwd(), SKILLS_DIR3);
+    const { join: join16 } = await import("node:path");
+    const resolvedSkillsDirectory = skillsDirectory || join16(process.cwd(), SKILLS_DIR3);
     const { skills, errors } = await discoverSkills3(resolvedSkillsDirectory);
     if (errors.length > 0) {
       console.warn("Errors encountered during skill discovery:");
@@ -52963,9 +55816,9 @@ __export(exports_settings, {
   getSetting: () => getSetting
 });
 import { homedir as homedir6 } from "node:os";
-import { join as join14 } from "node:path";
+import { join as join16 } from "node:path";
 function getSettingsPath() {
-  return join14(homedir6(), ".letta", "settings.json");
+  return join16(homedir6(), ".letta", "settings.json");
 }
 async function loadSettings() {
   const settingsPath = getSettingsPath();
@@ -53002,7 +55855,7 @@ async function getSetting(key) {
   return settings[key];
 }
 function getProjectSettingsPath() {
-  return join14(process.cwd(), ".letta", "settings.local.json");
+  return join16(process.cwd(), ".letta", "settings.local.json");
 }
 async function loadProjectSettings() {
   const settingsPath = getProjectSettingsPath();
@@ -53020,7 +55873,7 @@ async function loadProjectSettings() {
 }
 async function saveProjectSettings(settings) {
   const settingsPath = getProjectSettingsPath();
-  const dirPath = join14(process.cwd(), ".letta");
+  const dirPath = join16(process.cwd(), ".letta");
   try {
     if (!exists(dirPath)) {
       await mkdir(dirPath, { recursive: true });
@@ -56028,7 +58881,7 @@ var init_build4 = __esm(async () => {
 
 // src/cli/helpers/clipboard.ts
 import { execFileSync as execFileSync2 } from "node:child_process";
-import { existsSync as existsSync10, readFileSync as readFileSync2, statSync } from "node:fs";
+import { existsSync as existsSync12, readFileSync as readFileSync2, statSync } from "node:fs";
 import { basename as basename2, extname, isAbsolute as isAbsolute10, resolve as resolve16 } from "node:path";
 function countLines2(text) {
   return (text.match(/\r\n|\r|\n/g) || []).length + 1;
@@ -56079,7 +58932,7 @@ function translatePasteForImages(paste) {
       if (!isAbsolute10(filePath))
         filePath = resolve16(process.cwd(), filePath);
       const ext3 = extname(filePath || "").toLowerCase();
-      if (IMAGE_EXTS.has(ext3) && existsSync10(filePath) && statSync(filePath).isFile()) {
+      if (IMAGE_EXTS.has(ext3) && existsSync12(filePath) && statSync(filePath).isFile()) {
         const buf = readFileSync2(filePath);
         const b64 = buf.toString("base64");
         const mt = ext3 === ".png" ? "image/png" : ext3 === ".jpg" || ext3 === ".jpeg" ? "image/jpeg" : ext3 === ".gif" ? "image/gif" : ext3 === ".webp" ? "image/webp" : ext3 === ".bmp" ? "image/bmp" : ext3 === ".svg" ? "image/svg+xml" : ext3 === ".tif" || ext3 === ".tiff" ? "image/tiff" : ext3 === ".heic" ? "image/heic" : ext3 === ".heif" ? "image/heif" : ext3 === ".avif" ? "image/avif" : "application/octet-stream";
@@ -57302,8 +60155,8 @@ var init_ApprovalDialogRich = __esm(async () => {
         const filePath = parsedArgs?.file_path;
         if (filePath) {
           try {
-            const { existsSync: existsSync11 } = __require("node:fs");
-            if (existsSync11(filePath)) {
+            const { existsSync: existsSync13 } = __require("node:fs");
+            if (existsSync13(filePath)) {
               return "Overwrite File";
             }
           } catch {}
@@ -57320,13 +60173,13 @@ var init_ApprovalDialogRich = __esm(async () => {
       if (t === "write" || t === "write_file" || t === "writefile" || t === "write_file_gemini" || t === "writefilegemini") {
         const filePath = parsedArgs.file_path;
         if (filePath) {
-          const { existsSync: existsSync11 } = __require("node:fs");
+          const { existsSync: existsSync13 } = __require("node:fs");
           const { relative: relative4 } = __require("node:path");
           const cwd2 = process.cwd();
           const relPath = relative4(cwd2, filePath);
           const displayPath = relPath.startsWith("..") ? filePath : relPath;
           try {
-            if (existsSync11(filePath)) {
+            if (existsSync13(filePath)) {
               return { text: "Overwrite", boldPath: `${displayPath}?` };
             }
           } catch {}
@@ -58363,13 +61216,13 @@ __export(exports_terminalKeybindingInstaller, {
 });
 import {
   copyFileSync,
-  existsSync as existsSync11,
+  existsSync as existsSync13,
   mkdirSync as mkdirSync3,
   readFileSync as readFileSync3,
   writeFileSync
 } from "node:fs";
 import { homedir as homedir7, platform as platform3 } from "node:os";
-import { dirname as dirname9, join as join15 } from "node:path";
+import { dirname as dirname9, join as join17 } from "node:path";
 function detectTerminalType() {
   if (process.env.CURSOR_TRACE_ID || process.env.CURSOR_CHANNEL) {
     return "cursor";
@@ -58401,16 +61254,16 @@ function getKeybindingsPath(terminal) {
   }[terminal];
   const os3 = platform3();
   if (os3 === "darwin") {
-    return join15(homedir7(), "Library", "Application Support", appName, "User", "keybindings.json");
+    return join17(homedir7(), "Library", "Application Support", appName, "User", "keybindings.json");
   }
   if (os3 === "win32") {
     const appData = process.env.APPDATA;
     if (!appData)
       return null;
-    return join15(appData, appName, "User", "keybindings.json");
+    return join17(appData, appName, "User", "keybindings.json");
   }
   if (os3 === "linux") {
-    return join15(homedir7(), ".config", appName, "User", "keybindings.json");
+    return join17(homedir7(), ".config", appName, "User", "keybindings.json");
   }
   return null;
 }
@@ -58432,7 +61285,7 @@ function parseKeybindings(content) {
   }
 }
 function keybindingExists(keybindingsPath) {
-  if (!existsSync11(keybindingsPath))
+  if (!existsSync13(keybindingsPath))
     return false;
   try {
     const content = readFileSync3(keybindingsPath, { encoding: "utf-8" });
@@ -58445,7 +61298,7 @@ function keybindingExists(keybindingsPath) {
   }
 }
 function createBackup(keybindingsPath) {
-  if (!existsSync11(keybindingsPath))
+  if (!existsSync13(keybindingsPath))
     return null;
   const backupPath = `${keybindingsPath}.letta-backup`;
   try {
@@ -58461,12 +61314,12 @@ function installKeybinding(keybindingsPath) {
       return { success: true, alreadyExists: true };
     }
     const parentDir = dirname9(keybindingsPath);
-    if (!existsSync11(parentDir)) {
+    if (!existsSync13(parentDir)) {
       mkdirSync3(parentDir, { recursive: true });
     }
     let keybindings = [];
     let backupPath = null;
-    if (existsSync11(keybindingsPath)) {
+    if (existsSync13(keybindingsPath)) {
       backupPath = createBackup(keybindingsPath);
       const content = readFileSync3(keybindingsPath, { encoding: "utf-8" });
       const parsed = parseKeybindings(content);
@@ -58496,7 +61349,7 @@ function installKeybinding(keybindingsPath) {
 }
 function removeKeybinding(keybindingsPath) {
   try {
-    if (!existsSync11(keybindingsPath)) {
+    if (!existsSync13(keybindingsPath)) {
       return { success: true };
     }
     const content = readFileSync3(keybindingsPath, { encoding: "utf-8" });
@@ -58563,17 +61416,17 @@ function getWezTermConfigPath() {
   }
   const xdgConfig = process.env.XDG_CONFIG_HOME;
   if (xdgConfig) {
-    const xdgPath = join15(xdgConfig, "wezterm", "wezterm.lua");
-    if (existsSync11(xdgPath))
+    const xdgPath = join17(xdgConfig, "wezterm", "wezterm.lua");
+    if (existsSync13(xdgPath))
       return xdgPath;
   }
-  const configPath = join15(homedir7(), ".config", "wezterm", "wezterm.lua");
-  if (existsSync11(configPath))
+  const configPath = join17(homedir7(), ".config", "wezterm", "wezterm.lua");
+  if (existsSync13(configPath))
     return configPath;
-  return join15(homedir7(), ".wezterm.lua");
+  return join17(homedir7(), ".wezterm.lua");
 }
 function wezTermDeleteFixExists(configPath) {
-  if (!existsSync11(configPath))
+  if (!existsSync13(configPath))
     return false;
   try {
     const content = readFileSync3(configPath, { encoding: "utf-8" });
@@ -58590,7 +61443,7 @@ function installWezTermDeleteFix() {
     }
     let content = "";
     let backupPath = null;
-    if (existsSync11(configPath)) {
+    if (existsSync13(configPath)) {
       backupPath = `${configPath}.letta-backup`;
       copyFileSync(configPath, backupPath);
       content = readFileSync3(configPath, { encoding: "utf-8" });
@@ -58620,7 +61473,7 @@ ${WEZTERM_DELETE_FIX}
 `;
     }
     const parentDir = dirname9(configPath);
-    if (!existsSync11(parentDir)) {
+    if (!existsSync13(parentDir)) {
       mkdirSync3(parentDir, { recursive: true });
     }
     writeFileSync(configPath, content, { encoding: "utf-8" });
@@ -58990,9 +61843,9 @@ __export(exports_custom, {
   GLOBAL_COMMANDS_DIR: () => GLOBAL_COMMANDS_DIR,
   COMMANDS_DIR: () => COMMANDS_DIR
 });
-import { existsSync as existsSync12 } from "node:fs";
-import { readdir as readdir7, readFile as readFile9 } from "node:fs/promises";
-import { basename as basename3, dirname as dirname10, join as join16 } from "node:path";
+import { existsSync as existsSync14 } from "node:fs";
+import { readdir as readdir9, readFile as readFile11 } from "node:fs/promises";
+import { basename as basename3, dirname as dirname10, join as join18 } from "node:path";
 async function getCustomCommands() {
   if (cachedCommands !== null) {
     return cachedCommands;
@@ -59003,7 +61856,7 @@ async function getCustomCommands() {
 function refreshCustomCommands() {
   cachedCommands = null;
 }
-async function discoverCustomCommands(projectPath = join16(process.cwd(), COMMANDS_DIR)) {
+async function discoverCustomCommands(projectPath = join18(process.cwd(), COMMANDS_DIR)) {
   const commandsById = new Map;
   const userCommands = await discoverFromDirectory(GLOBAL_COMMANDS_DIR, "user");
   for (const cmd of userCommands) {
@@ -59024,7 +61877,7 @@ async function discoverCustomCommands(projectPath = join16(process.cwd(), COMMAN
   return result;
 }
 async function discoverFromDirectory(dirPath, source) {
-  if (!existsSync12(dirPath)) {
+  if (!existsSync14(dirPath)) {
     return [];
   }
   const commands2 = [];
@@ -59033,9 +61886,9 @@ async function discoverFromDirectory(dirPath, source) {
 }
 async function findCommandFiles(currentPath, rootPath, commands2, source) {
   try {
-    const entries = await readdir7(currentPath, { withFileTypes: true });
+    const entries = await readdir9(currentPath, { withFileTypes: true });
     for (const entry of entries) {
-      const fullPath = join16(currentPath, entry.name);
+      const fullPath = join18(currentPath, entry.name);
       if (entry.isDirectory()) {
         await findCommandFiles(fullPath, rootPath, commands2, source);
       } else if (entry.isFile() && entry.name.endsWith(".md")) {
@@ -59050,7 +61903,7 @@ async function findCommandFiles(currentPath, rootPath, commands2, source) {
   } catch (_error) {}
 }
 async function parseCommandFile(filePath, rootPath, source) {
-  const content = await readFile9(filePath, "utf-8");
+  const content = await readFile11(filePath, "utf-8");
   const { frontmatter, body } = parseFrontmatter(content);
   const id = basename3(filePath, ".md");
   const relativePath = dirname10(filePath).slice(rootPath.length);
@@ -59120,7 +61973,7 @@ async function findCustomCommand(commandName) {
 }
 var COMMANDS_DIR = ".commands", GLOBAL_COMMANDS_DIR, cachedCommands = null;
 var init_custom = __esm(() => {
-  GLOBAL_COMMANDS_DIR = join16(process.env.HOME || process.env.USERPROFILE || "~", ".letta/commands");
+  GLOBAL_COMMANDS_DIR = join18(process.env.HOME || process.env.USERPROFILE || "~", ".letta/commands");
 });
 
 // src/cli/components/HelpDialog.tsx
@@ -61878,6 +64731,7 @@ Check the top-level render call using <` + parentName + ">.";
           }
         }
       }
+      var didWarnAboutKeySpread = {};
       function jsxWithValidation(type, props, key, isStaticChildren, source, self) {
         {
           var validType = isValidElementType(type);
@@ -61925,6 +64779,25 @@ Check the top-level render call using <` + parentName + ">.";
                 }
               } else {
                 validateChildKeys(children, type);
+              }
+            }
+          }
+          {
+            if (hasOwnProperty.call(props, "key")) {
+              var componentName = getComponentNameFromType(type);
+              var keys = Object.keys(props).filter(function(k) {
+                return k !== "key";
+              });
+              var beforeExample = keys.length > 0 ? "{key: someKey, " + keys.join(": ..., ") + ": ...}" : "{key: someKey}";
+              if (!didWarnAboutKeySpread[componentName + beforeExample]) {
+                var afterExample = keys.length > 0 ? "{" + keys.join(": ..., ") + ": ...}" : "{}";
+                error(`A props object containing a "key" prop is being spread into JSX:
+` + `  let props = %s;
+` + `  <%s {...props} />
+` + `React keys must be passed directly to JSX without using spread:
+` + `  let props = %s;
+` + "  <%s key={someKey} {...props} />", beforeExample, componentName, afterExample, componentName);
+                didWarnAboutKeySpread[componentName + beforeExample] = true;
               }
             }
           }
@@ -62252,7 +65125,7 @@ var init_terminal_link = __esm(() => {
 
 // node_modules/ink-link/dist/index.js
 var import_jsx_runtime, Link = ({ children, url, fallback = true }) => import_jsx_runtime.jsx(Transform, { transform: (children2) => terminalLink(children2, url, { fallback }), children: import_jsx_runtime.jsx(Text, { children }) }), dist_default4;
-var init_dist4 = __esm(async () => {
+var init_dist5 = __esm(async () => {
   init_terminal_link();
   await init_build2();
   import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
@@ -62351,7 +65224,7 @@ var init_AgentInfoBar = __esm(async () => {
   init_colors();
   await __promiseAll([
     init_build2(),
-    init_dist4(),
+    init_dist5(),
     init_settings_manager()
   ]);
   import_react41 = __toESM(require_react(), 1);
@@ -62360,7 +65233,7 @@ var init_AgentInfoBar = __esm(async () => {
 
 // src/cli/helpers/fileSearch.ts
 import { readdirSync as readdirSync2, statSync as statSync2 } from "node:fs";
-import { join as join17, resolve as resolve17 } from "node:path";
+import { join as join19, resolve as resolve17 } from "node:path";
 function searchDirectoryRecursive(dir, pattern, maxResults = 200, results = []) {
   if (results.length >= maxResults) {
     return results;
@@ -62372,7 +65245,7 @@ function searchDirectoryRecursive(dir, pattern, maxResults = 200, results = []) 
         continue;
       }
       try {
-        const fullPath = join17(dir, entry);
+        const fullPath = join19(dir, entry);
         const stats = statSync2(fullPath);
         const relativePath = fullPath.startsWith(process.cwd()) ? fullPath.slice(process.cwd().length + 1) : fullPath;
         const matches = pattern.length === 0 || relativePath.toLowerCase().includes(pattern.toLowerCase());
@@ -62424,7 +65297,7 @@ async function searchFiles(query, deep = false) {
       const matchingEntries = searchPattern.length === 0 ? entries : entries.filter((entry) => entry.toLowerCase().includes(searchPattern.toLowerCase()));
       for (const entry of matchingEntries.slice(0, 50)) {
         try {
-          const fullPath = join17(searchDir, entry);
+          const fullPath = join19(searchDir, entry);
           const stats = statSync2(fullPath);
           const relativePath = fullPath.startsWith(process.cwd()) ? fullPath.slice(process.cwd().length + 1) : fullPath;
           results.push({
@@ -62895,7 +65768,7 @@ var init_SlashCommandAutocomplete = __esm(async () => {
   init_colors();
   await __promiseAll([
     init_build2(),
-    init_dist4(),
+    init_dist5(),
     init_settings_manager(),
     init_useAutocompleteNavigation(),
     init_Autocomplete()
@@ -64569,7 +67442,7 @@ var init_MemoryViewer = __esm(async () => {
   init_colors();
   await __promiseAll([
     init_build2(),
-    init_dist4()
+    init_dist5()
   ]);
   import_react49 = __toESM(require_react(), 1);
   jsx_dev_runtime28 = __toESM(require_jsx_dev_runtime(), 1);
@@ -64952,7 +67825,7 @@ var init_MessageSearch = __esm(async () => {
   init_colors();
   await __promiseAll([
     init_build2(),
-    init_dist4(),
+    init_dist5(),
     init_client2()
   ]);
   import_react50 = __toESM(require_react(), 1);
@@ -70432,7 +73305,7 @@ var exports_App = {};
 __export(exports_App, {
   default: () => App2
 });
-import { existsSync as existsSync13, readFileSync as readFileSync4, writeFileSync as writeFileSync2 } from "node:fs";
+import { existsSync as existsSync15, readFileSync as readFileSync4, writeFileSync as writeFileSync2 } from "node:fs";
 function uid4(prefix) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -70513,14 +73386,14 @@ NOTE: At any point in time through this workflow you should feel free to ask the
 }
 function planFileExists() {
   const planFilePath = permissionMode2.getPlanFilePath();
-  return !!planFilePath && existsSync13(planFilePath);
+  return !!planFilePath && existsSync15(planFilePath);
 }
 function readPlanFile() {
   const planFilePath = permissionMode2.getPlanFilePath();
   if (!planFilePath) {
     return "No plan file path set.";
   }
-  if (!existsSync13(planFilePath)) {
+  if (!existsSync15(planFilePath)) {
     return `Plan file not found at ${planFilePath}`;
   }
   try {
@@ -74342,13 +77215,13 @@ __export(exports_terminalKeybindingInstaller2, {
 });
 import {
   copyFileSync as copyFileSync2,
-  existsSync as existsSync14,
+  existsSync as existsSync16,
   mkdirSync as mkdirSync4,
   readFileSync as readFileSync5,
   writeFileSync as writeFileSync3
 } from "node:fs";
 import { homedir as homedir8, platform as platform5 } from "node:os";
-import { dirname as dirname11, join as join18 } from "node:path";
+import { dirname as dirname11, join as join20 } from "node:path";
 function detectTerminalType2() {
   if (process.env.CURSOR_TRACE_ID || process.env.CURSOR_CHANNEL) {
     return "cursor";
@@ -74380,16 +77253,16 @@ function getKeybindingsPath2(terminal) {
   }[terminal];
   const os4 = platform5();
   if (os4 === "darwin") {
-    return join18(homedir8(), "Library", "Application Support", appName, "User", "keybindings.json");
+    return join20(homedir8(), "Library", "Application Support", appName, "User", "keybindings.json");
   }
   if (os4 === "win32") {
     const appData = process.env.APPDATA;
     if (!appData)
       return null;
-    return join18(appData, appName, "User", "keybindings.json");
+    return join20(appData, appName, "User", "keybindings.json");
   }
   if (os4 === "linux") {
-    return join18(homedir8(), ".config", appName, "User", "keybindings.json");
+    return join20(homedir8(), ".config", appName, "User", "keybindings.json");
   }
   return null;
 }
@@ -74411,7 +77284,7 @@ function parseKeybindings2(content) {
   }
 }
 function keybindingExists2(keybindingsPath) {
-  if (!existsSync14(keybindingsPath))
+  if (!existsSync16(keybindingsPath))
     return false;
   try {
     const content = readFileSync5(keybindingsPath, { encoding: "utf-8" });
@@ -74424,7 +77297,7 @@ function keybindingExists2(keybindingsPath) {
   }
 }
 function createBackup2(keybindingsPath) {
-  if (!existsSync14(keybindingsPath))
+  if (!existsSync16(keybindingsPath))
     return null;
   const backupPath = `${keybindingsPath}.letta-backup`;
   try {
@@ -74440,12 +77313,12 @@ function installKeybinding2(keybindingsPath) {
       return { success: true, alreadyExists: true };
     }
     const parentDir = dirname11(keybindingsPath);
-    if (!existsSync14(parentDir)) {
+    if (!existsSync16(parentDir)) {
       mkdirSync4(parentDir, { recursive: true });
     }
     let keybindings = [];
     let backupPath = null;
-    if (existsSync14(keybindingsPath)) {
+    if (existsSync16(keybindingsPath)) {
       backupPath = createBackup2(keybindingsPath);
       const content = readFileSync5(keybindingsPath, { encoding: "utf-8" });
       const parsed = parseKeybindings2(content);
@@ -74475,7 +77348,7 @@ function installKeybinding2(keybindingsPath) {
 }
 function removeKeybinding2(keybindingsPath) {
   try {
-    if (!existsSync14(keybindingsPath)) {
+    if (!existsSync16(keybindingsPath)) {
       return { success: true };
     }
     const content = readFileSync5(keybindingsPath, { encoding: "utf-8" });
@@ -74542,17 +77415,17 @@ function getWezTermConfigPath2() {
   }
   const xdgConfig = process.env.XDG_CONFIG_HOME;
   if (xdgConfig) {
-    const xdgPath = join18(xdgConfig, "wezterm", "wezterm.lua");
-    if (existsSync14(xdgPath))
+    const xdgPath = join20(xdgConfig, "wezterm", "wezterm.lua");
+    if (existsSync16(xdgPath))
       return xdgPath;
   }
-  const configPath = join18(homedir8(), ".config", "wezterm", "wezterm.lua");
-  if (existsSync14(configPath))
+  const configPath = join20(homedir8(), ".config", "wezterm", "wezterm.lua");
+  if (existsSync16(configPath))
     return configPath;
-  return join18(homedir8(), ".wezterm.lua");
+  return join20(homedir8(), ".wezterm.lua");
 }
 function wezTermDeleteFixExists2(configPath) {
-  if (!existsSync14(configPath))
+  if (!existsSync16(configPath))
     return false;
   try {
     const content = readFileSync5(configPath, { encoding: "utf-8" });
@@ -74569,7 +77442,7 @@ function installWezTermDeleteFix2() {
     }
     let content = "";
     let backupPath = null;
-    if (existsSync14(configPath)) {
+    if (existsSync16(configPath)) {
       backupPath = `${configPath}.letta-backup`;
       copyFileSync2(configPath, backupPath);
       content = readFileSync5(configPath, { encoding: "utf-8" });
@@ -74599,7 +77472,7 @@ ${WEZTERM_DELETE_FIX2}
 `;
     }
     const parentDir = dirname11(configPath);
-    if (!existsSync14(parentDir)) {
+    if (!existsSync16(parentDir)) {
       mkdirSync4(parentDir, { recursive: true });
     }
     writeFileSync3(configPath, content, { encoding: "utf-8" });
@@ -74648,9 +77521,9 @@ __export(exports_settings2, {
   getSetting: () => getSetting2
 });
 import { homedir as homedir9 } from "node:os";
-import { join as join19 } from "node:path";
+import { join as join21 } from "node:path";
 function getSettingsPath2() {
-  return join19(homedir9(), ".letta", "settings.json");
+  return join21(homedir9(), ".letta", "settings.json");
 }
 async function loadSettings2() {
   const settingsPath = getSettingsPath2();
@@ -74687,7 +77560,7 @@ async function getSetting2(key) {
   return settings[key];
 }
 function getProjectSettingsPath2() {
-  return join19(process.cwd(), ".letta", "settings.local.json");
+  return join21(process.cwd(), ".letta", "settings.local.json");
 }
 async function loadProjectSettings2() {
   const settingsPath = getProjectSettingsPath2();
@@ -74705,7 +77578,7 @@ async function loadProjectSettings2() {
 }
 async function saveProjectSettings2(settings) {
   const settingsPath = getProjectSettingsPath2();
-  const dirPath = join19(process.cwd(), ".letta");
+  const dirPath = join21(process.cwd(), ".letta");
   try {
     if (!exists(dirPath)) {
       await mkdir(dirPath, { recursive: true });
@@ -75140,7 +78013,7 @@ var exports_create = {};
 __export(exports_create, {
   createAgent: () => createAgent2
 });
-import { join as join20 } from "node:path";
+import { join as join22 } from "node:path";
 async function createAgent2(name = DEFAULT_AGENT_NAME, model, embeddingModel = "openai/text-embedding-3-small", updateArgs, skillsDirectory, parallelToolCalls = true, enableSleeptime = false, systemPromptId, initBlocks, baseTools) {
   let modelHandle;
   if (model) {
@@ -75196,7 +78069,7 @@ async function createAgent2(name = DEFAULT_AGENT_NAME, model, embeddingModel = "
     }
   }
   const filteredMemoryBlocks = allowedBlockLabels && allowedBlockLabels.size > 0 ? defaultMemoryBlocks.filter((b) => allowedBlockLabels.has(b.label)) : defaultMemoryBlocks;
-  const resolvedSkillsDirectory = skillsDirectory || join20(process.cwd(), SKILLS_DIR);
+  const resolvedSkillsDirectory = skillsDirectory || join22(process.cwd(), SKILLS_DIR);
   try {
     const { skills, errors } = await discoverSkills(resolvedSkillsDirectory);
     if (errors.length > 0) {
@@ -76880,12 +79753,12 @@ EXAMPLES
   console.log(usage);
 }
 async function printInfo() {
-  const { join: join21 } = await import("path");
+  const { join: join23 } = await import("path");
   const { getVersion: getVersion3 } = await Promise.resolve().then(() => (init_version2(), exports_version));
   const { SKILLS_DIR: SKILLS_DIR3 } = await Promise.resolve().then(() => (init_skills3(), exports_skills2));
   const { exists: exists3 } = await Promise.resolve().then(() => (init_fs2(), exports_fs));
   const cwd2 = process.cwd();
-  const skillsDir = join21(cwd2, SKILLS_DIR3);
+  const skillsDir = join23(cwd2, SKILLS_DIR3);
   const skillsExist = exists3(skillsDir);
   await settingsManager2.loadLocalProjectSettings(cwd2);
   const localPinned = settingsManager2.getLocalPinnedAgents(cwd2);
@@ -77163,9 +80036,9 @@ Note: Flags should use double dashes for full names (e.g., --yolo, not -yolo)`);
       process.exit(1);
     }
     const { resolve: resolve19 } = await import("path");
-    const { existsSync: existsSync15 } = await import("fs");
+    const { existsSync: existsSync17 } = await import("fs");
     const resolvedPath = resolve19(fromAfFile);
-    if (!existsSync15(resolvedPath)) {
+    if (!existsSync17(resolvedPath)) {
       console.error(`Error: AgentFile not found: ${resolvedPath}`);
       process.exit(1);
     }
@@ -77567,8 +80440,8 @@ Error: ${message}`);
         await initializeLoadedSkillsFlag();
         try {
           const { discoverSkills: discoverSkills3, formatSkillsForMemory: formatSkillsForMemory3, SKILLS_DIR: SKILLS_DIR3 } = await Promise.resolve().then(() => (init_skills3(), exports_skills2));
-          const { join: join21 } = await import("path");
-          const resolvedSkillsDirectory = skillsDirectory2 || join21(process.cwd(), SKILLS_DIR3);
+          const { join: join23 } = await import("path");
+          const resolvedSkillsDirectory = skillsDirectory2 || join23(process.cwd(), SKILLS_DIR3);
           const { skills, errors } = await discoverSkills3(resolvedSkillsDirectory);
           if (errors.length > 0) {
             console.warn("Errors encountered during skill discovery:");
@@ -77710,4 +80583,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=1E6FA3ECFA22BF5C64756E2164756E21
+//# debugId=E1C69058EAA14F3464756E2164756E21

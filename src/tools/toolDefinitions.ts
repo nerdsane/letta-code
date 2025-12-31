@@ -30,6 +30,9 @@ import TodoWriteDescription from "./descriptions/TodoWrite.md";
 import UpdatePlanDescription from "./descriptions/UpdatePlan.md";
 import WriteDescription from "./descriptions/Write.md";
 import WorldManagerDescription from "./descriptions/world_manager.md";
+import StoryManagerDescription from "./descriptions/story_manager.md";
+import AssetManagerDescription from "./descriptions/asset_manager.md";
+import ImageGeneratorDescription from "./descriptions/image_generator.md";
 import WriteFileGeminiDescription from "./descriptions/WriteFileGemini.md";
 import WriteTodosGeminiDescription from "./descriptions/WriteTodosGemini.md";
 import { apply_patch } from "./impl/ApplyPatch";
@@ -66,6 +69,9 @@ import { write } from "./impl/Write";
 import { write_file_gemini } from "./impl/WriteFileGemini";
 import { write_todos } from "./impl/WriteTodosGemini";
 import { world_manager } from "./impl/world_manager";
+import { story_manager } from "./impl/story_manager";
+import { asset_manager } from "./impl/asset_manager";
+import { image_generator } from "./impl/image_generator";
 import ApplyPatchSchema from "./schemas/ApplyPatch.json";
 import AskUserQuestionSchema from "./schemas/AskUserQuestion.json";
 import BashSchema from "./schemas/Bash.json";
@@ -100,6 +106,9 @@ import WriteSchema from "./schemas/Write.json";
 import WriteFileGeminiSchema from "./schemas/WriteFileGemini.json";
 import WriteTodosGeminiSchema from "./schemas/WriteTodosGemini.json";
 import WorldManagerSchema from "./schemas/world_manager.json";
+import StoryManagerSchema from "./schemas/story_manager.json";
+import AssetManagerSchema from "./schemas/asset_manager.json";
+import ImageGeneratorSchema from "./schemas/image_generator.json";
 
 type ToolImplementation = (args: Record<string, unknown>) => Promise<unknown>;
 
@@ -194,6 +203,21 @@ const toolDefinitions = {
     schema: WorldManagerSchema,
     description: WorldManagerDescription.trim(),
     impl: world_manager as unknown as ToolImplementation,
+  },
+  story_manager: {
+    schema: StoryManagerSchema,
+    description: StoryManagerDescription.trim(),
+    impl: story_manager as unknown as ToolImplementation,
+  },
+  asset_manager: {
+    schema: AssetManagerSchema,
+    description: AssetManagerDescription.trim(),
+    impl: asset_manager as unknown as ToolImplementation,
+  },
+  image_generator: {
+    schema: ImageGeneratorSchema,
+    description: ImageGeneratorDescription.trim(),
+    impl: image_generator as unknown as ToolImplementation,
   },
   shell_command: {
     schema: ShellCommandSchema,

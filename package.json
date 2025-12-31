@@ -23,10 +23,13 @@
     "access": "public"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@letta-ai/letta-client": "1.6.1",
     "glob": "^13.0.0",
     "ink-link": "^5.0.0",
-    "open": "^10.2.0"
+    "open": "^10.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "optionalDependencies": {
     "@vscode/ripgrep": "^1.17.0"
@@ -43,7 +46,6 @@
     "lint-staged": "16.2.4",
     "minimatch": "^10.0.3",
     "picomatch": "^2.3.1",
-    "react": "18.2.0",
     "typescript": "^5.0.0"
   },
   "scripts": {
@@ -52,6 +54,7 @@
     "typecheck": "tsc --noEmit",
     "check": "bun run scripts/check.js",
     "dev": "bun --loader:.md=text --loader:.mdx=text --loader:.txt=text run src/index.ts",
+    "gallery": "bun run src/gallery/server.ts",
     "build": "node scripts/postinstall-patches.js && bun run build.js",
     "prepare": "bun run build",
     "postinstall": "node scripts/postinstall-patches.js"
