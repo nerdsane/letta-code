@@ -17,17 +17,10 @@ Generates images from text prompts using AI models and optionally saves them as 
 
 ## Basic Usage
 
-### Simple Generation
+**⚠️ IMPORTANT: Always use `save_as_asset: true` for story/world images!**
+OpenAI URLs expire in 1 hour, so images must be saved as assets to be permanent.
 
-```typescript
-image_generator({
-  prompt: "A futuristic art studio with neural interface equipment, soft blue lighting, cinematic"
-})
-```
-
-Returns image URL. For Google, image is returned as base64 data URL immediately. For OpenAI, URL expires in 1 hour.
-
-### Generate and Save as Asset
+### Generate and Save as Asset (Recommended)
 
 ```typescript
 image_generator({
@@ -40,6 +33,16 @@ image_generator({
 ```
 
 Downloads the image and saves it to `.dsf/assets/my_story/city_street_night.png`, then returns asset metadata to include in your story segment.
+
+### Quick Preview (URL only, expires in 1 hour)
+
+```typescript
+image_generator({
+  prompt: "A futuristic art studio with neural interface equipment, soft blue lighting, cinematic"
+})
+```
+
+Returns temporary image URL. For Google, image is returned as base64 data URL immediately. For OpenAI, URL expires in 1 hour.
 
 ## Advanced Options
 

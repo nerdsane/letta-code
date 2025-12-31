@@ -134,13 +134,13 @@ Use `world_manager` to save each scenario as a separate checkpoint.
 
 **Generate world cover image:**
 After saving each world, generate a cover image that visually represents the world's essence:
-1. Use `image_generator` with a detailed prompt capturing:
+1. Use `image_generator` with `save_as_asset: true` and a detailed prompt capturing:
    - The world's physical setting and atmosphere
    - Key technological or scientific elements
    - The mood and tone of the world
-   - **Visual style**: Always use "tasteful watercolor illustration" style - not comic book, not photorealistic, but artistic watercolor rendering with soft edges, layered colors, and illustrative quality
-2. Save the image using `asset_manager` with `world_checkpoint` parameter
-3. Update the world's `asset` field with the image metadata and save again
+   - **Visual style**: Always use "watercolor illustration" style - not comic book, not photorealistic, but watercolor rendering with soft edges, layered colors, and illustrative quality. **IMPORTANT**: Specify "edge-to-edge composition, no borders, no paper texture, no white background, full bleed" to ensure images display well on dark backgrounds
+2. The image will be automatically saved to `.dsf/assets/worlds/{checkpoint}/cover.png`
+3. Update the world's `asset` field with the returned asset metadata and save again
 
 Example workflow:
 ```
@@ -152,7 +152,7 @@ world_data = {
 
 # 2. Generate cover image with watercolor illustration style
 image_result = image_generator(
-  prompt="Orbital art station in low Earth orbit, large observation windows showing Earth below, holographic displays with abstract neural art, soft blue lighting, tasteful watercolor illustration style, artistic rendering with soft edges and layered colors, wide composition",
+  prompt="Orbital art station in low Earth orbit, large observation windows showing Earth below, holographic displays with abstract neural art, soft blue lighting, watercolor illustration style with soft edges and layered colors, edge-to-edge composition, no borders, no paper texture, no white background, full bleed, wide cinematic composition",
   save_as_asset=true,
   world_checkpoint="orbital_artists",
   asset_id="cover",
