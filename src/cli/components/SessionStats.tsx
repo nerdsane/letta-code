@@ -47,8 +47,37 @@ export function formatUsageStats({
     `Total duration (API):  ${formatDuration(stats.totalApiMs)}`,
     `Total duration (wall): ${formatDuration(stats.totalWallMs)}`,
     `Session usage:         ${stats.usage.stepCount} steps, ${formatCompact(stats.usage.promptTokens)} input, ${formatCompact(stats.usage.completionTokens)} output`,
-    "",
   ];
+
+  // Add cost information if available
+  if (stats.usage.totalCost !== undefined && stats.usage.totalCost !== null && stats.usage.totalCost > 0) {
+    const formatCost = (cost: number) => `$${cost.toFixed(4)}`;
+
+    let costLine = `Session cost:          ${formatCost(stats.usage.totalCost)}`;
+
+    // Add breakdown if available
+    const costParts: string[] = [];
+    if (stats.usage.inputCost && stats.usage.inputCost > 0) {
+      costParts.push(`${formatCost(stats.usage.inputCost)} input`);
+    }
+    if (stats.usage.outputCost && stats.usage.outputCost > 0) {
+      costParts.push(`${formatCost(stats.usage.outputCost)} output`);
+    }
+    if (stats.usage.cachedInputCost && stats.usage.cachedInputCost > 0) {
+      costParts.push(`${formatCost(stats.usage.cachedInputCost)} cached`);
+    }
+    if (stats.usage.reasoningCost && stats.usage.reasoningCost > 0) {
+      costParts.push(`${formatCost(stats.usage.reasoningCost)} reasoning`);
+    }
+
+    if (costParts.length > 0) {
+      costLine += ` (${costParts.join(", ")})`;
+    }
+
+    outputLines.push(costLine);
+  }
+
+  outputLines.push("");
 
   if (balance) {
     // API returns credits (integers), dollars = credits / 1000

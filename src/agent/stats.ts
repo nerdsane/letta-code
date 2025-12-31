@@ -7,6 +7,13 @@ export interface UsageStats {
   cachedTokens: number;
   reasoningTokens: number;
   stepCount: number;
+  // Cost tracking (optional, populated if pricing data available)
+  inputCost?: number;
+  outputCost?: number;
+  cachedInputCost?: number;
+  cacheWriteCost?: number;
+  reasoningCost?: number;
+  totalCost?: number;
 }
 
 export interface SessionStatsSnapshot {
@@ -31,6 +38,12 @@ export class SessionStats {
       cachedTokens: 0,
       reasoningTokens: 0,
       stepCount: 0,
+      inputCost: 0,
+      outputCost: 0,
+      cachedInputCost: 0,
+      cacheWriteCost: 0,
+      reasoningCost: 0,
+      totalCost: 0,
     };
   }
 
@@ -62,6 +75,12 @@ export class SessionStats {
       cachedTokens: 0,
       reasoningTokens: 0,
       stepCount: 0,
+      inputCost: 0,
+      outputCost: 0,
+      cachedInputCost: 0,
+      cacheWriteCost: 0,
+      reasoningCost: 0,
+      totalCost: 0,
     };
   }
 }
