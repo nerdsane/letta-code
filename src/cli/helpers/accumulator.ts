@@ -7,6 +7,16 @@
 import type { LettaStreamingResponse } from "@letta-ai/letta-client/resources/agents/messages";
 import { INTERRUPTED_BY_USER } from "../../constants";
 
+// Extend LettaStreamingResponse to include cost fields (until letta-client is regenerated)
+type LettaStreamingResponseWithCosts = LettaStreamingResponse & {
+  input_cost?: number;
+  output_cost?: number;
+  cached_input_cost?: number;
+  cache_write_cost?: number;
+  reasoning_cost?: number;
+  total_cost?: number;
+};
+
 // One line per transcript row. Tool calls evolve in-place.
 // For tool call returns, merge into the tool call matching the toolCallId
 export type Line =
@@ -79,6 +89,13 @@ export type Buffers = {
     cachedTokens: number;
     reasoningTokens: number;
     stepCount: number;
+    // Cost tracking (optional)
+    inputCost?: number;
+    outputCost?: number;
+    cachedInputCost?: number;
+    cacheWriteCost?: number;
+    reasoningCost?: number;
+    totalCost?: number;
   };
 };
 
@@ -97,6 +114,12 @@ export function createBuffers(): Buffers {
       cachedTokens: 0,
       reasoningTokens: 0,
       stepCount: 0,
+      inputCost: 0,
+      outputCost: 0,
+      cachedInputCost: 0,
+      cacheWriteCost: 0,
+      reasoningCost: 0,
+      totalCost: 0,
     },
   };
 }
@@ -218,7 +241,7 @@ function extractTextPart(v: unknown): string {
 }
 
 // Feed one SDK chunk; mutate buffers in place.
-export function onChunk(b: Buffers, chunk: LettaStreamingResponse) {
+export function onChunk(b: Buffers, chunk: LettaStreamingResponseWithCosts) {
   // TODO remove once SDK v1 has proper typing for in-stream errors
   // Check for streaming error objects (not typed in SDK but emitted by backend)
   // Note: Error handling moved to catch blocks in App.tsx and headless.ts
@@ -460,6 +483,25 @@ export function onChunk(b: Buffers, chunk: LettaStreamingResponse) {
       }
       if (chunk.step_count !== undefined) {
         b.usage.stepCount += chunk.step_count;
+      }
+      // Accumulate cost fields (optional, may be undefined if pricing unavailable)
+      if (chunk.input_cost !== undefined && chunk.input_cost !== null) {
+        b.usage.inputCost = (b.usage.inputCost || 0) + chunk.input_cost;
+      }
+      if (chunk.output_cost !== undefined && chunk.output_cost !== null) {
+        b.usage.outputCost = (b.usage.outputCost || 0) + chunk.output_cost;
+      }
+      if (chunk.cached_input_cost !== undefined && chunk.cached_input_cost !== null) {
+        b.usage.cachedInputCost = (b.usage.cachedInputCost || 0) + chunk.cached_input_cost;
+      }
+      if (chunk.cache_write_cost !== undefined && chunk.cache_write_cost !== null) {
+        b.usage.cacheWriteCost = (b.usage.cacheWriteCost || 0) + chunk.cache_write_cost;
+      }
+      if (chunk.reasoning_cost !== undefined && chunk.reasoning_cost !== null) {
+        b.usage.reasoningCost = (b.usage.reasoningCost || 0) + chunk.reasoning_cost;
+      }
+      if (chunk.total_cost !== undefined && chunk.total_cost !== null) {
+        b.usage.totalCost = (b.usage.totalCost || 0) + chunk.total_cost;
       }
       break;
     }
