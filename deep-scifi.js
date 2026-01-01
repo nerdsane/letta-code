@@ -3288,7 +3288,7 @@ var init_package = __esm(() => {
       typecheck: "tsc --noEmit",
       check: "bun run scripts/check.js",
       dev: "bun --loader:.md=text --loader:.mdx=text --loader:.txt=text run src/index.ts",
-      gallery: "bun run src/gallery/server.ts",
+      canvas: "bun run src/canvas/server.ts",
       build: "node scripts/postinstall-patches.js && bun run build.js",
       prepare: "bun run build",
       postinstall: "node scripts/postinstall-patches.js"
@@ -45229,7 +45229,20 @@ async function updateWorld(args) {
   }
   let world = loadResult.data;
   const revisionNotes = [];
-  for (const update of args.updates) {
+  for (let i = 0;i < args.updates.length; i++) {
+    const update = args.updates[i];
+    if (!update.path) {
+      return {
+        toolReturn: `Update at index ${i} is missing required 'path' field. Each update must have: { path: "field.name", operation: "add|update|remove", value: ... }`,
+        status: "error"
+      };
+    }
+    if (!update.operation || !["add", "update", "remove"].includes(update.operation)) {
+      return {
+        toolReturn: `Update at index ${i} has invalid 'operation' field. Must be one of: add, update, remove`,
+        status: "error"
+      };
+    }
     world = applyUpdate(world, update);
     if (update.reason) {
       revisionNotes.push(update.reason);
@@ -45243,6 +45256,9 @@ async function updateWorld(args) {
   });
 }
 function applyUpdate(world, update) {
+  if (!update.path) {
+    throw new Error("Update operation missing required 'path' field");
+  }
   const path14 = update.path.split(".");
   const newWorld = JSON.parse(JSON.stringify(world));
   let current = newWorld;
@@ -46892,21 +46908,27 @@ async function generateWithOpenAI(args) {
   }
   const size = args.size || DEFAULT_SIZE;
   const quality = args.quality || DEFAULT_QUALITY;
-  const style = args.style || DEFAULT_STYLE;
-  const model = size === "256x256" || size === "512x512" ? "dall-e-2" : "dall-e-3";
-  const response = await fetch("https://api.openai.com/v1/images/generations", {
+  const imageModel = args.model || "gpt-image-1";
+  const mainlineModel = "gpt-5.2";
+  const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model,
-      prompt: args.prompt,
-      n: 1,
-      size,
-      quality: model === "dall-e-3" ? quality : undefined,
-      style: model === "dall-e-3" ? style : undefined
+      model: mainlineModel,
+      input: args.prompt,
+      tools: [
+        {
+          type: "image_generation",
+          size,
+          quality: quality === "hd" ? "high" : quality === "standard" ? "medium" : "auto",
+          format: "png",
+          background: "auto"
+        }
+      ],
+      tool_choice: { type: "image_generation" }
     })
   });
   if (!response.ok) {
@@ -46914,12 +46936,15 @@ async function generateWithOpenAI(args) {
     throw new Error(`OpenAI API error (${response.status}): ${error}`);
   }
   const data = await response.json();
-  if (!data.data || data.data.length === 0) {
+  const imageGenCall = data.output.find((item) => item.type === "image_generation_call");
+  if (!imageGenCall || !imageGenCall.result) {
     throw new Error("No image returned from OpenAI");
   }
+  const base64Data = imageGenCall.result;
+  const dataUrl = `data:image/png;base64,${base64Data}`;
   return {
-    imageUrl: data.data[0].url,
-    revisedPrompt: data.data[0].revised_prompt
+    imageUrl: dataUrl,
+    revisedPrompt: imageGenCall.revised_prompt
   };
 }
 async function generateWithGoogle(args) {
@@ -46928,7 +46953,7 @@ async function generateWithGoogle(args) {
     throw new Error("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set. Get one at https://aistudio.google.com/apikey");
   }
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelName = args.model || "gemini-2.0-flash-exp";
+  const modelName = args.model || "gemini-2.5-flash-image";
   const model = genAI.getGenerativeModel({
     model: modelName
   });
@@ -46945,7 +46970,7 @@ async function generateWithGoogle(args) {
       }
     ],
     generationConfig: {
-      responseModalities: ["image"],
+      responseModalities: ["TEXT", "IMAGE"],
       maxOutputTokens: 8192
     }
   });
@@ -46998,7 +47023,7 @@ async function saveAsAsset(imageUrl, args) {
   }
   return asset;
 }
-var DEFAULT_PROVIDER = "openai", DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard", DEFAULT_STYLE = "vivid";
+var DEFAULT_PROVIDER = "openai", DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard";
 var init_image_generator2 = __esm(() => {
   init_asset_manager2();
   init_dist4();
@@ -53916,7 +53941,8 @@ async function createAgent(name = DEFAULT_AGENT_NAME, model, embeddingModel = "o
     "assess_output_quality",
     "check_logical_consistency",
     "compare_versions",
-    "analyze_information_gain"
+    "analyze_information_gain",
+    "search_trajectories"
   ];
   let toolNames = [...serverToolNames, ...defaultBaseTools];
   if (toolNames.includes("memory_apply_patch")) {
@@ -78198,7 +78224,8 @@ async function createAgent2(name = DEFAULT_AGENT_NAME, model, embeddingModel = "
     "assess_output_quality",
     "check_logical_consistency",
     "compare_versions",
-    "analyze_information_gain"
+    "analyze_information_gain",
+    "search_trajectories"
   ];
   let toolNames = [...serverToolNames, ...defaultBaseTools];
   if (toolNames.includes("memory_apply_patch")) {
@@ -80740,4 +80767,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=8D5400A628DAC57D64756E2164756E21
+//# debugId=1E58055F59730A4364756E2164756E21

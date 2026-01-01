@@ -96,6 +96,8 @@ export async function createAgent(
     "check_logical_consistency",
     "compare_versions",
     "analyze_information_gain",
+    // Continual learning
+    "search_trajectories",
   ];
 
   let toolNames = [...serverToolNames, ...defaultBaseTools];
