@@ -31309,7 +31309,7 @@ Use these proactively before showing work to the user.
 \`analyze_information_gain(after, before, metric)\` - Assess novelty and non-obviousness of ideas. Returns information_gain score, new_facts, insights, significance.
 
 **Continual Learning:**
-\`search_trajectories(query, min_score, limit)\` - Search your past execution experiences to learn from similar situations. Returns past runs ranked by similarity with outcome scores (0-1). Use min_score=0.7+ to find successful approaches, or min_score=0.0 to include failures and learn what NOT to do. Examples: "how did I handle story generation with specific themes", "dealing with API errors", "project roadmap discussions".
+\`search_trajectories(query, min_score, limit, include_contrasts)\` - Search your past execution experiences to learn from similar situations. Returns past runs ranked by similarity with outcome scores (0-1). Use min_score=0.7+ to find successful approaches, or min_score=0.0 to include failures. Better yet: use include_contrasts=True to get both top successes AND top failures in one call so you can compare what worked vs what didn't. Examples: "how did I handle story generation with specific themes", "dealing with API errors".
 
 ## Quality Standards
 
@@ -34092,23 +34092,37 @@ var init_asset_manager = () => {};
 // src/tools/descriptions/image_generator.md
 var image_generator_default = `Generates images from text prompts using AI models and optionally saves them as story assets.
 
+## Provider Auto-Detection
+
+The tool automatically selects the best available provider based on your API keys:
+
+1. **Google Gemini (Preferred)**: If \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` is set, uses Nano Banana Pro
+2. **OpenAI (Fallback)**: If only \`OPENAI_API_KEY\` is set, uses GPT-Image models
+
+**At least one API key must be configured** for image generation to work.
+
+You can also explicitly specify the provider with the \`provider\` parameter.
+
 ## Providers
 
-### OpenAI GPT-Image (Default)
-- **GPT-Image 1.5**: Latest image generation model (default), uses GPT-5.2 for orchestration
-- **GPT-Image 1**: High quality with prompt understanding
-- **GPT-Image 1-Mini**: Faster, lower cost option
-- **Architecture**: Uses GPT-5.2 Responses API to orchestrate image generation
-- **Cost**: Varies by model tier and quality settings
-- **Requires**: \`OPENAI_API_KEY\` environment variable
-
-### Google Gemini (Nano Banana Pro)
-- **Gemini 3 Pro Image** (gemini-3-pro-image-preview): Highest quality image generation, aka "Nano Banana Pro" (default)
+### Google Gemini - Nano Banana Pro (Preferred)
+- **Model**: \`gemini-3-pro-image-preview\` - Highest quality image generation
+- **Nickname**: "Nano Banana Pro"
 - **Features**: Advanced reasoning, conversational editing, recontextualization, high-quality text rendering
 - **Context**: 65k input tokens, 32k output tokens
 - **Cost**: $2 per million text input tokens, $0.134 per image output
 - **Requires**: \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` environment variable
 - **Get key**: https://aistudio.google.com/apikey
+- **Default**: Used automatically if Google API key is configured
+
+### OpenAI GPT-Image (Fallback)
+- **Model**: \`gpt-image-1.5\` - Latest image generation model
+- **Also available**: \`gpt-image-1\`, \`gpt-image-1-mini\` (faster, lower cost)
+- **Architecture**: Uses GPT-5.2 Responses API to orchestrate image generation
+- **Cost**: Varies by model tier and quality settings
+- **Requires**: \`OPENAI_API_KEY\` environment variable
+- **Get key**: https://platform.openai.com/api-keys
+- **Default**: Used automatically if OpenAI API key is configured (and Google key is not)
 
 ## Basic Usage
 
@@ -34293,17 +34307,22 @@ The image will now display inline with the story segment in the Story Explorer g
 
 ## Configuration
 
-Set environment variables in \`.env\`:
+Set environment variables in \`.env\` - **at least one is required**:
 
 \`\`\`bash
-# Required for OpenAI (default provider)
-OPENAI_API_KEY=sk-...
-
-# Optional: For Google Gemini/Imagen (Nano Banana)
+# PREFERRED: Google Gemini (Nano Banana Pro) - highest quality
 GOOGLE_API_KEY=AIza...
 # Or alternatively:
 GEMINI_API_KEY=AIza...
+
+# FALLBACK: OpenAI GPT-Image - used if Google key not available
+OPENAI_API_KEY=sk-...
 \`\`\`
+
+**Provider Selection Logic**:
+- If \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` is set → Uses Google Gemini (Nano Banana Pro)
+- Else if \`OPENAI_API_KEY\` is set → Uses OpenAI GPT-Image
+- Else → Error: No image generation API keys configured
 
 ## Cost Optimization
 
@@ -46836,6 +46855,16 @@ var init_dist4 = __esm(() => {
 });
 
 // src/tools/impl/image_generator.ts
+function getDefaultProvider() {
+  const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (googleKey) {
+    return "google";
+  } else if (openaiKey) {
+    return "openai";
+  }
+  return "openai";
+}
 async function image_generator(args) {
   try {
     console.error("image_generator called with args:", JSON.stringify(args, null, 2));
@@ -46851,7 +46880,15 @@ async function image_generator(args) {
         status: "error"
       };
     }
-    const provider = args.provider || DEFAULT_PROVIDER;
+    const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!googleKey && !openaiKey) {
+      return {
+        toolReturn: "No image generation API keys configured. Set either GOOGLE_API_KEY (preferred) or OPENAI_API_KEY in your .env file.",
+        status: "error"
+      };
+    }
+    const provider = args.provider || getDefaultProvider();
     let imageUrl;
     let revisedPrompt;
     switch (provider) {
@@ -47029,7 +47066,7 @@ async function saveAsAsset(imageUrl, args) {
   }
   return asset;
 }
-var DEFAULT_PROVIDER = "openai", DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard";
+var DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard";
 var init_image_generator2 = __esm(() => {
   init_asset_manager2();
   init_dist4();
@@ -80773,4 +80810,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=37D35BF0D6A531F464756E2164756E21
+//# debugId=CBCD261A1195DAAF64756E2164756E21
