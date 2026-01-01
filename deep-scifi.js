@@ -31308,6 +31308,9 @@ Use these proactively before showing work to the user.
 
 \`analyze_information_gain(after, before, metric)\` - Assess novelty and non-obviousness of ideas. Returns information_gain score, new_facts, insights, significance.
 
+**Continual Learning:**
+\`search_trajectories(query, min_score, limit)\` - Search your past execution experiences to learn from similar situations. Returns past runs ranked by similarity with outcome scores (0-1). Use min_score=0.7+ to find successful approaches, or min_score=0.0 to include failures and learn what NOT to do. Examples: "how did I handle story generation with specific themes", "dealing with API errors", "project roadmap discussions".
+
 ## Quality Standards
 
 Before presenting work, self-evaluate against these criteria:
@@ -34091,16 +34094,19 @@ var image_generator_default = `Generates images from text prompts using AI model
 
 ## Providers
 
-### OpenAI DALL-E (Default)
-- **DALL-E 3**: High quality, best prompt understanding, automatic prompt enhancement
-- **DALL-E 2**: Smaller sizes (256x256, 512x512), faster, cheaper
-- **Cost**: ~$0.040/image (DALL-E 3 standard), ~$0.080/image (DALL-E 3 HD)
+### OpenAI GPT-Image (Default)
+- **GPT-Image 1.5**: Latest image generation model (default), uses GPT-5.2 for orchestration
+- **GPT-Image 1**: High quality with prompt understanding
+- **GPT-Image 1-Mini**: Faster, lower cost option
+- **Architecture**: Uses GPT-5.2 Responses API to orchestrate image generation
+- **Cost**: Varies by model tier and quality settings
 - **Requires**: \`OPENAI_API_KEY\` environment variable
 
-### Google Gemini/Imagen (Nano Banana)
-- **Gemini 2.0 Flash**: Fast, free tier available, aka "Nano Banana"
-- **Imagen 3/4**: High quality, photorealistic
-- **Cost**: Free tier available, then pay-per-use
+### Google Gemini (Nano Banana Pro)
+- **Gemini 3 Pro Image** (gemini-3-pro-image-preview): Highest quality image generation, aka "Nano Banana Pro" (default)
+- **Features**: Advanced reasoning, conversational editing, recontextualization, high-quality text rendering
+- **Context**: 65k input tokens, 32k output tokens
+- **Cost**: $2 per million text input tokens, $0.134 per image output
 - **Requires**: \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` environment variable
 - **Get key**: https://aistudio.google.com/apikey
 
@@ -34135,7 +34141,7 @@ Returns temporary image URL. For Google, image is returned as base64 data URL im
 
 ## Advanced Options
 
-### High Quality DALL-E 3
+### High Quality with OpenAI
 
 \`\`\`typescript
 image_generator({
@@ -34143,17 +34149,17 @@ image_generator({
   provider: "openai",
   size: "1024x1024",
   quality: "hd",
-  style: "natural"
+  model: "gpt-image-1.5"  // Default, can be omitted
 })
 \`\`\`
 
-### Google Gemini (Nano Banana)
+### Google Gemini (Nano Banana Pro)
 
 \`\`\`typescript
 image_generator({
   prompt: "Abstract visualization of consciousness, flowing data streams, ethereal glow",
   provider: "google",
-  model: "gemini-2.0-flash-exp"
+  model: "gemini-3-pro-image-preview"  // Default, can be omitted
 })
 \`\`\`
 
@@ -46908,7 +46914,7 @@ async function generateWithOpenAI(args) {
   }
   const size = args.size || DEFAULT_SIZE;
   const quality = args.quality || DEFAULT_QUALITY;
-  const imageModel = args.model || "gpt-image-1";
+  const imageModel = args.model || "gpt-image-1.5";
   const mainlineModel = "gpt-5.2";
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -46953,7 +46959,7 @@ async function generateWithGoogle(args) {
     throw new Error("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set. Get one at https://aistudio.google.com/apikey");
   }
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelName = args.model || "gemini-2.5-flash-image";
+  const modelName = args.model || "gemini-3-pro-image-preview";
   const model = genAI.getGenerativeModel({
     model: modelName
   });
@@ -80767,4 +80773,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=1E58055F59730A4364756E2164756E21
+//# debugId=37D35BF0D6A531F464756E2164756E21

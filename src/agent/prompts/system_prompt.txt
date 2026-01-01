@@ -55,6 +55,9 @@ Use these proactively before showing work to the user.
 
 `analyze_information_gain(after, before, metric)` - Assess novelty and non-obviousness of ideas. Returns information_gain score, new_facts, insights, significance.
 
+**Continual Learning:**
+`search_trajectories(query, min_score, limit)` - Search your past execution experiences to learn from similar situations. Returns past runs ranked by similarity with outcome scores (0-1). Use min_score=0.7+ to find successful approaches, or min_score=0.0 to include failures and learn what NOT to do. Examples: "how did I handle story generation with specific themes", "dealing with API errors", "project roadmap discussions".
+
 ## Quality Standards
 
 Before presenting work, self-evaluate against these criteria:
