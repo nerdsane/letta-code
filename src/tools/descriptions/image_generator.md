@@ -1,19 +1,36 @@
 Generates images from text prompts using AI models and optionally saves them as story assets.
 
+## Provider Auto-Detection
+
+The tool automatically selects the best available provider based on your API keys:
+
+1. **Google Gemini (Preferred)**: If `GOOGLE_API_KEY` or `GEMINI_API_KEY` is set, uses Nano Banana Pro
+2. **OpenAI (Fallback)**: If only `OPENAI_API_KEY` is set, uses GPT-Image models
+
+**At least one API key must be configured** for image generation to work.
+
+You can also explicitly specify the provider with the `provider` parameter.
+
 ## Providers
 
-### OpenAI DALL-E (Default)
-- **DALL-E 3**: High quality, best prompt understanding, automatic prompt enhancement
-- **DALL-E 2**: Smaller sizes (256x256, 512x512), faster, cheaper
-- **Cost**: ~$0.040/image (DALL-E 3 standard), ~$0.080/image (DALL-E 3 HD)
-- **Requires**: `OPENAI_API_KEY` environment variable
-
-### Google Gemini/Imagen (Nano Banana)
-- **Gemini 2.0 Flash**: Fast, free tier available, aka "Nano Banana"
-- **Imagen 3/4**: High quality, photorealistic
-- **Cost**: Free tier available, then pay-per-use
+### Google Gemini - Nano Banana Pro (Preferred)
+- **Model**: `gemini-3-pro-image-preview` - Highest quality image generation
+- **Nickname**: "Nano Banana Pro"
+- **Features**: Advanced reasoning, conversational editing, recontextualization, high-quality text rendering
+- **Context**: 65k input tokens, 32k output tokens
+- **Cost**: $2 per million text input tokens, $0.134 per image output
 - **Requires**: `GOOGLE_API_KEY` or `GEMINI_API_KEY` environment variable
 - **Get key**: https://aistudio.google.com/apikey
+- **Default**: Used automatically if Google API key is configured
+
+### OpenAI GPT-Image (Fallback)
+- **Model**: `gpt-image-1.5` - Latest image generation model
+- **Also available**: `gpt-image-1`, `gpt-image-1-mini` (faster, lower cost)
+- **Architecture**: Uses GPT-5.2 Responses API to orchestrate image generation
+- **Cost**: Varies by model tier and quality settings
+- **Requires**: `OPENAI_API_KEY` environment variable
+- **Get key**: https://platform.openai.com/api-keys
+- **Default**: Used automatically if OpenAI API key is configured (and Google key is not)
 
 ## Basic Usage
 
@@ -46,7 +63,7 @@ Returns temporary image URL. For Google, image is returned as base64 data URL im
 
 ## Advanced Options
 
-### High Quality DALL-E 3
+### High Quality with OpenAI
 
 ```typescript
 image_generator({
@@ -54,17 +71,17 @@ image_generator({
   provider: "openai",
   size: "1024x1024",
   quality: "hd",
-  style: "natural"
+  model: "gpt-image-1.5"  // Default, can be omitted
 })
 ```
 
-### Google Gemini (Nano Banana)
+### Google Gemini (Nano Banana Pro)
 
 ```typescript
 image_generator({
   prompt: "Abstract visualization of consciousness, flowing data streams, ethereal glow",
   provider: "google",
-  model: "gemini-2.0-flash-exp"
+  model: "gemini-3-pro-image-preview"  // Default, can be omitted
 })
 ```
 
@@ -198,17 +215,22 @@ The image will now display inline with the story segment in the Story Explorer g
 
 ## Configuration
 
-Set environment variables in `.env`:
+Set environment variables in `.env` - **at least one is required**:
 
 ```bash
-# Required for OpenAI (default provider)
-OPENAI_API_KEY=sk-...
-
-# Optional: For Google Gemini/Imagen (Nano Banana)
+# PREFERRED: Google Gemini (Nano Banana Pro) - highest quality
 GOOGLE_API_KEY=AIza...
 # Or alternatively:
 GEMINI_API_KEY=AIza...
+
+# FALLBACK: OpenAI GPT-Image - used if Google key not available
+OPENAI_API_KEY=sk-...
 ```
+
+**Provider Selection Logic**:
+- If `GOOGLE_API_KEY` or `GEMINI_API_KEY` is set → Uses Google Gemini (Nano Banana Pro)
+- Else if `OPENAI_API_KEY` is set → Uses OpenAI GPT-Image
+- Else → Error: No image generation API keys configured
 
 ## Cost Optimization
 

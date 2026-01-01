@@ -1,7 +1,13 @@
 /**
- * image_generator - Generate images using AI models (OpenAI DALL-E or Google Gemini/Imagen)
+ * image_generator - Generate images using AI models (Google Gemini or OpenAI GPT-Image)
  *
  * Generates images from text prompts and optionally saves them as assets.
+ * 
+ * Default Provider Selection:
+ * - Google (preferred): Uses gemini-3-pro-image-preview (Nano Banana Pro) if GOOGLE_API_KEY is set
+ * - OpenAI (fallback): Uses gpt-image-1.5 via GPT-5.2 Responses API if OPENAI_API_KEY is set
+ * 
+ * At least one API key must be configured for image generation to work.
  */
 
 import type { StoryAsset } from "../../types/dsf";
@@ -20,7 +26,7 @@ export interface ImageGeneratorArgs {
   size?: "1024x1024" | "1792x1024" | "1024x1792" | "512x512" | "256x256";
   quality?: "standard" | "hd";
   style?: "vivid" | "natural";
-  model?: string; // For Google: "gemini-2.0-flash-exp", "imagen-3.0-generate-001", etc.
+  model?: string; // OpenAI: "gpt-image-1.5" (default), "gpt-image-1", "gpt-image-1-mini" | Google: "gemini-3-pro-image-preview" (default, aka Nano Banana Pro)
   save_as_asset?: boolean;
   story_id?: string;
   world_checkpoint?: string;
@@ -42,7 +48,22 @@ export interface ImageGeneratorResult {
 // Configuration
 // ============================================================================
 
-const DEFAULT_PROVIDER: ImageProvider = "openai";
+// Auto-detect default provider: prefer Google (Nano Banana Pro) if key is available
+function getDefaultProvider(): ImageProvider {
+  const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  
+  // Prefer Google (Nano Banana Pro) over OpenAI
+  if (googleKey) {
+    return "google";
+  } else if (openaiKey) {
+    return "openai";
+  }
+  
+  // No keys available - will error when called
+  return "openai"; // Default to openai for backwards compatibility
+}
+
 const DEFAULT_SIZE = "1024x1024";
 const DEFAULT_QUALITY = "standard";
 const DEFAULT_STYLE = "vivid";
@@ -71,7 +92,18 @@ export async function image_generator(
       };
     }
 
-    const provider = args.provider || DEFAULT_PROVIDER;
+    // Validate that at least one image generation API key is available
+    const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    
+    if (!googleKey && !openaiKey) {
+      return {
+        toolReturn: "No image generation API keys configured. Set either GOOGLE_API_KEY (preferred) or OPENAI_API_KEY in your .env file.",
+        status: "error",
+      };
+    }
+
+    const provider = args.provider || getDefaultProvider();
 
     // Generate image based on provider
     let imageUrl: string;
@@ -128,7 +160,7 @@ export async function image_generator(
 }
 
 // ============================================================================
-// OpenAI DALL-E Generation
+// OpenAI GPT-Image Generation (New Responses API)
 // ============================================================================
 
 async function generateWithOpenAI(
@@ -141,25 +173,33 @@ async function generateWithOpenAI(
 
   const size = args.size || DEFAULT_SIZE;
   const quality = args.quality || DEFAULT_QUALITY;
-  const style = args.style || DEFAULT_STYLE;
+  
+  // Use gpt-image models via the Responses API
+  // Default to gpt-image-1.5 (latest and best), but allow override via args.model
+  const imageModel = args.model || "gpt-image-1.5";
+  
+  // GPT-5.2 or GPT-5 orchestrates the image generation
+  const mainlineModel = "gpt-5.2";
 
-  // DALL-E 3 supports 1024x1024, 1792x1024, 1024x1792
-  // DALL-E 2 supports 256x256, 512x512, 1024x1024
-  const model = size === "256x256" || size === "512x512" ? "dall-e-2" : "dall-e-3";
-
-  const response = await fetch("https://api.openai.com/v1/images/generations", {
+  const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model,
-      prompt: args.prompt,
-      n: 1,
-      size,
-      quality: model === "dall-e-3" ? quality : undefined,
-      style: model === "dall-e-3" ? style : undefined,
+      model: mainlineModel,
+      input: args.prompt,
+      tools: [
+        {
+          type: "image_generation",
+          size: size,
+          quality: quality === "hd" ? "high" : quality === "standard" ? "medium" : "auto",
+          format: "png",
+          background: "auto",
+        },
+      ],
+      tool_choice: { type: "image_generation" },
     }),
   });
 
@@ -168,22 +208,35 @@ async function generateWithOpenAI(
     throw new Error(`OpenAI API error (${response.status}): ${error}`);
   }
 
-  const data = (await response.json()) as {
-    data: Array<{ url: string; revised_prompt?: string }>;
+  const data = await response.json() as {
+    output: Array<{
+      type: string;
+      result?: string;
+      revised_prompt?: string;
+    }>;
   };
 
-  if (!data.data || data.data.length === 0) {
+  // Find the image generation call in the output
+  const imageGenCall = data.output.find(
+    (item) => item.type === "image_generation_call"
+  );
+
+  if (!imageGenCall || !imageGenCall.result) {
     throw new Error("No image returned from OpenAI");
   }
 
+  // Result is base64 encoded
+  const base64Data = imageGenCall.result;
+  const dataUrl = `data:image/png;base64,${base64Data}`;
+
   return {
-    imageUrl: data.data[0].url,
-    revisedPrompt: data.data[0].revised_prompt,
+    imageUrl: dataUrl,
+    revisedPrompt: imageGenCall.revised_prompt,
   };
 }
 
 // ============================================================================
-// Google Gemini/Imagen Generation
+// Google Gemini Generation (Nano Banana Pro)
 // ============================================================================
 
 async function generateWithGoogle(
@@ -198,8 +251,9 @@ async function generateWithGoogle(
 
   const genAI = new GoogleGenerativeAI(apiKey);
 
-  // Default to Gemini 2.0 Flash (Nano Banana) - fastest and free
-  const modelName = args.model || "gemini-2.0-flash-exp";
+  // Default to Gemini 3 Pro Image (Nano Banana Pro) - latest and best
+  // Also known as "Nano Banana Pro" - highest quality image generation model
+  const modelName = args.model || "gemini-3-pro-image-preview";
 
   const model = genAI.getGenerativeModel({
     model: modelName,
@@ -207,7 +261,7 @@ async function generateWithGoogle(
 
   const numberOfImages = args.number_of_images || 1;
 
-  // Generate image
+  // Generate image with proper responseModalities config
   const result = await model.generateContent({
     contents: [
       {
@@ -220,7 +274,8 @@ async function generateWithGoogle(
       },
     ],
     generationConfig: {
-      responseModalities: ["image"],
+      // IMPORTANT: Must specify both TEXT and IMAGE for Nano Banana
+      responseModalities: ["TEXT", "IMAGE"],
       maxOutputTokens: 8192,
     },
   });
