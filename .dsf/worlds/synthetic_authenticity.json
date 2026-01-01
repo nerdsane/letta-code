@@ -1,0 +1,167 @@
+{
+  "development": {
+    "state": "sketch",
+    "version": 1,
+    "created": "2025-12-31T21:17:00Z",
+    "last_modified": "2025-12-31T21:17:00Z",
+    "revision_notes": []
+  },
+  "year": 2035,
+  "surface": {
+    "opening_scene": "Nia reviews the authentication logs for her latest piece—every emotional input, every AI iteration, every curatorial decision documented on-chain. In a world where synthetic and human-made are often indistinguishable, provenance has become the art world's obsession. She wonders if anyone actually watches these logs, or if they just need to know they exist.",
+    "visible_elements": [
+      {
+        "id": "char_nia",
+        "type": "character",
+        "name": "The Artist",
+        "description": "A celebrated artist navigating the authentication-obsessed art world, known for radical transparency about her human-AI collaborative process.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "role": "protagonist",
+          "age_range": "mid-30s",
+          "reputation": "respected for both craft and transparency"
+        }
+      },
+      {
+        "id": "loc_studio",
+        "type": "location",
+        "name": "The Authenticated Studio",
+        "description": "A Tribeca loft where every creative act is logged—neural inputs, AI generations, human selections. The documentation is as much a part of the work as the output.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "neighborhood": "Tribeca",
+          "feature": "continuous process documentation"
+        }
+      },
+      {
+        "id": "tech_auth",
+        "type": "technology",
+        "name": "Creative Authentication Protocol",
+        "description": "System that logs every step of the creative process—emotional inputs, AI outputs, human decisions—creating an immutable record of how a piece came to be.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "storage": "distributed ledger",
+          "granularity": "every significant creative decision"
+        }
+      }
+    ],
+    "character_pov": "The Artist",
+    "revealed_in_story": {}
+  },
+  "foundation": {
+    "core_premise": "When AI can generate work indistinguishable from human-made, the art world's response is radical documentation—every creative act logged, every human decision recorded. Authenticity is no longer about whether a human made it, but about the legibility of the process. The question shifts from 'is it real?' to 'can we see how it was made?'",
+    "deep_focus_areas": {
+      "primary": ["authenticity_and_provenance", "documentation_as_art", "transparency_vs_mystique"],
+      "depth_level": {
+        "authenticity_and_provenance": "deep",
+        "documentation_as_art": "medium",
+        "transparency_vs_mystique": "deep"
+      }
+    },
+    "rules": [
+      {
+        "id": "rule_1",
+        "statement": "AI-generated work is visually/experientially indistinguishable from human-made work at the output level—only process documentation reveals the difference.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_2",
+        "statement": "Major collectors and institutions require authentication logs—unlogged work trades at significant discount or is excluded from serious venues.",
+        "scope": "art_market",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_3",
+        "statement": "Some artists resist documentation, arguing it kills mystique and reduces art to process. They operate in parallel markets.",
+        "scope": "art_world",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_4",
+        "statement": "The logs themselves have become aesthetic objects—some collectors care more about beautiful process than beautiful output.",
+        "scope": "emerging",
+        "certainty": "tentative",
+        "introduced_in_version": 1
+      }
+    ],
+    "history": {
+      "timeline": [
+        {"event": "AI image generators become indistinguishable from photography", "when": "2027", "significance": "Triggers first authenticity crisis in visual arts"},
+        {"event": "Major auction house sells AI work as human-made, scandal ensues", "when": "2028", "significance": "Destroys trust, creates demand for verification"},
+        {"event": "Creative Authentication Protocol launched", "when": "2029", "significance": "First widely-adopted standard for process documentation"},
+        {"event": "Split emerges between documented and undocumented art markets", "when": "2031", "significance": "Two parallel art worlds develop with different values"},
+        {"event": "Process-documentation itself exhibited as art", "when": "2033", "significance": "Meta-turn where the logs become the work"}
+      ]
+    },
+    "geography": {
+      "locations": [
+        {"id": "loc_tribeca", "name": "Tribeca Documented District", "description": "High-end galleries and studios where authentication is standard, collectors expect full provenance", "significance": "Commercial center of the documented art world"},
+        {"id": "loc_ridgewood", "name": "Ridgewood Underground", "description": "Queens neighborhood where artists reject documentation, creating work without logs, selling through informal networks", "significance": "Center of resistance to authentication culture"},
+        {"id": "loc_virtual", "name": "Authenticated Virtual Galleries", "description": "Online spaces where provenance is built into the viewing experience—you can see how any piece was made while experiencing it", "significance": "Where most collectors first encounter work"}
+      ]
+    },
+    "culture": {
+      "values": ["transparency as integrity", "process legibility", "human decision-making as the valuable element"],
+      "practices": ["live-streaming creative sessions", "publishing process logs alongside finished work", "collectors reviewing logs before purchase"],
+      "social_norms": ["asking about documentation practices is acceptable", "undocumented work is viewed with suspicion in mainstream venues", "some consider heavy documentation performative or pretentious"]
+    },
+    "technology": {
+      "systems": [
+        {
+          "id": "tech_cap",
+          "name": "Creative Authentication Protocol",
+          "how_it_works": "Continuous logging system that records neural interface inputs, AI system outputs, human selection/rejection decisions, and editing actions. Creates immutable record stored on distributed ledger.",
+          "limitations": "Cannot capture intention or meaning—only actions. Skilled forgers can generate plausible fake logs. Some argue it documents the wrong things."
+        },
+        {
+          "id": "tech_neural_input",
+          "name": "Logged Neural Interface",
+          "how_it_works": "Standard emotional-reading interface with authentication layer that timestamps and hashes all inputs, proving a human was emotionally engaged during creation.",
+          "limitations": "Proves human involvement but not human creativity—you could be bored while technically creating."
+        },
+        {
+          "id": "tech_viewer",
+          "name": "Provenance Viewer",
+          "how_it_works": "Interface for experiencing art that includes optional overlay showing the authentication log—viewers can see exactly how each element was created while experiencing the piece.",
+          "limitations": "Some find the overlay distracting. Others find it more interesting than the art itself."
+        }
+      ]
+    },
+    "working_notes": {
+      "tentative_ideas": [
+        "A collector who only cares about logs, barely looks at the actual art",
+        "An artist who games the system—creates authentic-looking logs for AI-generated work",
+        "Nia's ambivalence about documentation as performance vs. genuine transparency"
+      ],
+      "questions": [
+        "Does radical transparency enhance or diminish the art experience?",
+        "What's lost when mystique disappears?",
+        "Is documented process just another layer of aesthetic choice?"
+      ],
+      "contradictions_to_resolve": []
+    }
+  },
+  "constraints": [
+    {"id": "const_1", "description": "AI output is indistinguishable from human output at the perceptual level", "type": "technological", "strictness": "absolute"},
+    {"id": "const_2", "description": "Authentication logs can prove human involvement but not human creativity or intention", "type": "technological", "strictness": "absolute"},
+    {"id": "const_3", "description": "The art world is divided on documentation—neither side has won", "type": "social", "strictness": "strong"},
+    {"id": "const_4", "description": "Forgery of logs is possible with effort—no system is perfectly secure", "type": "technological", "strictness": "strong"}
+  ],
+  "changelog": [],
+  "asset": {
+    "id": "cover",
+    "type": "image",
+    "path": "worlds/synthetic_authenticity/cover.png",
+    "description": "Cover image: Authentication logs and documented creative process"
+  }
+}

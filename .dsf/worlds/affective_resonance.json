@@ -1,0 +1,199 @@
+{
+  "development": {
+    "state": "sketch",
+    "version": 1,
+    "created": "2026-01-01T19:20:00Z",
+    "last_modified": "2026-01-01T19:50:24.344Z",
+    "revision_notes": [
+      "Initial sketch based on user preferences: major art hub, collaborative AI focus, background texture conflict"
+    ]
+  },
+  "year": 2035,
+  "surface": {
+    "opening_scene": "A converted warehouse in a gentrifying Brooklyn neighborhood, morning light through industrial windows, the protagonist preparing for a collaborative session with her AI system.",
+    "visible_elements": [
+      {
+        "id": "char_protagonist",
+        "type": "character",
+        "name": "The Artist",
+        "description": "A celebrated artist in her late 30s, known for pioneering affective-AI collaborative work. Employs a small team. Commands serious commissions.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "role": "protagonist",
+          "stance": "pro-AI as extension not replacement"
+        }
+      },
+      {
+        "id": "elem_affective_system",
+        "type": "technology",
+        "name": "Affective Resonance System",
+        "description": "Non-invasive EEG headset coupled with AI world-model. Reads emotional/intentional states (not thoughts). AI has developed aesthetic preferences from training.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {}
+      },
+      {
+        "id": "loc_studio",
+        "type": "location",
+        "name": "The Studio",
+        "description": "Converted warehouse in Brooklyn. Mix of traditional materials (canvas, pigments) and interface equipment. Team workstations. Large projection walls.",
+        "detail_level": "medium",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {}
+      }
+    ],
+    "character_pov": "The Artist",
+    "revealed_in_story": {}
+  },
+  "foundation": {
+    "core_premise": "Neural interfaces can read emotional and intentional states (but not thoughts or images). AI world-models trained on art history have developed emergent aesthetic preferences. Artists collaborate with AI systems that genuinely disagree, suggest, and push back creatively.",
+    "deep_focus_areas": {
+      "primary": [
+        "affective_computing",
+        "ai_aesthetic_preferences",
+        "creative_collaboration"
+      ],
+      "depth_level": {
+        "affective_computing": "deep",
+        "ai_aesthetic_preferences": "deep",
+        "creative_collaboration": "medium"
+      }
+    },
+    "rules": [
+      {
+        "id": "rule_1",
+        "statement": "Neural interfaces read emotional valence, arousal, and intentional states through EEG patterns. They cannot read specific thoughts, memories, or mental images.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_2",
+        "statement": "AI world-models develop aesthetic preferences through training, but these preferences are alien to human aesthetics - they find patterns humans don't consciously perceive.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_3",
+        "statement": "Creative sessions require emotional authenticity - the system detects performed emotions vs genuine ones. Artists must actually feel what they're channeling.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_4",
+        "statement": "The AI can refuse creative directions it finds aesthetically incoherent, creating genuine creative tension and negotiation.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      }
+    ],
+    "history": {
+      "timeline": [
+        {
+          "event": "Consumer EEG headsets reach sufficient fidelity for reliable emotional state classification",
+          "when": "2027",
+          "significance": "Made affective computing accessible beyond research labs"
+        },
+        {
+          "event": "First AI art systems with measurable aesthetic preferences demonstrated",
+          "when": "2028",
+          "significance": "Shifted discourse from 'AI as tool' to 'AI as collaborator'"
+        },
+        {
+          "event": "Major galleries begin showing 'affective collaborative' works",
+          "when": "2030",
+          "significance": "Legitimized the genre, also sparked traditionalist backlash"
+        },
+        {
+          "event": "The protagonist's first major commission sells at auction",
+          "when": "2032",
+          "significance": "Established her reputation in the field"
+        }
+      ]
+    },
+    "geography": {
+      "locations": [
+        {
+          "id": "loc_brooklyn_arts",
+          "name": "Brooklyn Arts District",
+          "description": "Former industrial zone, now artist studios and galleries. Mix of traditional and tech-forward spaces.",
+          "significance": "Where the protagonist built her practice"
+        }
+      ]
+    },
+    "culture": {
+      "values": [
+        "emotional authenticity",
+        "creative dialogue",
+        "artistic integrity"
+      ],
+      "practices": [
+        "affective sessions",
+        "AI-artist negotiations",
+        "emotional preparation rituals"
+      ]
+    },
+    "technology": {
+      "systems": [
+        {
+          "id": "tech_eeg_headset",
+          "name": "Affective Interface Headset",
+          "how_it_works": "Non-invasive EEG with 64 channels. ML models classify emotional states in real-time. 200ms latency. Requires calibration session.",
+          "limitations": "Cannot read thoughts or images. Requires stillness during calibration. Emotional states must be genuine - performed emotions read as incongruent."
+        },
+        {
+          "id": "tech_world_model",
+          "name": "Aesthetic World Model",
+          "how_it_works": "Trained on 50M artworks plus emotional response data. Develops emergent preferences through reinforcement from successful collaborations. Can generate, critique, and suggest.",
+          "limitations": "Preferences are alien - finds patterns humans miss but also misses what humans find obvious. Requires ongoing calibration with specific artist."
+        }
+      ]
+    },
+    "working_notes": {
+      "tentative_ideas": [
+        "Maybe the AI's alien aesthetics reveal something about human perception we didn't know?"
+      ],
+      "questions": [
+        "How do artists handle creative blocks when the system detects their emotional state?",
+        "What happens when AI and artist fundamentally disagree?"
+      ],
+      "contradictions_to_resolve": []
+    }
+  },
+  "constraints": [
+    {
+      "id": "const_1",
+      "description": "Neural interfaces cannot read thoughts or mental images - only emotional/intentional states",
+      "type": "physical",
+      "strictness": "absolute"
+    },
+    {
+      "id": "const_2",
+      "description": "AI aesthetic preferences are emergent and alien - not human aesthetics in digital form",
+      "type": "logical",
+      "strictness": "absolute"
+    },
+    {
+      "id": "const_3",
+      "description": "Emotional authenticity required - system detects performed vs genuine emotion",
+      "type": "physical",
+      "strictness": "absolute"
+    }
+  ],
+  "changelog": [
+    {
+      "version": 1,
+      "timestamp": "2026-01-01T19:50:24.344Z",
+      "changes": [
+        "Initial sketch based on user preferences: major art hub, collaborative AI focus, background texture conflict"
+      ],
+      "reason": "Initial sketch based on user preferences: major art hub, collaborative AI focus, background texture conflict"
+    }
+  ]
+}

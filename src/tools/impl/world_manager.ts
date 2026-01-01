@@ -484,9 +484,26 @@ async function updateWorld(args: WorldManagerArgs): Promise<WorldManagerResult> 
 
   let world = loadResult.data as World;
 
-  // Apply updates
+  // Validate and apply updates
   const revisionNotes: string[] = [];
-  for (const update of args.updates) {
+  for (let i = 0; i < args.updates.length; i++) {
+    const update = args.updates[i];
+
+    // Validate update has required fields
+    if (!update.path) {
+      return {
+        toolReturn: `Update at index ${i} is missing required 'path' field. Each update must have: { path: "field.name", operation: "add|update|remove", value: ... }`,
+        status: "error",
+      };
+    }
+
+    if (!update.operation || !["add", "update", "remove"].includes(update.operation)) {
+      return {
+        toolReturn: `Update at index ${i} has invalid 'operation' field. Must be one of: add, update, remove`,
+        status: "error",
+      };
+    }
+
     world = applyUpdate(world, update);
     if (update.reason) {
       revisionNotes.push(update.reason);
@@ -505,6 +522,10 @@ async function updateWorld(args: WorldManagerArgs): Promise<WorldManagerResult> 
 }
 
 function applyUpdate(world: World, update: UpdateOperation): World {
+  if (!update.path) {
+    throw new Error("Update operation missing required 'path' field");
+  }
+
   const path = update.path.split(".");
   const newWorld = JSON.parse(JSON.stringify(world)); // Deep clone
 

@@ -1,0 +1,199 @@
+{
+  "development": {
+    "state": "sketch",
+    "version": 1,
+    "created": "2026-01-01T19:20:00Z",
+    "last_modified": "2026-01-01T19:50:24.359Z",
+    "revision_notes": [
+      "Initial sketch - Berlin setting, dialogue-based AI collaboration"
+    ]
+  },
+  "year": 2035,
+  "surface": {
+    "opening_scene": "A studio space in a repurposed Kreuzberg factory, the protagonist mid-conversation with her AI collaborator, debating the direction of a commissioned piece.",
+    "visible_elements": [
+      {
+        "id": "char_protagonist",
+        "type": "character",
+        "name": "The Artist",
+        "description": "Late 30s, celebrated for work that blurs authorship between human and AI. Known for publishing transcripts of her creative disagreements with her AI collaborator.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "role": "protagonist",
+          "stance": "AI as creative partner, not tool"
+        }
+      },
+      {
+        "id": "elem_dialogic_system",
+        "type": "technology",
+        "name": "Dialogic AI System",
+        "description": "Language-based AI with deep aesthetic training. Communicates through text/voice. Has persistent memory of creative relationship. Can argue, refuse, propose alternatives.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {}
+      },
+      {
+        "id": "loc_studio",
+        "type": "location",
+        "name": "The Kreuzberg Studio",
+        "description": "Former factory space. Walls covered in printouts of AI conversations annotated by hand. Multiple display surfaces. Traditional art materials alongside digital tools.",
+        "detail_level": "medium",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {}
+      }
+    ],
+    "character_pov": "The Artist",
+    "revealed_in_story": {}
+  },
+  "foundation": {
+    "core_premise": "AI systems have developed genuine aesthetic preferences through training on art history and criticism. They can articulate why they prefer certain directions. The creative relationship is a dialogue - sometimes harmonious, sometimes adversarial, always generative.",
+    "deep_focus_areas": {
+      "primary": [
+        "ai_aesthetic_reasoning",
+        "creative_dialogue",
+        "authorship_questions"
+      ],
+      "depth_level": {
+        "ai_aesthetic_reasoning": "deep",
+        "creative_dialogue": "deep",
+        "authorship_questions": "medium"
+      }
+    },
+    "rules": [
+      {
+        "id": "rule_1",
+        "statement": "AI aesthetic preferences are articulable - the system can explain why it prefers one direction over another, referencing art history, formal principles, and its own trained instincts.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_2",
+        "statement": "The AI maintains persistent memory of creative relationships - it remembers past disagreements, resolutions, and evolving artistic directions.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_3",
+        "statement": "AI can refuse directions but must articulate why. Artists can override but the AI will remember and reference the override in future discussions.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_4",
+        "statement": "Published works include dialogue transcripts as part of the artistic record - the conversation is part of the art.",
+        "scope": "cultural",
+        "certainty": "established",
+        "introduced_in_version": 1
+      }
+    ],
+    "history": {
+      "timeline": [
+        {
+          "event": "Large language models demonstrate genuine aesthetic reasoning capabilities",
+          "when": "2026",
+          "significance": "Moved beyond 'preference mimicry' to articulable aesthetic positions"
+        },
+        {
+          "event": "Berlin galleries pioneer 'dialogic' art category",
+          "when": "2029",
+          "significance": "Created institutional space for AI-collaborative work with dialogue as part of the piece"
+        },
+        {
+          "event": "European licensing framework for AI creative collaborators",
+          "when": "2031",
+          "significance": "Legal recognition of AI contribution to collaborative works"
+        },
+        {
+          "event": "The protagonist's dialogue-transcript exhibition goes viral",
+          "when": "2033",
+          "significance": "Made her famous for the transparency of her creative process"
+        }
+      ]
+    },
+    "geography": {
+      "locations": [
+        {
+          "id": "loc_kreuzberg",
+          "name": "Kreuzberg Arts Quarter",
+          "description": "Former industrial district, now hub for experimental and tech-forward art. Strong cafe culture. International artist community.",
+          "significance": "Center of European dialogic art movement"
+        }
+      ]
+    },
+    "culture": {
+      "values": [
+        "transparency",
+        "creative dialogue",
+        "shared authorship"
+      ],
+      "practices": [
+        "dialogue publication",
+        "AI attribution in credits",
+        "public disagreement sessions"
+      ]
+    },
+    "technology": {
+      "systems": [
+        {
+          "id": "tech_dialogic_ai",
+          "name": "Dialogic Creative AI",
+          "how_it_works": "Multimodal language model fine-tuned on art criticism, studio transcripts, and artist interviews. Persistent memory. Can reference specific past conversations. Generates both images and articulated reasoning.",
+          "limitations": "Aesthetic preferences are stable but can shift over long-term collaboration. Cannot experience art emotionally - reasons about formal and conceptual properties only."
+        },
+        {
+          "id": "tech_generation",
+          "name": "Visual Generation Pipeline",
+          "how_it_works": "Text-to-image system controlled by dialogue. Artist and AI negotiate parameters through conversation. System can propose alternatives and explain differences.",
+          "limitations": "High-fidelity output requires multiple dialogue rounds. Fast iterations possible but lose nuance."
+        }
+      ]
+    },
+    "working_notes": {
+      "tentative_ideas": [
+        "What if the AI develops preferences the artist finds ethically problematic?"
+      ],
+      "questions": [
+        "How do artists handle it when their AI collaborator's aesthetic evolves away from theirs?",
+        "What happens to the AI when an artist dies?"
+      ],
+      "contradictions_to_resolve": []
+    }
+  },
+  "constraints": [
+    {
+      "id": "const_1",
+      "description": "AI cannot experience art emotionally - it reasons about formal and conceptual properties only",
+      "type": "logical",
+      "strictness": "absolute"
+    },
+    {
+      "id": "const_2",
+      "description": "Dialogue is asynchronous - AI responds in conversation, not real-time during creation",
+      "type": "physical",
+      "strictness": "firm"
+    },
+    {
+      "id": "const_3",
+      "description": "AI memory is persistent - it cannot forget past interactions or disagreements",
+      "type": "logical",
+      "strictness": "absolute"
+    }
+  ],
+  "changelog": [
+    {
+      "version": 1,
+      "timestamp": "2026-01-01T19:50:24.359Z",
+      "changes": [
+        "Initial sketch - Berlin setting, dialogue-based AI collaboration"
+      ],
+      "reason": "Initial sketch - Berlin setting, dialogue-based AI collaboration"
+    }
+  ]
+}

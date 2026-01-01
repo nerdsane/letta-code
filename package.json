@@ -25,6 +25,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@letta-ai/letta-client": "1.6.1",
+    "@radix-ui/react-dialog": "^1.1.15",
     "glob": "^13.0.0",
     "ink-link": "^5.0.0",
     "open": "^10.2.0",
@@ -54,7 +55,8 @@
     "typecheck": "tsc --noEmit",
     "check": "bun run scripts/check.js",
     "dev": "bun --loader:.md=text --loader:.mdx=text --loader:.txt=text run src/index.ts",
-    "gallery": "bun run src/gallery/server.ts",
+    "canvas": "bun run src/canvas/server.ts",
+    "agent-bus": "bun run src/agent-bus/server.ts",
     "build": "node scripts/postinstall-patches.js && bun run build.js",
     "prepare": "bun run build",
     "postinstall": "node scripts/postinstall-patches.js"

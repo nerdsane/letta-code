@@ -1,7 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type { World, Story, StorySegment } from "../types/dsf";
+import type { ComponentSpec } from "./components/types";
 import "./styles.css";
+import { DynamicRenderer } from "./components/DynamicRenderer";
+import { MountPoint } from "./components/MountPoint";
+import { AgentBusClient } from "./agentBusClient";
 
 // ============================================================================
 // ASCII Art Logo
@@ -24,7 +28,7 @@ const ASCII_LOGO = `██████╗ ███████╗████�
 // Types
 // ============================================================================
 
-type View = "gallery" | "world" | "story";
+type View = "canvas" | "world" | "story";
 
 interface AppState {
   view: View;
@@ -34,6 +38,39 @@ interface AppState {
   selectedStory: Story | null;
   loading: boolean;
   error: string | null;
+  dynamicUI: ComponentSpec | null; // Temporary test UI (will be removed)
+  agentUI: Map<string, { componentId: string; spec: ComponentSpec }>; // Agent-created UI by target
+  agentBusConnected: boolean;
+}
+
+// ============================================================================
+// Polling Utility
+// ============================================================================
+
+async function waitForCondition(
+  checkFn: () => Promise<boolean>,
+  options: {
+    timeoutMs?: number;
+    intervalMs?: number;
+    onCheck?: (attempt: number) => void;
+  } = {}
+): Promise<boolean> {
+  const { timeoutMs = 30000, intervalMs = 2000, onCheck } = options;
+  const startTime = Date.now();
+  let attempt = 0;
+
+  while (Date.now() - startTime < timeoutMs) {
+    attempt++;
+    if (onCheck) onCheck(attempt);
+
+    if (await checkFn()) {
+      return true;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+
+  return false;
 }
 
 // ============================================================================
@@ -42,14 +79,19 @@ interface AppState {
 
 function App() {
   const [state, setState] = useState<AppState>({
-    view: "gallery",
+    view: "canvas",
     worlds: [],
     stories: [],
     selectedWorld: null,
     selectedStory: null,
     loading: true,
     error: null,
+    dynamicUI: null,
+    agentUI: new Map(),
+    agentBusConnected: false,
   });
+
+  const agentBusRef = useRef<AgentBusClient | null>(null);
 
   // WebSocket connection for live updates
   useEffect(() => {
@@ -130,18 +172,144 @@ function App() {
     if (state.view === "story") {
       setState((s) => ({ ...s, view: "world" }));
     } else if (state.view === "world") {
-      setState((s) => ({ ...s, view: "gallery", selectedWorld: null }));
+      setState((s) => ({ ...s, view: "canvas", selectedWorld: null }));
     }
   }
 
   function goHome() {
     setState((s) => ({
       ...s,
-      view: "gallery",
+      view: "canvas",
       selectedWorld: null,
       selectedStory: null,
     }));
   }
+
+  function handleDynamicUIInteraction(
+    componentId: string,
+    interactionType: string,
+    data: any,
+    target?: string
+  ) {
+    console.log('[Dynamic UI] Interaction:', {
+      componentId,
+      interactionType,
+      data,
+      target
+    });
+
+    // Send interaction to agent via Agent Bus
+    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      agentBusRef.current.sendInteraction(componentId, interactionType, data, target);
+    } else {
+      console.warn('[Canvas] Agent Bus not connected, interaction not sent');
+    }
+  }
+
+  // Initialize Agent Bus connection
+  useEffect(() => {
+    const agentBus = new AgentBusClient({
+      onCanvasUI: (componentId, target, action, spec) => {
+        setState((s) => {
+          const newAgentUI = new Map(s.agentUI);
+
+          if (action === 'remove') {
+            newAgentUI.delete(target);
+          } else if (spec) {
+            newAgentUI.set(target, { componentId, spec });
+          }
+
+          return { ...s, agentUI: newAgentUI };
+        });
+      },
+      onConnect: (clientId) => {
+        console.log('[Canvas] Connected to Agent Bus:', clientId);
+        setState((s) => ({ ...s, agentBusConnected: true }));
+      },
+      onDisconnect: () => {
+        console.log('[Canvas] Disconnected from Agent Bus');
+        setState((s) => ({ ...s, agentBusConnected: false }));
+      },
+      onError: (error) => {
+        console.error('[Canvas] Agent Bus error:', error);
+      },
+    });
+
+    agentBus.connect();
+    agentBusRef.current = agentBus;
+
+    return () => {
+      agentBus.disconnect();
+    };
+  }, []);
+
+  // Test: Load a sample dynamic UI on mount (temporary)
+  useEffect(() => {
+    const testUI: ComponentSpec = {
+      type: 'Dialog',
+      id: 'test-dialog',
+      props: {
+        title: 'Agent-Controlled Dialog',
+        description: 'This dialog was created by specifying JSON!',
+        trigger: {
+          type: 'Button',
+          id: 'trigger-btn',
+          props: {
+            label: '🤖 Agent UI Test',
+            variant: 'primary'
+          }
+        }
+      },
+      children: {
+        type: 'Stack',
+        props: { spacing: 16 },
+        children: [
+          {
+            type: 'Text',
+            props: {
+              content: 'This entire UI was created from a JSON specification:',
+              size: 'md',
+              color: 'var(--text-primary)'
+            }
+          },
+          {
+            type: 'Text',
+            props: {
+              content: '• Dialog with neon styling ✨',
+              size: 'sm',
+              color: 'var(--text-secondary)'
+            }
+          },
+          {
+            type: 'Text',
+            props: {
+              content: '• Stack layout with spacing',
+              size: 'sm',
+              color: 'var(--text-secondary)'
+            }
+          },
+          {
+            type: 'Text',
+            props: {
+              content: '• Multiple text components',
+              size: 'sm',
+              color: 'var(--text-secondary)'
+            }
+          },
+          {
+            type: 'Text',
+            props: {
+              content: 'Next: Agent Bus → canvas_ui tool → Agent control! 🚀',
+              size: 'md',
+              color: 'var(--neon-cyan)'
+            }
+          }
+        ]
+      }
+    };
+
+    setState(s => ({ ...s, dynamicUI: testUI }));
+  }, []);
 
   if (state.loading) {
     return <LoadingScreen />;
@@ -161,9 +329,36 @@ function App() {
         onHome={goHome}
       />
 
+      {/* Test dynamic UI (temporary) */}
+      {state.dynamicUI && (
+        <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 2000 }}>
+          <DynamicRenderer
+            spec={state.dynamicUI}
+            onInteraction={handleDynamicUIInteraction}
+          />
+        </div>
+      )}
+
+      {/* Agent Bus UI components */}
+      {Array.from(state.agentUI.entries()).map(([target, { componentId, spec }]) => {
+        // For now, render all components as floating (TODO: add proper mount points)
+        return (
+          <div
+            key={componentId}
+            data-target={target}
+            style={{ position: 'fixed', bottom: '80px', right: '20px', zIndex: 2001 }}
+          >
+            <DynamicRenderer
+              spec={spec}
+              onInteraction={handleDynamicUIInteraction}
+            />
+          </div>
+        );
+      })}
+
       <main className="main-content">
-        {state.view === "gallery" && (
-          <GalleryView
+        {state.view === "canvas" && (
+          <CanvasView
             worlds={state.worlds}
             stories={state.stories}
             onSelectWorld={selectWorld}
@@ -178,11 +373,17 @@ function App() {
               (s) => s.world_checkpoint === getWorldCheckpointName(state.selectedWorld!)
             )}
             onSelectStory={selectStory}
+            agentUI={state.agentUI}
+            onInteraction={handleDynamicUIInteraction}
           />
         )}
 
         {state.view === "story" && state.selectedStory && (
-          <StoryView story={state.selectedStory} />
+          <StoryView
+            story={state.selectedStory}
+            agentUI={state.agentUI}
+            onInteraction={handleDynamicUIInteraction}
+          />
         )}
       </main>
     </div>
@@ -225,7 +426,7 @@ function Header({
 ╚══════╝ ╚═════╝╚═╝      ╚═╝     ╚═╝`}
           </pre>
         </div>
-        {view !== "gallery" && (
+        {view !== "canvas" && (
           <button className="back-button" onClick={onBack}>
             ← Back
           </button>
@@ -234,7 +435,7 @@ function Header({
 
       <nav className="breadcrumb">
         <span className="breadcrumb-item" onClick={onHome}>
-          Gallery
+          Canvas
         </span>
         {selectedWorld && (
           <>
@@ -256,10 +457,10 @@ function Header({
 }
 
 // ============================================================================
-// Gallery View
+// Canvas View
 // ============================================================================
 
-function GalleryView({
+function CanvasView({
   worlds,
   stories,
   onSelectWorld,
@@ -273,7 +474,7 @@ function GalleryView({
   const activeStories = stories.filter((s) => s.metadata.status === "active");
 
   return (
-    <div className="gallery-view">
+    <div className="canvas-view">
       <section className="section">
         <h2 className="section-title">Worlds ({worlds.length})</h2>
         <div className="worlds-grid">
@@ -319,54 +520,155 @@ function WorldView({
   world,
   stories,
   onSelectStory,
+  agentUI,
+  onInteraction,
 }: {
   world: World;
   stories: Story[];
   onSelectStory: (story: Story) => void;
+  agentUI: Map<string, { componentId: string; spec: ComponentSpec }>;
+  onInteraction: (componentId: string, interactionType: string, data: any, target?: string) => void;
 }) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [isWorking, setIsWorking] = useState(false);
+
+  // Helper to get components for a specific target
+  const getComponentsForTarget = (target: string) => {
+    const components = [];
+    for (const [key, value] of agentUI.entries()) {
+      if (key === target) {
+        components.push(value);
+      }
+    }
+    return components;
+  };
 
   async function handleNewStory() {
+    const initialStoryCount = stories.length;
+
     try {
+      setIsWorking(true);
+      setActionMessage("Asking agent to create story...");
+
       const checkpoint = getWorldCheckpointName(world);
       const response = await fetch(`/api/world/${checkpoint}/new-story`, {
         method: "POST",
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorText;
+        } catch {
+          errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json() as { message?: string; context_file?: string };
-      setActionMessage(result.message || "Context created! Run letta-code to write a story in this world.");
+      const result = await response.json() as { status: string; message?: string };
+      setActionMessage("Agent is creating story... checking for updates...");
 
-      setTimeout(() => setActionMessage(null), 5000);
+      // POLL for new story
+      const success = await waitForCondition(
+        async () => {
+          try {
+            const storiesRes = await fetch(`/api/stories?world=${checkpoint}`);
+            const updatedStories = (await storiesRes.json()) as Story[];
+            return updatedStories.length > initialStoryCount;
+          } catch {
+            return false;
+          }
+        },
+        {
+          timeoutMs: 60000,
+          intervalMs: 2000,
+          onCheck: (attempt) => {
+            setActionMessage(`Agent is creating story... (checking ${attempt})`);
+          },
+        }
+      );
+
+      if (success) {
+        setActionMessage("✓ New story created! Refreshing...");
+        window.location.reload(); // Reload page to show new story
+      } else {
+        setActionMessage("⚠ Timeout waiting for story. Try refreshing page.");
+        setTimeout(() => setActionMessage(null), 5000);
+      }
     } catch (error) {
-      console.error("Error creating story context:", error);
-      setActionMessage(`Error: ${error instanceof Error ? error.message : "Failed to create context"}`);
+      console.error("Error creating story:", error);
+      const errorMsg = error instanceof Error ? error.message : "Failed to create story";
+      setActionMessage(`Error: ${errorMsg}`);
       setTimeout(() => setActionMessage(null), 5000);
+    } finally {
+      setIsWorking(false);
     }
   }
 
   async function handleDevelopWorld() {
+    const initialVersion = world.development.version;
+
     try {
+      setIsWorking(true);
+      setActionMessage("Asking agent to develop world...");
+
       const checkpoint = getWorldCheckpointName(world);
       const response = await fetch(`/api/world/${checkpoint}/develop`, {
         method: "POST",
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorText;
+        } catch {
+          errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json() as { message?: string; context_file?: string };
-      setActionMessage(result.message || "Context created! Run letta-code to develop this world further.");
+      const result = await response.json() as { status: string; message?: string };
+      setActionMessage("Agent is developing world... checking for updates...");
 
-      setTimeout(() => setActionMessage(null), 5000);
+      // POLL for world version change
+      const success = await waitForCondition(
+        async () => {
+          try {
+            const worldsRes = await fetch("/api/worlds");
+            const worlds = (await worldsRes.json()) as World[];
+            const updatedWorld = worlds.find((w) => getWorldCheckpointName(w) === checkpoint);
+            return (updatedWorld?.development.version || 0) > initialVersion;
+          } catch {
+            return false;
+          }
+        },
+        {
+          timeoutMs: 60000,
+          intervalMs: 2000,
+          onCheck: (attempt) => {
+            setActionMessage(`Agent is developing world... (checking ${attempt})`);
+          },
+        }
+      );
+
+      if (success) {
+        setActionMessage("✓ World updated! Refreshing...");
+        window.location.reload(); // Reload page to show updated world
+      } else {
+        setActionMessage("⚠ Timeout waiting for update. Try refreshing page.");
+        setTimeout(() => setActionMessage(null), 5000);
+      }
     } catch (error) {
-      console.error("Error creating development context:", error);
-      setActionMessage(`Error: ${error instanceof Error ? error.message : "Failed to create context"}`);
+      console.error("Error developing world:", error);
+      const errorMsg = error instanceof Error ? error.message : "Failed to develop world";
+      setActionMessage(`Error: ${errorMsg}`);
       setTimeout(() => setActionMessage(null), 5000);
+    } finally {
+      setIsWorking(false);
     }
   }
 
@@ -381,11 +683,26 @@ function WorldView({
         <p className="world-premise">{world.foundation.core_premise}</p>
       </div>
 
+      {/* Agent UI: World Header */}
+      <MountPoint
+        target="world_header"
+        components={getComponentsForTarget("world_header")}
+        onInteraction={onInteraction}
+      />
+
       <div className="world-actions">
-        <button className="action-button action-button-primary" onClick={handleNewStory}>
+        <button
+          className="action-button action-button-primary"
+          onClick={handleNewStory}
+          disabled={isWorking}
+        >
           Write Story in This World
         </button>
-        <button className="action-button action-button-secondary" onClick={handleDevelopWorld}>
+        <button
+          className="action-button action-button-secondary"
+          onClick={handleDevelopWorld}
+          disabled={isWorking}
+        >
           Develop World Further
         </button>
       </div>
@@ -395,6 +712,13 @@ function WorldView({
           {actionMessage}
         </div>
       )}
+
+      {/* Agent UI: World Overview */}
+      <MountPoint
+        target="world_overview"
+        components={getComponentsForTarget("world_overview")}
+        onInteraction={onInteraction}
+      />
 
       <div className="world-content">
         <section className="world-section">
@@ -448,16 +772,121 @@ function WorldView({
 }
 
 // ============================================================================
+// Markdown Renderer Component
+// ============================================================================
+
+function MarkdownContent({
+  content,
+  assets,
+}: {
+  content: string;
+  assets?: StoryAsset[];
+}) {
+  // Simple markdown parser for images: ![description](asset_id)
+  const renderMarkdown = (text: string) => {
+    const parts: (string | React.ReactElement)[] = [];
+    let lastIndex = 0;
+
+    // Match ![...](asset_id) or ![](asset_id)
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    let match;
+
+    while ((match = imageRegex.exec(text)) !== null) {
+      // Add text before the image
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+
+      const altText = match[1] || "";
+      const assetId = match[2];
+
+      // Find the asset
+      const asset = assets?.find((a) => a.id === assetId || a.path.includes(assetId));
+
+      if (asset) {
+        parts.push(
+          <img
+            key={`${assetId}-${match.index}`}
+            src={`/assets/${asset.path}`}
+            alt={altText || asset.description || "Story image"}
+            className="inline-image"
+            style={{ maxWidth: "100%", height: "auto", margin: "1rem 0" }}
+          />
+        );
+      } else {
+        // Asset not found, show placeholder
+        parts.push(
+          <span key={`missing-${assetId}-${match.index}`} className="missing-image">
+            [Image: {altText || assetId}]
+          </span>
+        );
+      }
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : [text];
+  };
+
+  // Split by newlines to preserve paragraphs
+  const paragraphs = content.split("\n\n");
+
+  return (
+    <div className="markdown-content">
+      {paragraphs.map((para, i) => {
+        const rendered = renderMarkdown(para);
+        return (
+          <p key={i} style={{ marginBottom: "1rem", whiteSpace: "pre-wrap" }}>
+            {rendered}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================================
 // Story View
 // ============================================================================
 
-function StoryView({ story }: { story: Story }) {
+function StoryView({
+  story,
+  agentUI,
+  onInteraction,
+}: {
+  story: Story;
+  agentUI: Map<string, { componentId: string; spec: ComponentSpec }>;
+  onInteraction: (componentId: string, interactionType: string, data: any, target?: string) => void;
+}) {
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(story.segments.length - 1);
+  const [continuingStory, setContinuingStory] = useState(false);
+  const [continueMessage, setContinueMessage] = useState<string | null>(null);
 
   const segment = story.segments[activeSegmentIndex];
 
+  // Helper to get components for a specific target
+  const getComponentsForTarget = (target: string) => {
+    const components = [];
+    for (const [key, value] of agentUI.entries()) {
+      if (key === target) {
+        components.push(value);
+      }
+    }
+    return components;
+  };
+
   async function handleContinue() {
+    const initialSegmentCount = story.segments.length;
+
     try {
+      setContinuingStory(true);
+      setContinueMessage("Asking agent to continue story...");
+
       const response = await fetch("/api/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -468,24 +897,61 @@ function StoryView({ story }: { story: Story }) {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        const errorText = await response.text();
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorText;
+        } catch {
+          errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json() as {
+        status: string;
         message?: string;
-        next_steps?: string[];
-        context_file?: string;
+        story_id?: string;
+        agent_response?: any;
       };
 
-      const steps = result.next_steps?.join('\n') || '';
-      alert(
-        `✓ Story continuation context created!\n\n` +
-        `${result.message || ''}\n\n` +
-        `Next steps:\n${steps}\n\n` +
-        `Context file: ${result.context_file || ''}`
+      setContinueMessage("Agent is writing... checking for updates...");
+
+      // POLL for new segment
+      const success = await waitForCondition(
+        async () => {
+          try {
+            const storiesRes = await fetch("/api/stories");
+            const stories = (await storiesRes.json()) as Story[];
+            const updatedStory = stories.find((s) => s.id === story.id);
+            return (updatedStory?.segments.length || 0) > initialSegmentCount;
+          } catch {
+            return false;
+          }
+        },
+        {
+          timeoutMs: 60000, // 60 seconds
+          intervalMs: 2000, // Check every 2 seconds
+          onCheck: (attempt) => {
+            setContinueMessage(`Agent is writing... (checking ${attempt})`);
+          },
+        }
       );
+
+      if (success) {
+        setContinueMessage("✓ New segment added! Refreshing...");
+        window.location.reload(); // Reload page to show new segment
+      } else {
+        setContinueMessage("⚠ Timeout waiting for segment. Try refreshing page.");
+        setTimeout(() => {
+          setContinuingStory(false);
+          setContinueMessage(null);
+        }, 5000);
+      }
     } catch (error) {
-      alert(`Failed to create continuation context:\n\n${error}`);
+      setContinuingStory(false);
+      setContinueMessage(null);
+      alert(`Failed to continue story:\n\n${error instanceof Error ? error.message : error}`);
     }
   }
 
@@ -500,6 +966,13 @@ function StoryView({ story }: { story: Story }) {
           </span>
         </div>
       </div>
+
+      {/* Agent UI: Story Header */}
+      <MountPoint
+        target="story_header"
+        components={getComponentsForTarget("story_header")}
+        onInteraction={onInteraction}
+      />
 
       {story.segments.length === 0 ? (
         <EmptyState message="No segments yet" />
@@ -543,7 +1016,23 @@ function StoryView({ story }: { story: Story }) {
                 </div>
               )}
 
-              <div className="segment-text">{segment.content}</div>
+              {/* Agent UI: Before Segment Text */}
+              <MountPoint
+                target={`story_segment_${segment.id}_before`}
+                components={getComponentsForTarget(`story_segment_${segment.id}_before`)}
+                onInteraction={onInteraction}
+              />
+
+              <div className="segment-text">
+                <MarkdownContent content={segment.content} assets={segment.assets} />
+              </div>
+
+              {/* Agent UI: After Segment Text */}
+              <MountPoint
+                target={`story_segment_${segment.id}`}
+                components={getComponentsForTarget(`story_segment_${segment.id}`)}
+                onInteraction={onInteraction}
+              />
 
               {segment.world_evolution && (
                 <div className="world-evolution">
@@ -585,15 +1074,31 @@ function StoryView({ story }: { story: Story }) {
 
               {activeSegmentIndex === story.segments.length - 1 && (
                 <div className="story-actions">
-                  <button className="continue-button" onClick={handleContinue}>
-                    Continue Story →
+                  <button
+                    className="continue-button"
+                    onClick={handleContinue}
+                    disabled={continuingStory}
+                  >
+                    {continuingStory ? "Agent is writing..." : "Continue Story →"}
                   </button>
+                  {continueMessage && (
+                    <div className="continue-message">
+                      {continueMessage}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
         </>
       )}
+
+      {/* Agent UI: Story Footer */}
+      <MountPoint
+        target="story_footer"
+        components={getComponentsForTarget("story_footer")}
+        onInteraction={onInteraction}
+      />
     </div>
   );
 }

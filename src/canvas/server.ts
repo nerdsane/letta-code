@@ -1,5 +1,5 @@
 /**
- * Story Explorer Gallery Server
+ * Story Explorer Canvas Server
  *
  * A web interface for browsing DSF worlds and stories with live updates
  */
@@ -10,6 +10,8 @@ import { join } from "node:path";
 import type { ServerWebSocket } from "bun";
 import type { World, Story } from "../types/dsf";
 import indexHtml from "./index.html";
+import { getClient } from "../agent/client";
+import { settingsManager } from "../settings-manager";
 
 // ============================================================================
 // Constants
@@ -19,6 +21,12 @@ const PORT = 3030;
 const WORLDS_DIR = ".dsf/worlds";
 const STORIES_DIR = ".dsf/stories";
 const ASSETS_DIR = ".dsf/assets";
+
+// ============================================================================
+// Shared Agent State
+// ============================================================================
+
+let sharedAgentId: string | null = null;
 
 // ============================================================================
 // WebSocket Clients
@@ -167,11 +175,48 @@ async function startFileWatcher() {
 }
 
 // ============================================================================
+// Agent Initialization
+// ============================================================================
+
+async function initializeSharedAgent() {
+  try {
+    // Load local project settings (same as CLI does)
+    await settingsManager.loadLocalProjectSettings(process.cwd());
+
+    // Get the agent ID that CLI is using
+    const localSettings = settingsManager.getLocalProjectSettings(process.cwd());
+    sharedAgentId = localSettings?.lastAgent || null;
+
+    if (sharedAgentId) {
+      console.log(`📎 Using shared agent: ${sharedAgentId}`);
+
+      // Verify agent exists
+      try {
+        const client = await getClient();
+        const agent = await client.agents.retrieve(sharedAgentId);
+        console.log(`   Agent name: ${agent.name}`);
+      } catch (error) {
+        console.warn(`   Warning: Agent ${sharedAgentId} not found. It may have been deleted.`);
+        sharedAgentId = null;
+      }
+    } else {
+      console.log(`ℹ️  No shared agent found. Web UI actions will require CLI to create an agent first.`);
+    }
+  } catch (error) {
+    console.error("Failed to initialize shared agent:", error);
+    sharedAgentId = null;
+  }
+}
+
+// ============================================================================
 // Server Setup
 // ============================================================================
 
-export function startGalleryServer() {
-  console.log("Starting Story Explorer Gallery Server...");
+export async function startCanvasServer() {
+  console.log("Starting Story Explorer Canvas Server...");
+
+  // Initialize shared agent from CLI settings
+  await initializeSharedAgent();
 
   // Start file watcher
   startFileWatcher();
@@ -254,33 +299,58 @@ export function startGalleryServer() {
         async POST(req) {
           const checkpoint = req.params.checkpoint || "";
 
+          // Check if shared agent is available
+          if (!sharedAgentId) {
+            return new Response(
+              JSON.stringify({
+                error: "No agent available",
+                message: "Please create an agent in CLI first (run: ./deep-scifi.js)",
+                details: "The canvas server needs a shared agent to create stories.",
+              }),
+              { status: 503, headers: { "Content-Type": "application/json" } }
+            );
+          }
+
           // Load the world
           const world = await loadWorld(checkpoint);
           if (!world) {
             return new Response("World not found", { status: 404 });
           }
 
-          // Create context for writing a new story
-          const context = {
-            action: "write_story",
-            world_checkpoint: checkpoint,
-            world,
-            instructions: `Write a new story in the "${checkpoint}" world. Use the world's rules, elements, and constraints. Follow the world's premise: ${world.foundation.core_premise}`,
-          };
+          try {
+            // Get Letta client
+            const client = await getClient();
 
-          // Save context file
-          const contextPath = join(WORLDS_DIR, `_new_story_${checkpoint}_${Date.now()}.json`);
-          await Bun.write(contextPath, JSON.stringify(context, null, 2));
+            // Send message to agent
+            const userMessage = `Write a new story in the "${checkpoint}" world. Use the world's rules, elements, and constraints. Follow the world's premise: ${world.foundation.core_premise}`;
 
-          return Response.json({
-            status: "success",
-            message: "Story context created! Run letta-code to start writing.",
-            context_file: contextPath,
-            next_steps: [
-              "Run: bun run dev (or your letta-code command)",
-              `The agent will see the context and start writing a story in the "${checkpoint}" world`,
-            ],
-          });
+            // Create message
+            const messages = await client.agents.messages.create(sharedAgentId, {
+              messages: [
+                {
+                  role: "user",
+                  content: userMessage,
+                },
+              ],
+            });
+
+            // Agent will use story_manager tool to create the story
+            return Response.json({
+              status: "success",
+              message: "Agent is creating a new story...",
+              world_checkpoint: checkpoint,
+              agent_response: messages,
+            });
+          } catch (error) {
+            console.error("Error invoking agent:", error);
+            return new Response(
+              JSON.stringify({
+                error: "Agent invocation failed",
+                message: error instanceof Error ? error.message : "Unknown error",
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
       },
 
@@ -288,18 +358,30 @@ export function startGalleryServer() {
         async POST(req) {
           const checkpoint = req.params.checkpoint || "";
 
+          // Check if shared agent is available
+          if (!sharedAgentId) {
+            return new Response(
+              JSON.stringify({
+                error: "No agent available",
+                message: "Please create an agent in CLI first (run: ./deep-scifi.js)",
+                details: "The canvas server needs a shared agent to develop worlds.",
+              }),
+              { status: 503, headers: { "Content-Type": "application/json" } }
+            );
+          }
+
           // Load the world
           const world = await loadWorld(checkpoint);
           if (!world) {
             return new Response("World not found", { status: 404 });
           }
 
-          // Create context for developing the world
-          const context = {
-            action: "develop_world",
-            world_checkpoint: checkpoint,
-            world,
-            instructions: `Develop the "${checkpoint}" world further. Consider:
+          try {
+            // Get Letta client
+            const client = await getClient();
+
+            // Send message to agent
+            const userMessage = `Develop the "${checkpoint}" world further. Consider:
 - Adding depth to existing rules and elements
 - Exploring consequences of the world's mechanisms
 - Filling in gaps in technology, culture, or history
@@ -307,22 +389,35 @@ export function startGalleryServer() {
 - Adding new rules or elements that emerge from existing ones
 
 Current state: ${world.development.state} (v${world.development.version})
-Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`,
-          };
+Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`;
 
-          // Save context file
-          const contextPath = join(WORLDS_DIR, `_develop_${checkpoint}_${Date.now()}.json`);
-          await Bun.write(contextPath, JSON.stringify(context, null, 2));
+            // Create message
+            const messages = await client.agents.messages.create(sharedAgentId, {
+              messages: [
+                {
+                  role: "user",
+                  content: userMessage,
+                },
+              ],
+            });
 
-          return Response.json({
-            status: "success",
-            message: "Development context created! Run letta-code to continue development.",
-            context_file: contextPath,
-            next_steps: [
-              "Run: bun run dev (or your letta-code command)",
-              `The agent will see the context and develop the "${checkpoint}" world further`,
-            ],
-          });
+            // Agent will use world_manager tool to update the world
+            return Response.json({
+              status: "success",
+              message: "Agent is developing the world...",
+              world_checkpoint: checkpoint,
+              agent_response: messages,
+            });
+          } catch (error) {
+            console.error("Error invoking agent:", error);
+            return new Response(
+              JSON.stringify({
+                error: "Agent invocation failed",
+                message: error instanceof Error ? error.message : "Unknown error",
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
       },
 
@@ -333,6 +428,18 @@ Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`,
 
           if (!story_id) {
             return new Response("story_id is required", { status: 400 });
+          }
+
+          // Check if shared agent is available
+          if (!sharedAgentId) {
+            return new Response(
+              JSON.stringify({
+                error: "No agent available",
+                message: "Please create an agent in CLI first (run: ./deep-scifi.js)",
+                details: "The canvas server needs a shared agent to continue stories.",
+              }),
+              { status: 503, headers: { "Content-Type": "application/json" } }
+            );
           }
 
           // Load the story
@@ -347,35 +454,40 @@ Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`,
             return new Response("World not found", { status: 404 });
           }
 
-          // Get the last segment
-          const lastSegment = story.segments[story.segments.length - 1];
+          try {
+            // Get Letta client
+            const client = await getClient();
 
-          // Create continuation context
-          const continuationContext = {
-            story,
-            world,
-            last_segment: lastSegment,
-            active_endpoints: story.endpoints.filter((e) => e.status === "active"),
-            suggested_directions: lastSegment?.branches?.map((b) => b.prompt) || [],
-            rules_to_consider: world.foundation.rules.filter((r) => r.certainty !== "tentative"),
-            elements_in_play: world.surface.visible_elements,
-          };
+            // Send message to agent
+            const userMessage = `Continue writing story "${story.metadata.title}". Write the next segment, continuing from where the story left off.`;
 
-          // Save continuation context to file
-          const contextPath = join(STORIES_DIR, story.world_checkpoint, `_continue_${story_id}.json`);
-          await Bun.write(contextPath, JSON.stringify(continuationContext, null, 2));
+            // Create message (non-streaming for now, streaming in next step)
+            const messages = await client.agents.messages.create(sharedAgentId, {
+              messages: [
+                {
+                  role: "user",
+                  content: userMessage,
+                },
+              ],
+            });
 
-          return Response.json({
-            status: "success",
-            message: "Continuation context created. Use this in your next letta-code session to continue the story.",
-            context_file: contextPath,
-            story_id,
-            next_steps: [
-              "1. Start letta-code CLI",
-              "2. Ask to continue story: " + story.metadata.title,
-              "3. The agent will use the continuation context to write the next segment",
-            ],
-          });
+            // File watcher will notify web UI when segment is written
+            return Response.json({
+              status: "success",
+              message: "Agent is writing next segment...",
+              story_id,
+              agent_response: messages,
+            });
+          } catch (error) {
+            console.error("Error invoking agent:", error);
+            return new Response(
+              JSON.stringify({
+                error: "Agent invocation failed",
+                message: error instanceof Error ? error.message : "Unknown error",
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
       },
 
@@ -449,5 +561,5 @@ Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`,
 
 // Run server if this file is executed directly
 if (import.meta.main) {
-  startGalleryServer();
+  await startCanvasServer();
 }

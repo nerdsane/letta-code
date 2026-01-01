@@ -1,0 +1,166 @@
+{
+  "development": {
+    "state": "sketch",
+    "version": 1,
+    "created": "2025-12-31T21:17:00Z",
+    "last_modified": "2025-12-31T21:17:00Z",
+    "revision_notes": []
+  },
+  "year": 2035,
+  "surface": {
+    "opening_scene": "Nia stands in the Memory Room, surrounded by twelve participants wearing soft interface bands. Today's piece will be built from their collective emotional responses to a shared prompt—grief for something lost. She watches the aggregate patterns emerge on her monitor, looking for the moment when individual sorrows harmonize into something larger.",
+    "visible_elements": [
+      {
+        "id": "char_nia",
+        "type": "character",
+        "name": "The Artist",
+        "description": "A celebrated artist known for collective-memory pieces that weave multiple participants' emotional states into unified immersive experiences. Facilitator as much as creator.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "role": "protagonist",
+          "age_range": "mid-30s",
+          "style": "collaborative, process-oriented"
+        }
+      },
+      {
+        "id": "loc_memory_room",
+        "type": "location",
+        "name": "The Memory Room",
+        "description": "A purpose-built space in a converted Lower East Side synagogue, designed for collective neural-art sessions. Soft lighting, acoustic dampening, comfortable seating arranged in circles.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "capacity": "up to 30 participants",
+          "vibe": "meditative, intentional"
+        }
+      },
+      {
+        "id": "tech_collective",
+        "type": "technology",
+        "name": "Collective Interface Array",
+        "description": "System that reads emotional states from multiple participants simultaneously, finding resonance patterns and points of divergence to feed into generative systems.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "last_modified_version": 1,
+        "properties": {
+          "participants": "2-30 people",
+          "output": "aggregate emotional topology"
+        }
+      }
+    ],
+    "character_pov": "The Artist",
+    "revealed_in_story": {}
+  },
+  "foundation": {
+    "core_premise": "Art is created not by a single artist channeling emotion into AI, but by aggregating the emotional states of multiple participants. The artist's role shifts from creator to facilitator—designing prompts, curating participants, and shaping how collective feeling becomes immersive experience.",
+    "deep_focus_areas": {
+      "primary": ["collective_creativity", "artist_as_facilitator", "shared_emotional_experience"],
+      "depth_level": {
+        "collective_creativity": "deep",
+        "artist_as_facilitator": "deep",
+        "shared_emotional_experience": "medium"
+      }
+    },
+    "rules": [
+      {
+        "id": "rule_1",
+        "statement": "Neural interfaces can read emotional states from multiple people simultaneously, revealing patterns of resonance and dissonance across a group.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_2",
+        "statement": "Collective emotional data creates richer, more textured input for AI systems than individual emotion—the intersections and tensions between feelings generate complexity.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_3",
+        "statement": "The artist designs the conditions for collective creation—the prompt, the participant mix, the environment—but doesn't control the output directly.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_4",
+        "statement": "Participants experience a sense of profound connection during sessions, sometimes uncomfortable in its intimacy—their emotions are visible to the system if not to each other.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      }
+    ],
+    "history": {
+      "timeline": [
+        {"event": "Group meditation apps pioneer multi-user biometric synchronization", "when": "2027", "significance": "First proof that collective physiological states create unique emergent patterns"},
+        {"event": "Artists begin experimenting with audience biometrics as input", "when": "2029", "significance": "Performances where audience emotion shapes what they see"},
+        {"event": "First collective-source pieces exhibited", "when": "2031", "significance": "Work credited to artist plus participant group, sparking authorship debates"},
+        {"event": "Nia develops her facilitation methodology", "when": "2032", "significance": "Establishes protocols for ethical, meaningful collective sessions"},
+        {"event": "Major museum commissions collective piece", "when": "2034", "significance": "Institutional validation of the form"}
+      ]
+    },
+    "geography": {
+      "locations": [
+        {"id": "loc_les", "name": "Lower East Side Sacred Spaces", "description": "Repurposed religious buildings—synagogues, churches—now used for collective-art sessions, their architecture suited to contemplative gathering", "significance": "Where collective work happens, spaces designed for shared experience"},
+        {"id": "loc_institutions", "name": "Institutional Spaces", "description": "Museums and cultural centers that commission and exhibit collective pieces, often struggling with how to credit and compensate participants", "significance": "Where legitimacy and funding come from"},
+        {"id": "loc_underground", "name": "Underground Collectives", "description": "Informal gathering spaces where people create collective experiences without named artists, pure participatory creation", "significance": "The radical edge that questions whether artists are needed at all"}
+      ]
+    },
+    "culture": {
+      "values": ["shared experience over individual genius", "process as meaningful as product", "emotional vulnerability as creative act"],
+      "practices": ["pre-session consent and boundary-setting rituals", "post-session integration conversations", "participant acknowledgment in all exhibitions"],
+      "social_norms": ["participants own their contribution but license it for the piece", "facilitators cannot use sessions for therapy without credentials", "recording collective sessions requires unanimous consent"]
+    },
+    "technology": {
+      "systems": [
+        {
+          "id": "tech_collective_array",
+          "name": "Collective Interface Array",
+          "how_it_works": "Multiple lightweight EEG headbands networked together, with software that identifies emotional resonance patterns—moments when multiple participants feel similarly—and divergence patterns—where emotions clash or contrast.",
+          "limitations": "More participants means more noise. Finding signal in collective data requires sophisticated filtering. Individual attribution is impossible—only aggregate patterns emerge."
+        },
+        {
+          "id": "tech_topology_engine",
+          "name": "Emotional Topology Engine",
+          "how_it_works": "AI system that maps collective emotional data as a landscape—peaks of shared intensity, valleys of divergence, ridges where subgroups align. This topology becomes the structural basis for generated environments.",
+          "limitations": "Interpretation of topology as visual/spatial experience is still artistic choice. Same data could yield very different pieces."
+        },
+        {
+          "id": "tech_immersive_playback",
+          "name": "Distributed Playback System",
+          "how_it_works": "Allows the generated piece to be experienced by others—either in dedicated spaces or through home AR/VR systems. Can be experienced solo or in groups.",
+          "limitations": "Experiencing alone misses something. The work was created collectively and resonates differently when experienced that way."
+        }
+      ]
+    },
+    "working_notes": {
+      "tentative_ideas": [
+        "A participant who becomes obsessed with the sessions, attending as many as possible",
+        "Debate about whether facilitators are artists or something else",
+        "A tech company wanting to commercialize collective-emotion data"
+      ],
+      "questions": [
+        "What happens when participants' emotions during a session are ugly—anger, resentment, prejudice?",
+        "Can you create joyful work from grieving participants, or does that feel like extraction?"
+      ],
+      "contradictions_to_resolve": []
+    }
+  },
+  "constraints": [
+    {"id": "const_1", "description": "Individual thoughts/images remain private—only aggregate emotional patterns are visible to the system", "type": "technological", "strictness": "absolute"},
+    {"id": "const_2", "description": "Collective data cannot be attributed to individuals—only patterns across the group", "type": "technological", "strictness": "absolute"},
+    {"id": "const_3", "description": "The artist facilitates but cannot fully control collective output—genuine collaboration with participants", "type": "creative", "strictness": "strong"},
+    {"id": "const_4", "description": "Consent and ethical handling of emotional data is taken seriously—violations damage careers", "type": "social", "strictness": "strong"}
+  ],
+  "changelog": [],
+  "asset": {
+    "id": "cover",
+    "type": "image",
+    "path": "worlds/collective_memory/cover.png",
+    "description": "Cover image: Collective neural art session in sacred space"
+  }
+}

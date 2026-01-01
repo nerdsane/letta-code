@@ -98,6 +98,8 @@ export async function createAgent(
     "analyze_information_gain",
     // Continual learning
     "search_trajectories",
+    // Canvas UI
+    "canvas_ui",
   ];
 
   let toolNames = [...serverToolNames, ...defaultBaseTools];

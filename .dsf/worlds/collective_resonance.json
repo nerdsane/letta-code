@@ -1,0 +1,214 @@
+{
+  "development": {
+    "state": "sketch",
+    "version": 1,
+    "created": "2026-01-01T00:03:00Z",
+    "last_modified": "2026-01-01T00:23:17.293Z",
+    "revision_notes": []
+  },
+  "year": 2035,
+  "surface": {
+    "opening_scene": "First-person: Nia leading a 'resonance session' with her team - four minds connected through shared neural interfaces, their combined emotional states feeding a generative system that none of them fully controls.",
+    "visible_elements": [
+      {
+        "id": "char_protagonist",
+        "type": "character",
+        "name": "The Conductor",
+        "description": "Artist who pioneered 'collective resonance' - multi-brain creative sessions where team members share neural states. Leads but doesn't dominate; more facilitator than sole creator.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1,
+        "properties": {
+          "role": "protagonist",
+          "perspective": "first-person"
+        }
+      },
+      {
+        "id": "char_team_member",
+        "type": "character",
+        "name": "The Skeptic",
+        "description": "Team member who joined from traditional art background. Talented but uncomfortable with the dissolution of individual authorship. Represents internal tension.",
+        "detail_level": "medium",
+        "introduced_in_version": 1,
+        "properties": {
+          "role": "supporting",
+          "relationship": "team member"
+        }
+      },
+      {
+        "id": "char_critic",
+        "type": "character",
+        "name": "The Critic",
+        "description": "Art writer who's documented Nia's rise. Intellectually supportive but personally troubled by what collective creation means for the idea of artistic genius.",
+        "detail_level": "medium",
+        "introduced_in_version": 1,
+        "properties": {
+          "role": "mirror",
+          "relationship": "professional observer"
+        }
+      },
+      {
+        "id": "loc_resonance_chamber",
+        "type": "location",
+        "name": "The Resonance Chamber",
+        "description": "Circular room designed for collective sessions. Five stations arranged facing center, where the shared visualization emerges. Acoustic dampening, controlled lighting.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "tech_collective_interface",
+        "type": "technology",
+        "name": "Collective Neural Interface",
+        "description": "System that reads multiple people's emotional states and combines them into unified input for generative models. Not telepathy - emotional resonance.",
+        "detail_level": "detailed",
+        "introduced_in_version": 1
+      }
+    ],
+    "character_pov": "The Conductor (Nia)",
+    "revealed_in_story": {}
+  },
+  "foundation": {
+    "core_premise": "By 2035, multi-brain interfaces allow small groups to share emotional states during creative sessions - not reading thoughts, but feeling each other's feelings. Nia pioneered 'collective resonance' art: works created by teams whose combined emotional signatures feed generative AI. The art that emerges belongs to no single person. This challenges everything about artistic identity, authorship, and the myth of individual genius.",
+    "deep_focus_areas": {
+      "primary": [
+        "multi_brain_creativity",
+        "collective_authorship",
+        "dissolution_of_artistic_ego"
+      ],
+      "depth_level": {
+        "multi_brain_creativity": "deep",
+        "collective_authorship": "deep",
+        "dissolution_of_artistic_ego": "medium"
+      }
+    },
+    "rules": [
+      {
+        "id": "rule_1",
+        "statement": "Collective interfaces share emotional states, not thoughts. You feel what others feel, but don't know why they feel it. Intimacy without transparency.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_2",
+        "statement": "Group emotional dynamics are emergent - the combined state is not simply averaged, but something new that depends on relationships and group chemistry.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_3",
+        "statement": "Sessions require 'tuning' - groups need practice together before their combined signal becomes coherent. Like a band learning to play together.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      },
+      {
+        "id": "rule_4",
+        "statement": "Credit and ownership in collective art is legally and philosophically unresolved. Some collectives share equally; some have 'leads' who take primary credit; disputes are common.",
+        "scope": "universal",
+        "certainty": "established",
+        "introduced_in_version": 1
+      }
+    ],
+    "history": {
+      "timeline": [
+        {
+          "event": "First multi-brain BCI experiments in research settings",
+          "when": "2027-2028",
+          "significance": "Proof of concept for shared emotional awareness"
+        },
+        {
+          "event": "First artistic experiments with collective input",
+          "when": "2030",
+          "significance": "Artists begin exploring what emerges from shared emotional states"
+        },
+        {
+          "event": "Nia forms first resonance collective",
+          "when": "2031",
+          "significance": "Protagonist's foundational creative decision"
+        },
+        {
+          "event": "Major collective art scandal - disputed authorship",
+          "when": "2033",
+          "significance": "Legal and ethical questions become public"
+        },
+        {
+          "event": "Nia's collective wins major prize",
+          "when": "2034",
+          "significance": "Institutional recognition, but prize committee unsure who to name"
+        }
+      ]
+    },
+    "technology": {
+      "systems": [
+        {
+          "id": "tech_collective_bci",
+          "name": "Collective Neural Interface",
+          "how_it_works": "Multiple EEG headsets feed into shared processing system. Emotional states are extracted and combined using learned fusion model. Combined emotional vector feeds generative AI. Optional: participants can 'feel' the group's combined state through subtle haptic feedback.",
+          "limitations": "Groups larger than 5-6 become incoherent. Requires extensive calibration as group. Emotionally exhausting - sessions limited to 2-3 hours. Some personality types don't integrate well."
+        },
+        {
+          "id": "tech_resonance_viz",
+          "name": "Resonance Visualization",
+          "how_it_works": "Real-time display showing each participant's emotional contribution and the emergent group state. Helps participants understand the collective dynamics during sessions.",
+          "limitations": "Visualization is interpretive, not precise. Can create self-consciousness that disrupts natural emotional flow."
+        }
+      ]
+    },
+    "culture": {
+      "values": [
+        "collective creativity",
+        "ego dissolution",
+        "emergence over control"
+      ],
+      "practices": [
+        "resonance warm-ups",
+        "emotional vulnerability rituals",
+        "rotating leadership"
+      ],
+      "tensions": [
+        "Who is the artist?",
+        "Can fame exist without individual identity?",
+        "What happens when a collective member leaves?"
+      ]
+    },
+    "working_notes": {
+      "tentative_ideas": [
+        "Team member wants to leave and take 'their' contribution",
+        "Commission that requires a specific emotional signature Nia can't produce alone"
+      ],
+      "questions": [
+        "How does Nia feel about sharing credit?",
+        "What's the relationship between Nia's individual reputation and her collective's work?"
+      ],
+      "contradictions_to_resolve": []
+    }
+  },
+  "constraints": [
+    {
+      "id": "const_1",
+      "description": "Collective interfaces share emotions, not thoughts - no telepathy",
+      "type": "physical",
+      "strictness": "absolute"
+    },
+    {
+      "id": "const_2",
+      "description": "Group size limited by coherence - more than 6 people creates noise",
+      "type": "physical",
+      "strictness": "absolute"
+    },
+    {
+      "id": "const_3",
+      "description": "10-year timeline limits how mature multi-brain interfaces can be",
+      "type": "temporal",
+      "strictness": "absolute"
+    }
+  ],
+  "changelog": [],
+  "asset": {
+    "id": "cover",
+    "type": "image",
+    "path": "worlds/collective_resonance/cover.png",
+    "description": "Cover image for Collective Resonance world"
+  }
+}
