@@ -5,11 +5,29 @@
  * multimedia enhancements for stories and worlds displayed in the canvas.
  */
 
-import WebSocket from 'ws';
 import type { CanvasUIMessage } from '../agent-bus/types';
 import type { ComponentSpec } from '../canvas/components/types';
 
 const AGENT_BUS_URL = process.env.AGENT_BUS_URL || 'ws://localhost:8284/ws?type=agent';
+
+// ============================================================================
+// Tool Interface
+// ============================================================================
+
+interface CanvasUIArgs {
+  target: string;
+  spec: ComponentSpec;
+  action?: 'create' | 'update' | 'remove';
+}
+
+interface CanvasUIResult {
+  toolReturn: string;
+  status: 'success' | 'error';
+}
+
+// ============================================================================
+// WebSocket Connection Management
+// ============================================================================
 
 let agentBusWs: WebSocket | null = null;
 let isConnecting = false;
@@ -68,51 +86,9 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
   });
 }
 
-export interface CanvasUIParams {
-  /**
-   * Where to mount the component in the canvas.
-   *
-   * Mount points:
-   * - "floating": Appears as overlay (bottom-right)
-   * - "story_segment_{id}": Inline in specific story segment
-   * - "world_overview": In world overview section
-   * - "story_header": At top of current story
-   *
-   * Future mount points will include inline positions within story content.
-   */
-  target: string;
-
-  /**
-   * The UI component specification (JSON).
-   *
-   * Available components:
-   * - Dialog: Modal dialogs with trigger buttons
-   * - Button: Primary/secondary action buttons
-   * - Text: Styled text (heading, body, caption)
-   * - Stack: Vertical/horizontal layout container
-   *
-   * Example:
-   * {
-   *   type: "Dialog",
-   *   id: "story-viz-1",
-   *   props: {
-   *     title: "Story Timeline",
-   *     description: "Visual timeline of key events",
-   *     trigger: {
-   *       type: "Button",
-   *       props: { label: "View Timeline", variant: "primary" }
-   *     }
-   *   },
-   *   children: { ... }
-   * }
-   */
-  spec: ComponentSpec;
-
-  /**
-   * Action to perform: create (new), update (existing), or remove.
-   */
-  action?: 'create' | 'update' | 'remove';
-}
+// ============================================================================
+// Main Entry Point
+// ============================================================================
 
 /**
  * Create or update dynamic UI in the canvas.
@@ -120,17 +96,10 @@ export interface CanvasUIParams {
  * Use this to add inline visualizations, interactive elements, and multimedia
  * enhancements to stories and worlds. The UI will appear in the canvas at the
  * specified target location.
- *
- * @param target - Where to mount the component (e.g., "floating", "story_segment_123")
- * @param spec - Component specification (JSON describing the UI)
- * @param action - Action to perform (default: "create")
- * @returns Success message or error
  */
-export async function canvas_ui({
-  target,
-  spec,
-  action = 'create',
-}: CanvasUIParams): Promise<string> {
+export async function canvas_ui(args: CanvasUIArgs): Promise<CanvasUIResult> {
+  const { target, spec, action = 'create' } = args;
+
   try {
     const ws = await ensureAgentBusConnection();
 
@@ -148,39 +117,23 @@ export async function canvas_ui({
 
     console.log(`[canvas_ui] Sent ${action} for ${componentId} at ${target}`);
 
+    let resultMessage: string;
     if (action === 'remove') {
-      return `Removed component from ${target}`;
+      resultMessage = `Removed component from ${target}`;
+    } else {
+      resultMessage = `Component ${componentId} ${action === 'update' ? 'updated' : 'created'} at ${target}`;
     }
 
-    return `Component ${componentId} ${action === 'update' ? 'updated' : 'created'} at ${target}`;
+    return {
+      toolReturn: resultMessage,
+      status: 'success',
+    };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error('[canvas_ui] Error:', errorMsg);
-    return `Failed to ${action} UI component: ${errorMsg}`;
+    return {
+      toolReturn: `Failed to ${action} UI component: ${errorMsg}`,
+      status: 'error',
+    };
   }
 }
-
-// Tool metadata for Letta
-export const canvas_ui_metadata = {
-  name: 'canvas_ui',
-  description: 'Create dynamic UI components in the canvas for inline visualizations and interactive elements',
-  parameters: {
-    type: 'object',
-    properties: {
-      target: {
-        type: 'string',
-        description: 'Mount point: "floating", "story_segment_{id}", "world_overview", etc.',
-      },
-      spec: {
-        type: 'object',
-        description: 'Component specification (JSON) - Dialog, Button, Text, Stack',
-      },
-      action: {
-        type: 'string',
-        enum: ['create', 'update', 'remove'],
-        description: 'Action to perform (default: create)',
-      },
-    },
-    required: ['target', 'spec'],
-  },
-};

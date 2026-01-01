@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "target": {
+      "type": "string",
+      "description": "Mount point where the UI component should appear. Options: 'floating' (overlay), 'story_header', 'story_segment_{id}', 'story_segment_{id}_before', 'story_footer', 'world_header', 'world_overview'"
+    },
+    "spec": {
+      "type": "object",
+      "description": "Component specification defining the UI to render. Must include 'type' (Dialog, Button, Text, Stack) and 'props'. May include 'id' and 'children' for nested components."
+    },
+    "action": {
+      "type": "string",
+      "enum": ["create", "update", "remove"],
+      "description": "Action to perform: create (new component), update (existing component), remove (delete component)"
+    }
+  },
+  "required": ["target", "spec"]
+}
