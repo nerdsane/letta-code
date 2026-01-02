@@ -71,6 +71,7 @@ export const ANTHROPIC_DEFAULT_TOOLS: ToolName[] = [
   "story_manager",
   "asset_manager",
   "image_generator",
+  "canvas_ui",
 ];
 
 export const OPENAI_DEFAULT_TOOLS: ToolName[] = [
