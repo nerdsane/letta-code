@@ -157,4 +157,5 @@ vite.config.ts.timestamp-*
 .legacy
 
 deep-sci-fi.js
-deep-sci-fi.js.map.dsf/
+deep-sci-fi.js.map
+.dsf/
