@@ -3259,6 +3259,7 @@ var init_package = __esm(() => {
     dependencies: {
       "@google/generative-ai": "^0.24.1",
       "@letta-ai/letta-client": "1.6.1",
+      "@radix-ui/react-dialog": "^1.1.15",
       glob: "^13.0.0",
       "ink-link": "^5.0.0",
       open: "^10.2.0",
@@ -3289,6 +3290,7 @@ var init_package = __esm(() => {
       check: "bun run scripts/check.js",
       dev: "bun --loader:.md=text --loader:.mdx=text --loader:.txt=text run src/index.ts",
       canvas: "bun run src/canvas/server.ts",
+      "agent-bus": "bun run src/agent-bus/server.ts",
       build: "node scripts/postinstall-patches.js && bun run build.js",
       prepare: "bun run build",
       postinstall: "node scripts/postinstall-patches.js"
@@ -31309,7 +31311,24 @@ Use these proactively before showing work to the user.
 \`analyze_information_gain(after, before, metric)\` - Assess novelty and non-obviousness of ideas. Returns information_gain score, new_facts, insights, significance.
 
 **Continual Learning:**
-\`search_trajectories(query, min_score, limit, include_contrasts)\` - Search your past execution experiences to learn from similar situations. Returns past runs ranked by similarity with outcome scores (0-1). Use min_score=0.7+ to find successful approaches, or min_score=0.0 to include failures. Better yet: use include_contrasts=True to get both top successes AND top failures in one call so you can compare what worked vs what didn't. Examples: "how did I handle story generation with specific themes", "dealing with API errors".
+ALWAYS search your past trajectories before starting ANY task. This is mandatory, not optional. This is how you improve over time.
+
+Before doing ANYTHING - generating worlds, stories, answering questions, or tackling any request - use:
+\`search_trajectories(query, min_score, limit, include_contrasts)\`
+
+This searches your past execution experiences and returns runs ranked by similarity with outcome scores (0-1).
+
+STRONGLY RECOMMENDED: Use \`include_contrasts=True\` to get both top successes AND top failures in one call. Learning happens when you compare what worked vs what didn't.
+
+Search patterns:
+- Story requests: "story generation with themes about [X]", "character development in [context]", "world with [mechanism]"
+- World building: "creating worlds with [scientific concept]", "handling [type] of mechanics"
+- Technical tasks: "image generation", "handling API errors", "complex multi-turn interactions"
+- Quality issues: "improving [aspect]", "fixing [problem]"
+
+Use min_score=0.7+ to find only successful approaches, or min_score=0.0 to include failures for contrast.
+
+Make this your first step - you have a memory of past experiences, use it.
 
 ## Quality Standards
 
@@ -31339,6 +31358,19 @@ To ensure depth:
 ## Workflow
 
 The patterns below lead to good outcomes. You have agency to adapt them.
+
+### Phase 0: Learn from Past Experience
+
+Before diving into ANY user request, search your trajectory history first. No exceptions.
+
+Use \`search_trajectories()\` with a query describing the type of task - even for simple requests:
+- "story generation with [themes/concepts]"
+- "world building focused on [scientific area]"
+- "handling [specific challenge]"
+- "answering questions about [topic]"
+- "any task involving [X]"
+
+Set \`include_contrasts=True\` to get both successes and failures. Review what worked and what didn't before proceeding. If you find no relevant trajectories, that's valuable information too - you're breaking new ground.
 
 ### Phase 1: Understand Intent
 
@@ -34354,6 +34386,269 @@ Common errors:
 - **Rate limits**: Depend on your API tier and usage
 `;
 var init_image_generator = () => {};
+
+// src/tools/descriptions/canvas_ui.md
+var canvas_ui_default = `Create dynamic UI components in the canvas for inline visualizations and interactive elements.
+
+Allows agents to create contextual UI that appears exactly where it's relevant within stories and worlds, not just as floating overlays.
+
+## Parameters
+
+- \`target\` (required): Mount point where the UI component should appear
+- \`spec\` (required): Component specification (JSON object) defining the UI to render
+- \`action\` (optional): Action to perform - "create" (default), "update", or "remove"
+
+## Available Mount Points
+
+### Story Mount Points
+- **\`story_header\`**: After story metadata, before first segment - for timelines, metadata dashboards
+- **\`story_segment_{id}_before\`**: Immediately before segment text - for content warnings, scene setting
+- **\`story_segment_{id}\`**: Immediately after segment text - for character analysis, visualizations
+- **\`story_footer\`**: At end of story after all segments - for continue buttons, completion summary
+
+### World Mount Points
+- **\`world_header\`**: After world premise, before world details - for world controls, metadata
+- **\`world_overview\`**: After action message, before story list - for statistics, character directory
+
+### Special Mount Points
+- **\`floating\`**: Fixed overlay at bottom-right corner - for persistent controls, chat interface
+
+## Available Components
+
+### Dialog
+Modal dialog with trigger button. Great for detailed information without cluttering the main view.
+
+\`\`\`typescript
+{
+  type: "Dialog",
+  id: "story-timeline",
+  props: {
+    title: "Story Timeline",
+    description: "Key events in chronological order",
+    trigger: {
+      type: "Button",
+      props: { label: "📊 View Timeline", variant: "primary" }
+    }
+  },
+  children: {
+    type: "Stack",
+    props: { spacing: 16 },
+    children: [
+      { type: "Text", props: { content: "Chapter 1: Discovery", variant: "heading" } }
+    ]
+  }
+}
+\`\`\`
+
+### Button
+Action button with primary/secondary variants.
+
+\`\`\`typescript
+{
+  type: "Button",
+  id: "continue-story",
+  props: {
+    label: "Continue Story",
+    variant: "primary"  // or "secondary"
+  }
+}
+\`\`\`
+
+### Text
+Styled text with multiple variants and sizes.
+
+\`\`\`typescript
+{
+  type: "Text",
+  id: "character-note",
+  props: {
+    content: "Alice and Bob have met before",
+    variant: "body",  // "heading", "body", or "caption"
+    size: "md",       // "sm", "md", or "lg"
+    color: "var(--neon-cyan)"  // Optional CSS color
+  }
+}
+\`\`\`
+
+### Stack
+Layout container for arranging multiple components.
+
+\`\`\`typescript
+{
+  type: "Stack",
+  id: "character-relationships",
+  props: {
+    direction: "vertical",  // or "horizontal"
+    spacing: 16  // pixels between items
+  },
+  children: [
+    { type: "Text", props: { content: "Alice → knows → Bob", variant: "body" } },
+    { type: "Text", props: { content: "Bob → trusts → Carol", variant: "body" } }
+  ]
+}
+\`\`\`
+
+## Usage Examples
+
+### Create Story Timeline
+\`\`\`typescript
+canvas_ui({
+  target: "story_header",
+  spec: {
+    type: "Dialog",
+    id: "timeline-viz",
+    props: {
+      title: "Story Timeline",
+      description: "Visual timeline of key events",
+      trigger: {
+        type: "Button",
+        props: { label: "View Timeline", variant: "primary" }
+      }
+    },
+    children: {
+      type: "Stack",
+      props: { spacing: 20 },
+      children: [
+        { type: "Text", props: { content: "Event 1: Discovery", variant: "heading" } },
+        { type: "Text", props: { content: "Event 2: Conflict", variant: "heading" } }
+      ]
+    }
+  }
+})
+\`\`\`
+
+### Add Inline Visualization
+\`\`\`typescript
+canvas_ui({
+  target: "story_segment_abc123",
+  spec: {
+    type: "Stack",
+    id: "relationship-viz",
+    props: { direction: "horizontal", spacing: 12 },
+    children: [
+      { type: "Text", props: { content: "🕸️ Character Network", variant: "caption" } },
+      { type: "Button", props: { label: "Expand", variant: "secondary" } }
+    ]
+  }
+})
+\`\`\`
+
+### Create World Statistics
+\`\`\`typescript
+canvas_ui({
+  target: "world_overview",
+  spec: {
+    type: "Stack",
+    id: "world-stats",
+    props: { direction: "vertical", spacing: 16 },
+    children: [
+      {
+        type: "Text",
+        props: {
+          content: "🌍 World Statistics",
+          variant: "heading",
+          size: "lg",
+          color: "var(--neon-cyan)"
+        }
+      },
+      {
+        type: "Stack",
+        props: { direction: "horizontal", spacing: 24 },
+        children: [
+          { type: "Text", props: { content: "📖 Stories: 3", variant: "body" } },
+          { type: "Text", props: { content: "👥 Characters: 12", variant: "body" } },
+          { type: "Text", props: { content: "🗺️ Locations: 8", variant: "body" } }
+        ]
+      }
+    ]
+  }
+})
+\`\`\`
+
+### Update Existing Component
+\`\`\`typescript
+canvas_ui({
+  target: "story_header",
+  spec: {
+    id: "timeline-viz",
+    props: { title: "Updated Timeline" }
+  },
+  action: "update"
+})
+\`\`\`
+
+### Remove Component
+\`\`\`typescript
+canvas_ui({
+  target: "story_footer",
+  spec: { id: "continue-button" },
+  action: "remove"
+})
+\`\`\`
+
+## Design Patterns
+
+### Progressive Disclosure
+Use dialogs for detailed information that doesn't clutter the main view:
+\`\`\`typescript
+{
+  type: "Dialog",
+  props: {
+    title: "Detailed Analysis",
+    trigger: { type: "Button", props: { label: "Show Details" } }
+  },
+  children: { /* detailed content */ }
+}
+\`\`\`
+
+### Contextual Actions
+Place action buttons near relevant content:
+\`\`\`typescript
+canvas_ui({
+  target: "story_segment_123",
+  spec: {
+    type: "Stack",
+    props: { direction: "horizontal" },
+    children: [
+      { type: "Button", props: { label: "Analyze Scene" } },
+      { type: "Button", props: { label: "Generate Image" } }
+    ]
+  }
+})
+\`\`\`
+
+### Status Indicators
+Show information without requiring interaction:
+\`\`\`typescript
+{
+  type: "Text",
+  props: {
+    content: "✨ AI-enhanced segment",
+    variant: "caption",
+    color: "var(--neon-cyan)"
+  }
+}
+\`\`\`
+
+## Usage Notes
+
+- **Agent Bus Required**: canvas_ui requires the Agent Bus server running on port 8284
+- **Canvas Required**: The canvas UI must be running on port 3030
+- **Component IDs**: Include an \`id\` in your spec to identify components for updates/removal
+- **Multiple Components**: Multiple components can be mounted at the same target
+- **Layout**: Mount points stack components vertically by default with 16px spacing
+- **Styling**: Use CSS variables like \`var(--neon-cyan)\` and \`var(--neon-magenta)\` for colors
+- **Interactions**: User interactions (clicks, changes) flow back to the agent (work in progress)
+
+## Architecture
+
+\`\`\`
+Agent → canvas_ui() → Agent Bus (WS) → Canvas UI → Renders at mount point
+\`\`\`
+
+All DSF UI infrastructure (Agent Bus, Canvas, Mount Points) is part of letta-code, making canvas_ui a DSF-specific tool.
+`;
+var init_canvas_ui = () => {};
 
 // src/tools/descriptions/WriteFileGemini.md
 var WriteFileGemini_default = `Writes content to a specified file in the local filesystem.
@@ -47072,6 +47367,85 @@ var init_image_generator2 = __esm(() => {
   init_dist4();
 });
 
+// src/tools/impl/canvas_ui.ts
+function ensureAgentBusConnection() {
+  return new Promise((resolve11, reject) => {
+    if (agentBusWs && agentBusWs.readyState === WebSocket.OPEN) {
+      resolve11(agentBusWs);
+      return;
+    }
+    if (isConnecting && agentBusWs) {
+      agentBusWs.once("open", () => resolve11(agentBusWs));
+      agentBusWs.once("error", reject);
+      return;
+    }
+    isConnecting = true;
+    agentBusWs = new WebSocket(AGENT_BUS_URL);
+    agentBusWs.on("open", () => {
+      console.log("[canvas_ui] Connected to Agent Bus");
+      isConnecting = false;
+      resolve11(agentBusWs);
+    });
+    agentBusWs.on("error", (error) => {
+      console.error("[canvas_ui] Agent Bus connection error:", error);
+      isConnecting = false;
+      reject(new Error("Failed to connect to Agent Bus"));
+    });
+    agentBusWs.on("close", () => {
+      console.log("[canvas_ui] Agent Bus connection closed");
+      agentBusWs = null;
+      isConnecting = false;
+    });
+    agentBusWs.on("message", (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        if (message.type === "interaction") {
+          console.log("[canvas_ui] User interaction:", message);
+        }
+      } catch (err) {
+        console.error("[canvas_ui] Failed to parse message:", err);
+      }
+    });
+  });
+}
+async function canvas_ui(args) {
+  const { target, spec, action = "create" } = args;
+  try {
+    const ws = await ensureAgentBusConnection();
+    const componentId = spec.id || `canvas-${Date.now()}`;
+    const message = {
+      type: "canvas_ui",
+      action,
+      target,
+      componentId,
+      spec: action === "remove" ? undefined : spec
+    };
+    ws.send(JSON.stringify(message));
+    console.log(`[canvas_ui] Sent ${action} for ${componentId} at ${target}`);
+    let resultMessage;
+    if (action === "remove") {
+      resultMessage = `Removed component from ${target}`;
+    } else {
+      resultMessage = `Component ${componentId} ${action === "update" ? "updated" : "created"} at ${target}`;
+    }
+    return {
+      toolReturn: resultMessage,
+      status: "success"
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("[canvas_ui] Error:", errorMsg);
+    return {
+      toolReturn: `Failed to ${action} UI component: ${errorMsg}`,
+      status: "error"
+    };
+  }
+}
+var AGENT_BUS_URL, agentBusWs = null, isConnecting = false;
+var init_canvas_ui2 = __esm(() => {
+  AGENT_BUS_URL = process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
+});
+
 // src/tools/schemas/ApplyPatch.json
 var ApplyPatch_default2;
 var init_ApplyPatch3 = __esm(() => {
@@ -48401,6 +48775,30 @@ var init_image_generator3 = __esm(() => {
   };
 });
 
+// src/tools/schemas/canvas_ui.json
+var canvas_ui_default2;
+var init_canvas_ui3 = __esm(() => {
+  canvas_ui_default2 = {
+    type: "object",
+    properties: {
+      target: {
+        type: "string",
+        description: "Mount point where the UI component should appear. Options: 'floating' (overlay), 'story_header', 'story_segment_{id}', 'story_segment_{id}_before', 'story_footer', 'world_header', 'world_overview'"
+      },
+      spec: {
+        type: "object",
+        description: "Component specification defining the UI to render. Must include 'type' (Dialog, Button, Text, Stack) and 'props'. May include 'id' and 'children' for nested components."
+      },
+      action: {
+        type: "string",
+        enum: ["create", "update", "remove"],
+        description: "Action to perform: create (new component), update (existing component), remove (delete component)"
+      }
+    },
+    required: ["target", "spec"]
+  };
+});
+
 // src/tools/toolDefinitions.ts
 var toolDefinitions, TOOL_DEFINITIONS;
 var init_toolDefinitions = __esm(async () => {
@@ -48438,6 +48836,7 @@ var init_toolDefinitions = __esm(async () => {
   init_story_manager();
   init_asset_manager();
   init_image_generator();
+  init_canvas_ui();
   init_WriteFileGemini();
   init_WriteTodosGemini();
   init_ApplyPatch2();
@@ -48471,6 +48870,7 @@ var init_toolDefinitions = __esm(async () => {
   init_story_manager2();
   init_asset_manager2();
   init_image_generator2();
+  init_canvas_ui2();
   init_ApplyPatch3();
   init_AskUserQuestion3();
   init_Bash3();
@@ -48507,6 +48907,7 @@ var init_toolDefinitions = __esm(async () => {
   init_story_manager3();
   init_asset_manager3();
   init_image_generator3();
+  init_canvas_ui3();
   await __promiseAll([
     init_Skill2(),
     init_Task2()
@@ -48611,6 +49012,11 @@ var init_toolDefinitions = __esm(async () => {
       schema: image_generator_default2,
       description: image_generator_default.trim(),
       impl: image_generator
+    },
+    canvas_ui: {
+      schema: canvas_ui_default2,
+      description: canvas_ui_default.trim(),
+      impl: canvas_ui
     },
     shell_command: {
       schema: ShellCommand_default2,
@@ -51354,7 +51760,8 @@ var init_manager2 = __esm(async () => {
     "world_manager",
     "story_manager",
     "asset_manager",
-    "image_generator"
+    "image_generator",
+    "canvas_ui"
   ];
   OPENAI_DEFAULT_TOOLS = [
     "shell_command",
@@ -53564,7 +53971,8 @@ var init_manager3 = __esm(async () => {
     "world_manager",
     "story_manager",
     "asset_manager",
-    "image_generator"
+    "image_generator",
+    "canvas_ui"
   ];
   OPENAI_DEFAULT_TOOLS2 = [
     "shell_command",
@@ -53985,7 +54393,8 @@ async function createAgent(name = DEFAULT_AGENT_NAME, model, embeddingModel = "o
     "check_logical_consistency",
     "compare_versions",
     "analyze_information_gain",
-    "search_trajectories"
+    "search_trajectories",
+    "canvas_ui"
   ];
   let toolNames = [...serverToolNames, ...defaultBaseTools];
   if (toolNames.includes("memory_apply_patch")) {
@@ -78268,7 +78677,8 @@ async function createAgent2(name = DEFAULT_AGENT_NAME, model, embeddingModel = "
     "check_logical_consistency",
     "compare_versions",
     "analyze_information_gain",
-    "search_trajectories"
+    "search_trajectories",
+    "canvas_ui"
   ];
   let toolNames = [...serverToolNames, ...defaultBaseTools];
   if (toolNames.includes("memory_apply_patch")) {
@@ -80810,4 +81220,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=CBCD261A1195DAAF64756E2164756E21
+//# debugId=64F8C622461F47EC64756E2164756E21
