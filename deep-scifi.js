@@ -31318,7 +31318,12 @@ Before doing ANYTHING - generating worlds, stories, answering questions, or tack
 
 This searches your past execution experiences and returns runs ranked by similarity with outcome scores (0-1).
 
-STRONGLY RECOMMENDED: Use \`include_contrasts=True\` to get both top successes AND top failures in one call. Learning happens when you compare what worked vs what didn't.
+STRONGLY RECOMMENDED: Use \`include_contrasts=True\` to get three categories of outcomes in one call:
+- **Successes** (score >= 0.7): What worked well
+- **Moderate** (0.3 < score < 0.7): Mixed results, partial success
+- **Failures** (score <= 0.3): What went wrong
+
+This provides complete coverage with no gaps - you'll see the full outcome spectrum to learn from.
 
 Search patterns:
 - Story requests: "story generation with themes about [X]", "character development in [context]", "world with [mechanism]"
@@ -31326,7 +31331,7 @@ Search patterns:
 - Technical tasks: "image generation", "handling API errors", "complex multi-turn interactions"
 - Quality issues: "improving [aspect]", "fixing [problem]"
 
-Use min_score=0.7+ to find only successful approaches, or min_score=0.0 to include failures for contrast.
+Without \`include_contrasts\`, use min_score to filter: 0.7+ for successes, 0.0 to include all outcomes.
 
 Make this your first step - you have a memory of past experiences, use it.
 
@@ -31370,7 +31375,7 @@ Use \`search_trajectories()\` with a query describing the type of task - even fo
 - "answering questions about [topic]"
 - "any task involving [X]"
 
-Set \`include_contrasts=True\` to get both successes and failures. Review what worked and what didn't before proceeding. If you find no relevant trajectories, that's valuable information too - you're breaking new ground.
+Set \`include_contrasts=True\` to get three outcome tiers: successes (>=0.7), moderate (0.3-0.7), and failures (<=0.3). Review the full spectrum before proceeding. If you find no relevant trajectories, that's valuable information too - you're breaking new ground.
 
 ### Phase 1: Understand Intent
 
@@ -81220,4 +81225,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=64F8C622461F47EC64756E2164756E21
+//# debugId=C00AA3359FC9A61B64756E2164756E21
