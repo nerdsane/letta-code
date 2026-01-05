@@ -2,11 +2,11 @@
  * image_generator - Generate images using AI models (Google Gemini or OpenAI GPT-Image)
  *
  * Generates images from text prompts and optionally saves them as assets.
- * 
+ *
  * Default Provider Selection:
  * - Google (preferred): Uses gemini-3-pro-image-preview (Nano Banana Pro) if GOOGLE_API_KEY is set
- * - OpenAI (fallback): Uses gpt-image-1.5 via GPT-5.2 Responses API if OPENAI_API_KEY is set
- * 
+ * - OpenAI (fallback): Uses gpt-image-1.5 (latest, Dec 2025) via /v1/images/generations if OPENAI_API_KEY is set
+ *
  * At least one API key must be configured for image generation to work.
  */
 
@@ -26,7 +26,7 @@ export interface ImageGeneratorArgs {
   size?: "1024x1024" | "1792x1024" | "1024x1792" | "512x512" | "256x256";
   quality?: "standard" | "hd";
   style?: "vivid" | "natural";
-  model?: string; // OpenAI: "gpt-image-1.5" (default), "gpt-image-1", "gpt-image-1-mini" | Google: "gemini-3-pro-image-preview" (default, aka Nano Banana Pro)
+  model?: string; // OpenAI: "gpt-image-1.5" (default, latest), "gpt-image-1", "dall-e-3" | Google: "gemini-3-pro-image-preview" (default, aka Nano Banana Pro)
   save_as_asset?: boolean;
   story_id?: string;
   world_checkpoint?: string;
@@ -160,7 +160,7 @@ export async function image_generator(
 }
 
 // ============================================================================
-// OpenAI GPT-Image Generation (New Responses API)
+// OpenAI GPT-Image-1 Generation
 // ============================================================================
 
 async function generateWithOpenAI(
@@ -171,36 +171,43 @@ async function generateWithOpenAI(
     throw new Error("OPENAI_API_KEY environment variable not set");
   }
 
-  const size = args.size || DEFAULT_SIZE;
-  const quality = args.quality || DEFAULT_QUALITY;
-  
-  // Use gpt-image models via the Responses API
-  // Default to gpt-image-1.5 (latest and best), but allow override via args.model
-  const imageModel = args.model || "gpt-image-1.5";
-  
-  // GPT-5.2 or GPT-5 orchestrates the image generation
-  const mainlineModel = "gpt-5.2";
+  // Map size to gpt-image-1 supported sizes
+  // gpt-image-1 supports: "1024x1024", "1024x1536" (portrait), "1536x1024" (landscape), "auto"
+  let size = args.size || DEFAULT_SIZE;
+  if (size === "1792x1024") {
+    size = "1536x1024"; // Map to closest supported landscape
+  } else if (size === "1024x1792") {
+    size = "1024x1536"; // Map to closest supported portrait
+  } else if (size === "512x512" || size === "256x256") {
+    size = "1024x1024"; // gpt-image-1 doesn't support smaller sizes
+  }
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  // Use gpt-image-1.5 (latest, Dec 2025) - best quality, 4x faster, better text rendering
+  // Falls back to gpt-image-1 or dall-e-3 if specified
+  const model = args.model || "gpt-image-1.5";
+
+  // Build request body - gpt-image-1.5 and gpt-image-1 don't support style/quality params
+  const requestBody: Record<string, any> = {
+    model,
+    prompt: args.prompt,
+    n: 1,
+    size,
+    response_format: "b64_json",
+  };
+
+  // Only add style/quality for DALL-E models (not gpt-image-1 or gpt-image-1.5)
+  if (model.startsWith("dall-e")) {
+    requestBody.quality = args.quality || DEFAULT_QUALITY;
+    requestBody.style = args.style || DEFAULT_STYLE;
+  }
+
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model: mainlineModel,
-      input: args.prompt,
-      tools: [
-        {
-          type: "image_generation",
-          size: size,
-          quality: quality === "hd" ? "high" : quality === "standard" ? "medium" : "auto",
-          format: "png",
-          background: "auto",
-        },
-      ],
-      tool_choice: { type: "image_generation" },
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -209,29 +216,35 @@ async function generateWithOpenAI(
   }
 
   const data = await response.json() as {
-    output: Array<{
-      type: string;
-      result?: string;
+    data: Array<{
+      b64_json?: string;
+      url?: string;
       revised_prompt?: string;
     }>;
   };
 
-  // Find the image generation call in the output
-  const imageGenCall = data.output.find(
-    (item) => item.type === "image_generation_call"
-  );
-
-  if (!imageGenCall || !imageGenCall.result) {
+  if (!data.data || data.data.length === 0) {
     throw new Error("No image returned from OpenAI");
   }
 
-  // Result is base64 encoded
-  const base64Data = imageGenCall.result;
-  const dataUrl = `data:image/png;base64,${base64Data}`;
+  const imageData = data.data[0];
+
+  let imageUrl: string;
+  if (imageData.b64_json) {
+    imageUrl = `data:image/png;base64,${imageData.b64_json}`;
+  } else if (imageData.url) {
+    // Fetch the image and convert to base64
+    const imgResponse = await fetch(imageData.url);
+    const imgBuffer = await imgResponse.arrayBuffer();
+    const base64 = Buffer.from(imgBuffer).toString("base64");
+    imageUrl = `data:image/png;base64,${base64}`;
+  } else {
+    throw new Error("No image data in response");
+  }
 
   return {
-    imageUrl: dataUrl,
-    revisedPrompt: imageGenCall.revised_prompt,
+    imageUrl,
+    revisedPrompt: imageData.revised_prompt,
   };
 }
 
@@ -333,20 +346,43 @@ async function saveAsAsset(
   const assetId = args.asset_id || `img_${Date.now()}`;
   const fileName = `${assetId}.png`;
 
+  // Calculate full path including story_id or world_checkpoint context
+  // This ensures the path in metadata matches where asset_manager saves the file
+  let fullPath: string;
+  if (args.asset_path) {
+    // Custom path provided - use as-is but add context prefix if needed
+    if (args.story_id) {
+      fullPath = `${args.story_id}/${args.asset_path}`;
+    } else if (args.world_checkpoint) {
+      fullPath = `worlds/${args.world_checkpoint}/${args.asset_path}`;
+    } else {
+      fullPath = args.asset_path;
+    }
+  } else {
+    // Auto-generate path with context
+    if (args.story_id) {
+      fullPath = `${args.story_id}/${fileName}`;
+    } else if (args.world_checkpoint) {
+      fullPath = `worlds/${args.world_checkpoint}/${fileName}`;
+    } else {
+      fullPath = fileName;
+    }
+  }
+
   const asset: StoryAsset = {
     id: assetId,
     type: "image",
-    path: args.asset_path || fileName,
+    path: fullPath,
     description: args.asset_description || `Generated image: ${args.prompt.slice(0, 100)}`,
     generated: true,
     prompt: args.prompt,
   };
 
   // Save using asset_manager
+  // Note: Don't pass story_id/world_checkpoint since fullPath already includes the context
+  // This prevents asset_manager from double-prefixing the path
   const result = await asset_manager({
     operation: "save",
-    story_id: args.story_id,
-    world_checkpoint: args.world_checkpoint,
     asset,
     data: dataUrl,
   });

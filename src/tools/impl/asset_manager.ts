@@ -103,7 +103,11 @@ async function saveAsset(args: AssetManagerArgs): Promise<AssetManagerResult> {
     await mkdir(worldDir, { recursive: true });
     assetPath = join(worldDir, args.asset.path);
   } else {
+    // Use path directly - it may include subdirectories (e.g., "story_id/img.png")
     assetPath = join(ASSETS_DIR, args.asset.path);
+    // Ensure parent directory exists (handles paths like "story_id/img.png")
+    const parentDir = join(assetPath, "..");
+    await mkdir(parentDir, { recursive: true });
   }
 
   // Handle data - could be base64 or file path

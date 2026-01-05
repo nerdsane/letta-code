@@ -39,17 +39,153 @@ export interface TextSpec extends BaseComponentSpec {
 export interface StackSpec extends BaseComponentSpec {
   type: 'Stack';
   props: {
-    spacing?: number;
     direction?: 'vertical' | 'horizontal';
+    spacing?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+    align?: 'start' | 'center' | 'end' | 'stretch';
+    justify?: 'start' | 'center' | 'end' | 'between' | 'around';
+    wrap?: boolean;
   };
   children?: ComponentSpec[];
+}
+
+export interface GridSpec extends BaseComponentSpec {
+  type: 'Grid';
+  props: {
+    columns?: number | 'auto';
+    rows?: number | 'auto';
+    gap?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+    columnGap?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+    rowGap?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+    minChildWidth?: string;
+    align?: 'start' | 'center' | 'end' | 'stretch';
+    justify?: 'start' | 'center' | 'end' | 'stretch';
+  };
+  children?: ComponentSpec[];
+}
+
+export interface ImageSpec extends BaseComponentSpec {
+  type: 'Image';
+  props: {
+    src: string;
+    alt?: string;
+    caption?: string;
+    size?: 'small' | 'medium' | 'large' | 'full';
+    lightbox?: boolean;
+    onClick?: string;
+  };
+}
+
+export interface GalleryImage {
+  src: string;
+  alt?: string;
+  caption?: string;
+}
+
+export interface GallerySpec extends BaseComponentSpec {
+  type: 'Gallery';
+  props: {
+    images: GalleryImage[];
+    columns?: 2 | 3 | 4;
+    gap?: 'sm' | 'md' | 'lg';
+    lightbox?: boolean;
+    variant?: 'grid' | 'masonry' | 'carousel';
+  };
+}
+
+export interface CardSpec extends BaseComponentSpec {
+  type: 'Card';
+  props: {
+    title?: string;
+    subtitle?: string;
+    image?: string;
+    imagePosition?: 'top' | 'left' | 'right';
+    variant?: 'default' | 'elevated' | 'outlined' | 'ghost';
+    accent?: 'cyan' | 'purple' | 'none';
+    onClick?: string;
+  };
+  children?: ComponentSpec | ComponentSpec[];
+}
+
+export interface TimelineEvent {
+  id?: string;
+  date?: string;
+  year?: string | number;
+  title: string;
+  description?: string;
+  icon?: string;
+  status?: 'completed' | 'current' | 'upcoming';
+  accent?: 'cyan' | 'purple' | 'default';
+}
+
+export interface TimelineSpec extends BaseComponentSpec {
+  type: 'Timeline';
+  props: {
+    events: TimelineEvent[];
+    orientation?: 'vertical' | 'horizontal';
+    variant?: 'default' | 'compact' | 'detailed';
+    showConnectors?: boolean;
+  };
+}
+
+export interface CalloutSpec extends BaseComponentSpec {
+  type: 'Callout';
+  props: {
+    variant?: 'info' | 'warning' | 'quote' | 'rule' | 'tech';
+    title?: string;
+    content?: string;
+  };
+  children?: ComponentSpec | ComponentSpec[];
+}
+
+export interface StatItem {
+  value: string | number;
+  label: string;
+  trend?: 'up' | 'down' | 'neutral';
+  accent?: 'cyan' | 'purple' | 'default';
+}
+
+export interface StatsSpec extends BaseComponentSpec {
+  type: 'Stats';
+  props: {
+    items: StatItem[];
+    columns?: 2 | 3 | 4 | 'auto';
+    variant?: 'default' | 'compact' | 'large';
+  };
+}
+
+export interface BadgeSpec extends BaseComponentSpec {
+  type: 'Badge';
+  props: {
+    label: string;
+    variant?: 'default' | 'cyan' | 'purple' | 'success' | 'warning' | 'error';
+    size?: 'sm' | 'md' | 'lg';
+    icon?: string;
+  };
+}
+
+export interface DividerSpec extends BaseComponentSpec {
+  type: 'Divider';
+  props: {
+    variant?: 'default' | 'accent' | 'dashed';
+    spacing?: 'sm' | 'md' | 'lg';
+    label?: string;
+  };
 }
 
 export type ComponentSpec =
   | DialogSpec
   | ButtonSpec
   | TextSpec
-  | StackSpec;
+  | StackSpec
+  | GridSpec
+  | ImageSpec
+  | GallerySpec
+  | CardSpec
+  | TimelineSpec
+  | CalloutSpec
+  | StatsSpec
+  | BadgeSpec
+  | DividerSpec;
 
 export interface CanvasState {
   rootComponent: ComponentSpec | null;

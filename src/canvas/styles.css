@@ -801,6 +801,62 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Inline Images in Story Text */
+.inline-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: var(--space-4) 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.inline-image:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+}
+
+.inline-image.size-small {
+  max-width: 300px;
+}
+
+.inline-image.size-medium {
+  max-width: 500px;
+}
+
+.inline-image.size-large {
+  max-width: 700px;
+}
+
+.inline-image.size-full {
+  max-width: 100%;
+}
+
+/* Missing/placeholder image */
+.missing-image {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  background: rgba(255, 170, 0, 0.1);
+  border: 1px dashed rgba(255, 170, 0, 0.3);
+  color: #ffaa00;
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  border-radius: 2px;
+}
+
+/* Markdown content container */
+.markdown-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.markdown-content p {
+  margin: 0;
+}
+
 .world-evolution {
   background: rgba(0, 255, 204, 0.02);
   border-left: 2px solid rgba(0, 255, 204, 0.3);
@@ -1188,4 +1244,715 @@ a:focus-visible {
 
 .dsf-dialog-content::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 255, 204, 0.4);
+}
+
+/* ============================================================================
+   DSF Image Component
+   ============================================================================ */
+
+.dsf-image-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dsf-image-container {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+}
+
+.dsf-image-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.dsf-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.dsf-image.loading {
+  opacity: 0;
+}
+
+.dsf-image.loaded {
+  opacity: 1;
+}
+
+.dsf-image:hover {
+  transform: scale(1.02);
+}
+
+.dsf-image-caption {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: var(--space-1) 0;
+}
+
+.dsf-image-small .dsf-image-container { max-width: 300px; }
+.dsf-image-medium .dsf-image-container { max-width: 500px; }
+.dsf-image-large .dsf-image-container { max-width: 700px; }
+.dsf-image-full .dsf-image-container { max-width: 100%; }
+
+.dsf-image-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  color: #ff4444;
+  font-size: var(--text-sm);
+}
+
+.dsf-image-error-icon {
+  font-size: var(--text-lg);
+}
+
+/* ============================================================================
+   DSF Lightbox
+   ============================================================================ */
+
+.dsf-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dsf-lightbox-image {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border: 1px solid var(--border-medium);
+}
+
+.dsf-lightbox-close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  width: 44px;
+  height: 44px;
+  font-size: 2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.dsf-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+}
+
+.dsf-lightbox-caption {
+  position: absolute;
+  bottom: var(--space-6);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  max-width: 80vw;
+  text-align: center;
+}
+
+.dsf-lightbox-counter {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+}
+
+.dsf-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  width: 60px;
+  height: 60px;
+  font-size: 2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.dsf-lightbox-prev { left: var(--space-4); }
+.dsf-lightbox-next { right: var(--space-4); }
+
+.dsf-lightbox-nav:hover {
+  background: rgba(0, 255, 204, 0.1);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+}
+
+/* ============================================================================
+   DSF Gallery Component
+   ============================================================================ */
+
+.dsf-gallery {
+  width: 100%;
+}
+
+.dsf-gallery-empty {
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-subtle);
+}
+
+.dsf-gallery-item {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dsf-gallery-item:hover {
+  border-color: var(--neon-cyan);
+  transform: translateY(-2px);
+}
+
+.dsf-gallery-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.dsf-gallery-item:hover .dsf-gallery-image {
+  transform: scale(1.05);
+}
+
+.dsf-gallery-item-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-2);
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+}
+
+/* Carousel variant */
+.dsf-gallery-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.dsf-carousel-main {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dsf-carousel-image-container {
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.dsf-carousel-image {
+  width: 100%;
+  height: 400px;
+  object-fit: contain;
+  background: var(--bg-tertiary);
+  cursor: pointer;
+}
+
+.dsf-carousel-nav {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin: 0 var(--space-2);
+}
+
+.dsf-carousel-nav:hover {
+  background: rgba(0, 255, 204, 0.1);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+}
+
+.dsf-carousel-caption {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-style: italic;
+}
+
+.dsf-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.dsf-carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-subtle);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dsf-carousel-dot:hover,
+.dsf-carousel-dot.active {
+  background: var(--neon-cyan);
+}
+
+/* ============================================================================
+   DSF Card Component
+   ============================================================================ */
+
+.dsf-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.dsf-card-clickable {
+  cursor: pointer;
+}
+
+.dsf-card-clickable:hover {
+  background: rgba(0, 255, 204, 0.03);
+  border-color: var(--border-medium);
+  transform: translateY(-2px);
+}
+
+.dsf-card-horizontal {
+  display: flex;
+}
+
+.dsf-card-image-container {
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.dsf-card-image-top {
+  width: 100%;
+  height: 180px;
+}
+
+.dsf-card-image-side {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.dsf-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.dsf-card-clickable:hover .dsf-card-image {
+  transform: scale(1.05);
+}
+
+.dsf-card-content {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+}
+
+.dsf-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dsf-card-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  margin: 0;
+}
+
+.dsf-card-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.dsf-card-body {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Card variants */
+.dsf-card-elevated {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dsf-card-outlined {
+  background: transparent;
+  border-width: 2px;
+}
+
+.dsf-card-ghost {
+  background: transparent;
+  border: none;
+}
+
+/* Card accents */
+.dsf-card-accent-cyan {
+  border-left: 3px solid var(--neon-cyan);
+}
+
+.dsf-card-accent-purple {
+  border-left: 3px solid var(--neon-purple);
+}
+
+/* ============================================================================
+   DSF Timeline Component
+   ============================================================================ */
+
+.dsf-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.dsf-timeline-empty {
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-subtle);
+}
+
+/* Vertical Timeline */
+.dsf-timeline-vertical .dsf-timeline-item {
+  display: flex;
+  gap: var(--space-3);
+  position: relative;
+}
+
+.dsf-timeline-marker-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.dsf-timeline-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 2px solid var(--neon-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.dsf-timeline-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon-cyan);
+}
+
+.dsf-timeline-icon {
+  font-size: 10px;
+}
+
+.dsf-timeline-connector {
+  width: 2px;
+  flex: 1;
+  background: linear-gradient(to bottom, var(--neon-cyan) 0%, var(--border-subtle) 100%);
+  margin: var(--space-1) 0;
+  min-height: 30px;
+}
+
+.dsf-timeline-content {
+  flex: 1;
+  padding-bottom: var(--space-4);
+}
+
+.dsf-timeline-date {
+  font-size: var(--text-xs);
+  color: var(--neon-cyan);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-1);
+}
+
+.dsf-timeline-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.dsf-timeline-description {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Timeline status */
+.dsf-timeline-status-completed .dsf-timeline-marker {
+  background: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+}
+
+.dsf-timeline-status-completed .dsf-timeline-dot {
+  background: var(--bg-primary);
+}
+
+.dsf-timeline-status-current .dsf-timeline-marker {
+  border-color: var(--neon-purple);
+  box-shadow: 0 0 12px rgba(170, 0, 255, 0.5);
+}
+
+.dsf-timeline-status-current .dsf-timeline-dot {
+  background: var(--neon-purple);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.dsf-timeline-status-upcoming .dsf-timeline-marker {
+  border-color: var(--border-subtle);
+}
+
+.dsf-timeline-status-upcoming .dsf-timeline-dot {
+  background: var(--border-subtle);
+}
+
+/* Timeline accent */
+.dsf-timeline-accent-purple .dsf-timeline-marker {
+  border-color: var(--neon-purple);
+}
+
+.dsf-timeline-accent-purple .dsf-timeline-dot {
+  background: var(--neon-purple);
+}
+
+/* Horizontal Timeline */
+.dsf-timeline-horizontal {
+  overflow-x: auto;
+  padding: var(--space-4) 0;
+}
+
+.dsf-timeline-track {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  min-width: max-content;
+}
+
+.dsf-timeline-horizontal .dsf-timeline-line {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to right, var(--neon-cyan), var(--border-subtle));
+}
+
+.dsf-timeline-horizontal .dsf-timeline-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 150px;
+  padding: 0 var(--space-3);
+}
+
+.dsf-timeline-horizontal .dsf-timeline-content {
+  text-align: center;
+  padding-top: var(--space-2);
+}
+
+/* Compact variant */
+.dsf-timeline-compact .dsf-timeline-content {
+  padding-bottom: var(--space-2);
+}
+
+.dsf-timeline-compact .dsf-timeline-title {
+  font-size: var(--text-sm);
+}
+
+.dsf-timeline-compact .dsf-timeline-description {
+  display: none;
+}
+
+/* ============================================================================
+   DSF Callout Component (for rich text)
+   ============================================================================ */
+
+.dsf-callout {
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--neon-cyan);
+  background: rgba(0, 255, 204, 0.05);
+  margin: var(--space-3) 0;
+}
+
+.dsf-callout-info {
+  border-left-color: var(--neon-cyan);
+  background: rgba(0, 255, 204, 0.05);
+}
+
+.dsf-callout-warning {
+  border-left-color: #ffaa00;
+  background: rgba(255, 170, 0, 0.05);
+}
+
+.dsf-callout-quote {
+  border-left-color: var(--neon-purple);
+  background: rgba(170, 0, 255, 0.05);
+  font-style: italic;
+}
+
+.dsf-callout-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dsf-callout-content {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   DSF Stats/Metric Component
+   ============================================================================ */
+
+.dsf-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+.dsf-stat {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.dsf-stat-value {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--neon-cyan);
+  font-family: var(--font-mono);
+}
+
+.dsf-stat-label {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: var(--space-1);
+}
+
+/* ============================================================================
+   DSF Divider
+   ============================================================================ */
+
+.dsf-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-subtle) 20%, var(--border-subtle) 80%, transparent);
+  margin: var(--space-4) 0;
+}
+
+.dsf-divider-accent {
+  background: linear-gradient(90deg, transparent, var(--neon-cyan) 20%, var(--neon-cyan) 80%, transparent);
+  opacity: 0.3;
+}
+
+/* ============================================================================
+   DSF Badge
+   ============================================================================ */
+
+.dsf-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+}
+
+.dsf-badge-cyan {
+  background: rgba(0, 255, 204, 0.1);
+  color: var(--neon-cyan);
+  border-color: rgba(0, 255, 204, 0.3);
+}
+
+.dsf-badge-purple {
+  background: rgba(170, 0, 255, 0.1);
+  color: var(--neon-purple);
+  border-color: rgba(170, 0, 255, 0.3);
 }
