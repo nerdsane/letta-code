@@ -52,6 +52,61 @@ if (interactions[0]?.data?.actionId === "continue") {
 }
 ```
 
+## Handling Story Read Requests
+
+When user clicks a story in the canvas, you'll receive a `story_read_request` interaction:
+
+```typescript
+const interactions = get_canvas_interactions()
+// Returns: [{
+//   interactionType: "story_read_request",
+//   data: {
+//     storyId: "story-123",
+//     title: "The Awakening",
+//     segmentCount: 5,
+//     story: { /* full story object */ }
+//   }
+// }]
+
+// Compose immersive experience for the story
+if (interactions[0]?.interactionType === "story_read_request") {
+  const { story } = interactions[0].data;
+
+  // Generate a cover image for the story
+  const coverImage = await image_generator({ prompt: "..." });
+
+  // Compose fullscreen experience
+  canvas_ui({
+    mode: "fullscreen",
+    target: "story-experience",
+    spec: {
+      type: "Stack",
+      children: [
+        { type: "ProgressBar", props: { position: "top" } },
+        { type: "Hero", props: {
+          title: story.metadata.title,
+          backgroundImage: coverImage,
+          badge: "Chapter 1"
+        }},
+        // Story segments with scroll animations
+        ...story.segments.map(segment => ({
+          type: "ScrollSection",
+          props: { animation: "fade-up" },
+          children: [{ type: "Text", props: { content: segment.content } }]
+        })),
+        // Actions at the end
+        { type: "ActionBar", props: {
+          actions: [
+            { id: "continue", label: "Continue", variant: "primary" },
+            { id: "explore", label: "Explore world", variant: "branch" }
+          ]
+        }}
+      ]
+    }
+  })
+}
+```
+
 ## Parameters
 
 - `target` (required): Mount point where the UI appears

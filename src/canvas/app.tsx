@@ -193,11 +193,35 @@ function App() {
   }
 
   function selectStory(story: Story) {
-    setState((s) => ({
-      ...s,
-      view: "story",
-      selectedStory: story,
-    }));
+    // Send interaction to agent requesting immersive story experience
+    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      agentBusRef.current.sendInteraction(
+        'canvas-story-request',
+        'story_read_request',
+        {
+          storyId: story.id,
+          title: story.metadata.title,
+          segmentCount: story.segments.length,
+          // Include story data for agent to compose experience
+          story: story,
+        },
+        'story-experience'
+      );
+      // Show thinking state while agent composes experience
+      setState((s) => ({
+        ...s,
+        agentThinking: true,
+        selectedStory: story,
+      }));
+    } else {
+      // Fallback to static view if agent bus not connected
+      console.warn('[Canvas] Agent Bus not connected, using static story view');
+      setState((s) => ({
+        ...s,
+        view: "story",
+        selectedStory: story,
+      }));
+    }
   }
 
   function goBack() {
@@ -253,7 +277,8 @@ function App() {
             if (action === 'remove') {
               return { ...s, fullscreenUI: null };
             } else if (spec) {
-              return { ...s, fullscreenUI: { componentId, spec, mode } };
+              // Clear thinking state when fullscreen experience arrives
+              return { ...s, fullscreenUI: { componentId, spec, mode }, agentThinking: false };
             }
             return s;
           }
