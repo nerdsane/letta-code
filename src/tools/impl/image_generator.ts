@@ -186,17 +186,19 @@ async function generateWithOpenAI(
   // Falls back to gpt-image-1 or dall-e-3 if specified
   const model = args.model || "gpt-image-1.5";
 
-  // Build request body - gpt-image-1.5 and gpt-image-1 don't support style/quality params
+  // Build request body
+  // gpt-image-1 and gpt-image-1.5 ONLY return b64_json (don't pass response_format - it's implied)
+  // DALL-E models support response_format, quality, and style parameters
   const requestBody: Record<string, any> = {
     model,
     prompt: args.prompt,
     n: 1,
     size,
-    response_format: "b64_json",
   };
 
-  // Only add style/quality for DALL-E models (not gpt-image-1 or gpt-image-1.5)
+  // Only add response_format for DALL-E models (gpt-image-1/1.5 don't accept this param)
   if (model.startsWith("dall-e")) {
+    requestBody.response_format = "b64_json";
     requestBody.quality = args.quality || DEFAULT_QUALITY;
     requestBody.style = args.style || DEFAULT_STYLE;
   }

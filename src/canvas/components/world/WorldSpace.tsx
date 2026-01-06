@@ -18,7 +18,10 @@ export function WorldSpace({
   onExploreElement,
   onStartNewStory,
 }: WorldSpaceProps) {
-  const { foundation, surface, development } = world;
+  // Guard against missing nested properties
+  const foundation = world?.foundation || { name: 'Unknown World', premise: '', rules: [], time_period: '' };
+  const surface = world?.surface || { visible_elements: [] };
+  const development = world?.development || { version: 0, versions: [] };
 
   // Get world cover image if available
   const coverImage = world.asset?.path ? `/api/assets/${world.asset.path}` : undefined;
