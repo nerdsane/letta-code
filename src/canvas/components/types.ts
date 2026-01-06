@@ -100,7 +100,7 @@ export interface CardSpec extends BaseComponentSpec {
     image?: string;
     imagePosition?: 'top' | 'left' | 'right';
     variant?: 'default' | 'elevated' | 'outlined' | 'ghost';
-    accent?: 'cyan' | 'purple' | 'none';
+    accent?: 'cyan' | 'teal' | 'none';
     onClick?: string;
   };
   children?: ComponentSpec | ComponentSpec[];
@@ -114,7 +114,7 @@ export interface TimelineEvent {
   description?: string;
   icon?: string;
   status?: 'completed' | 'current' | 'upcoming';
-  accent?: 'cyan' | 'purple' | 'default';
+  accent?: 'cyan' | 'teal' | 'default';
 }
 
 export interface TimelineSpec extends BaseComponentSpec {
@@ -141,7 +141,7 @@ export interface StatItem {
   value: string | number;
   label: string;
   trend?: 'up' | 'down' | 'neutral';
-  accent?: 'cyan' | 'purple' | 'default';
+  accent?: 'cyan' | 'teal' | 'default';
 }
 
 export interface StatsSpec extends BaseComponentSpec {
@@ -157,7 +157,7 @@ export interface BadgeSpec extends BaseComponentSpec {
   type: 'Badge';
   props: {
     label: string;
-    variant?: 'default' | 'cyan' | 'purple' | 'success' | 'warning' | 'error';
+    variant?: 'default' | 'cyan' | 'teal' | 'success' | 'warning' | 'error';
     size?: 'sm' | 'md' | 'lg';
     icon?: string;
   };

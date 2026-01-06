@@ -8,6 +8,7 @@ import { MountPoint } from "./components/MountPoint";
 import { AgentBusClient } from "./agentBusClient";
 import { ImmersiveStoryReader } from "./components/story";
 import { mockStory } from "./components/story/mockStory";
+import { WorldSpace } from "./components/world";
 
 // ============================================================================
 // ASCII Art Logo
@@ -46,12 +47,12 @@ interface AppState {
   selectedStory: Story | null;
   loading: boolean;
   error: string | null;
-  dynamicUI: ComponentSpec | null; // Temporary test UI (will be removed)
   agentUI: Map<string, AgentUIEntry>; // Agent-created UI by target
   fullscreenUI: AgentUIEntry | null; // Fullscreen UI takes over main content
   agentBusConnected: boolean;
   showImmersiveDemo: boolean; // Toggle for immersive reader demo (mock data)
   agentThinking: boolean; // Agent is processing
+  useImmersiveWorld: boolean; // Use immersive WorldSpace view
 }
 
 // ============================================================================
@@ -97,12 +98,12 @@ function App() {
     selectedStory: null,
     loading: true,
     error: null,
-    dynamicUI: null,
     agentUI: new Map(),
     fullscreenUI: null,
     agentBusConnected: false,
     showImmersiveDemo: false,
     agentThinking: false,
+    useImmersiveWorld: true, // Default to immersive experience
   });
 
   const agentBusRef = useRef<AgentBusClient | null>(null);
@@ -133,6 +134,22 @@ function App() {
 
     return () => ws.close();
   }, []);
+
+  // ESC key handler for fullscreen and immersive modes
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (state.fullscreenUI) {
+          setState(s => ({ ...s, fullscreenUI: null }));
+        } else if (state.showImmersiveDemo) {
+          setState(s => ({ ...s, showImmersiveDemo: false }));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.fullscreenUI, state.showImmersiveDemo]);
 
   // Load initial data
   useEffect(() => {
@@ -295,74 +312,6 @@ function App() {
     };
   }, []);
 
-  // Test: Load a sample dynamic UI on mount (temporary)
-  useEffect(() => {
-    const testUI: ComponentSpec = {
-      type: 'Dialog',
-      id: 'test-dialog',
-      props: {
-        title: 'Agent-Controlled Dialog',
-        description: 'This dialog was created by specifying JSON!',
-        trigger: {
-          type: 'Button',
-          id: 'trigger-btn',
-          props: {
-            label: '🤖 Agent UI Test',
-            variant: 'primary'
-          }
-        }
-      },
-      children: {
-        type: 'Stack',
-        props: { spacing: 16 },
-        children: [
-          {
-            type: 'Text',
-            props: {
-              content: 'This entire UI was created from a JSON specification:',
-              size: 'md',
-              color: 'var(--text-primary)'
-            }
-          },
-          {
-            type: 'Text',
-            props: {
-              content: '• Dialog with neon styling ✨',
-              size: 'sm',
-              color: 'var(--text-secondary)'
-            }
-          },
-          {
-            type: 'Text',
-            props: {
-              content: '• Stack layout with spacing',
-              size: 'sm',
-              color: 'var(--text-secondary)'
-            }
-          },
-          {
-            type: 'Text',
-            props: {
-              content: '• Multiple text components',
-              size: 'sm',
-              color: 'var(--text-secondary)'
-            }
-          },
-          {
-            type: 'Text',
-            props: {
-              content: 'Next: Agent Bus → canvas_ui tool → Agent control! 🚀',
-              size: 'md',
-              color: 'var(--neon-cyan)'
-            }
-          }
-        ]
-      }
-    };
-
-    setState(s => ({ ...s, dynamicUI: testUI }));
-  }, []);
-
   if (state.loading) {
     return <LoadingScreen />;
   }
@@ -395,48 +344,7 @@ function App() {
         onHome={goHome}
       />
 
-      {/* Demo toggle - temporary for testing immersive components */}
-      <button
-        onClick={toggleImmersiveDemo}
-        style={{
-          position: 'fixed',
-          bottom: '20px',
-          left: '20px',
-          zIndex: 2000,
-          padding: '8px 12px',
-          background: 'rgba(10, 10, 10, 0.9)',
-          border: '1px solid rgba(0, 255, 204, 0.2)',
-          color: 'rgba(0, 255, 204, 0.6)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '10px',
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(0, 255, 204, 0.5)';
-          e.currentTarget.style.color = '#00ffcc';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(0, 255, 204, 0.2)';
-          e.currentTarget.style.color = 'rgba(0, 255, 204, 0.6)';
-        }}
-      >
-        {state.showImmersiveDemo ? 'Exit Demo' : 'Demo'}
-      </button>
-
-      {/* Test dynamic UI (temporary) */}
-      {state.dynamicUI && (
-        <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 2000 }}>
-          <DynamicRenderer
-            spec={state.dynamicUI}
-            onInteraction={handleDynamicUIInteraction}
-          />
-        </div>
-      )}
-
-      {/* Agent Bus UI components */}
+      {/* Agent Bus UI components (overlay mode) */}
       {Array.from(state.agentUI.entries()).map(([target, { componentId, spec }]) => {
         // For now, render all components as floating (TODO: add proper mount points)
         return (
@@ -525,15 +433,32 @@ function App() {
         )}
 
         {state.view === "world" && state.selectedWorld && (
-          <WorldView
-            world={state.selectedWorld}
-            stories={state.stories.filter(
-              (s) => s.world_checkpoint === getWorldCheckpointName(state.selectedWorld!)
-            )}
-            onSelectStory={selectStory}
-            agentUI={state.agentUI}
-            onInteraction={handleDynamicUIInteraction}
-          />
+          state.useImmersiveWorld ? (
+            <WorldSpace
+              world={state.selectedWorld}
+              stories={state.stories.filter(
+                (s) => s.world_checkpoint === getWorldCheckpointName(state.selectedWorld!)
+              )}
+              onSelectStory={selectStory}
+              onStartNewStory={() => {
+                // Trigger new story creation
+                const checkpoint = getWorldCheckpointName(state.selectedWorld!);
+                fetch(`/api/world/${checkpoint}/new-story`, { method: 'POST' })
+                  .then(() => window.location.reload())
+                  .catch(console.error);
+              }}
+            />
+          ) : (
+            <WorldView
+              world={state.selectedWorld}
+              stories={state.stories.filter(
+                (s) => s.world_checkpoint === getWorldCheckpointName(state.selectedWorld!)
+              )}
+              onSelectStory={selectStory}
+              agentUI={state.agentUI}
+              onInteraction={handleDynamicUIInteraction}
+            />
+          )
         )}
 
         {state.view === "story" && state.selectedStory && (

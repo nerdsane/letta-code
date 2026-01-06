@@ -11,7 +11,55 @@ import type { ComponentSpec } from '../canvas/components/types';
 const AGENT_BUS_URL = process.env.AGENT_BUS_URL || 'ws://localhost:8284/ws?type=agent';
 
 // ============================================================================
-// Interaction Callback Registry
+// Interaction Queue - For agent to poll user interactions
+// ============================================================================
+
+export interface QueuedInteraction {
+  id: string;
+  timestamp: number;
+  componentId: string;
+  interactionType: string;
+  target?: string;
+  data: any;
+}
+
+const interactionQueue: QueuedInteraction[] = [];
+const MAX_QUEUE_SIZE = 100;
+const INTERACTION_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Get all pending interactions from the queue
+ * Clears the queue after reading (agent has received them)
+ */
+export function getCanvasInteractions(): QueuedInteraction[] {
+  // Remove expired interactions
+  const now = Date.now();
+  const validInteractions = interactionQueue.filter(i => now - i.timestamp < INTERACTION_TTL_MS);
+
+  // Clear the queue
+  interactionQueue.length = 0;
+
+  return validInteractions;
+}
+
+/**
+ * Peek at pending interactions without clearing
+ */
+export function peekCanvasInteractions(): QueuedInteraction[] {
+  const now = Date.now();
+  return interactionQueue.filter(i => now - i.timestamp < INTERACTION_TTL_MS);
+}
+
+/**
+ * Get count of pending interactions
+ */
+export function getInteractionCount(): number {
+  const now = Date.now();
+  return interactionQueue.filter(i => now - i.timestamp < INTERACTION_TTL_MS).length;
+}
+
+// ============================================================================
+// Interaction Callback Registry (for TypeScript-side handlers)
 // ============================================================================
 
 type InteractionCallback = (data: any) => void | Promise<void>;
@@ -27,11 +75,32 @@ export function onInteraction(target: string, callback: InteractionCallback) {
 
 /**
  * Handle incoming interaction from canvas
+ * - Queues interaction for agent polling
+ * - Also fires any registered TypeScript callbacks
  */
 function handleInteraction(message: InteractionMessage) {
   const { target, data, componentId, interactionType } = message;
 
-  // Try target-specific callback first
+  // Always queue the interaction for agent polling
+  const queuedInteraction: QueuedInteraction = {
+    id: `int-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: Date.now(),
+    componentId,
+    interactionType,
+    target,
+    data,
+  };
+
+  interactionQueue.push(queuedInteraction);
+
+  // Trim queue if too large
+  while (interactionQueue.length > MAX_QUEUE_SIZE) {
+    interactionQueue.shift();
+  }
+
+  console.log(`[canvas_ui] Queued interaction: ${interactionType} on ${componentId} (queue size: ${interactionQueue.length})`);
+
+  // Also try TypeScript callbacks for immediate handling
   if (target && interactionCallbacks.has(target)) {
     const callback = interactionCallbacks.get(target)!;
     Promise.resolve(callback(data)).catch(err => {
@@ -40,16 +109,12 @@ function handleInteraction(message: InteractionMessage) {
     return;
   }
 
-  // Try componentId callback
   if (interactionCallbacks.has(componentId)) {
     const callback = interactionCallbacks.get(componentId)!;
     Promise.resolve(callback({ ...data, interactionType })).catch(err => {
       console.error(`[canvas_ui] Interaction callback error for ${componentId}:`, err);
     });
-    return;
   }
-
-  console.log(`[canvas_ui] Unhandled interaction: ${interactionType} on ${componentId} (target: ${target})`);
 }
 
 // ============================================================================
