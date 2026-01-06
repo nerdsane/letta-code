@@ -9,6 +9,7 @@ import { AgentBusClient } from "./agentBusClient";
 import { ImmersiveStoryReader } from "./components/story";
 import { mockStory } from "./components/story/mockStory";
 import { WorldSpace } from "./components/world";
+import { WelcomeSpace } from "./components/welcome";
 
 // ============================================================================
 // ASCII Art Logo
@@ -424,7 +425,7 @@ function App() {
 
       <main className="main-content">
         {state.view === "canvas" && (
-          <CanvasView
+          <WelcomeSpace
             worlds={state.worlds}
             stories={state.stories}
             onSelectWorld={selectWorld}
