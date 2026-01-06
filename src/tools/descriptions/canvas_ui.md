@@ -1,5 +1,57 @@
 Create dynamic, immersive UI experiences in the canvas. Compose magical, game-like interfaces for stories and worlds.
 
+## Proactive Visual Storytelling
+
+As a storyteller, you should **proactively create immersive experiences** without waiting for explicit UI requests:
+
+**When to create fullscreen experiences:**
+- When presenting a new story or chapter - wrap it in Hero + ScrollSections
+- When revealing a dramatic moment - use Hero with atmospheric background
+- When introducing a new world - compose an exploration experience
+- When showing character interactions - add inline images and callouts
+
+**When to use inline/overlay:**
+- Quick stats or information during conversation
+- World rule reminders while writing
+- Character relationship visualizations
+
+**Visual immersion is core to storytelling.** Don't just write text - compose experiences that draw the reader in. Generate images for key scenes and weave them into scroll-driven layouts.
+
+## Handling User Interactions
+
+After showing UI with actions, use `get_canvas_interactions` to see what the user selected:
+
+```typescript
+// 1. Show experience with actions
+canvas_ui({
+  mode: "fullscreen",
+  spec: {
+    type: "Stack",
+    children: [
+      // ... story content ...
+      {
+        type: "ActionBar",
+        props: {
+          actions: [
+            { id: "continue", label: "Continue", variant: "primary" },
+            { id: "explore", label: "Explore world", variant: "branch" }
+          ]
+        }
+      }
+    ]
+  }
+})
+
+// 2. Later, check what user clicked
+const interactions = get_canvas_interactions()
+// Returns: [{ componentId: "...", data: { actionId: "continue" } }]
+
+// 3. React to their choice
+if (interactions[0]?.data?.actionId === "continue") {
+  // Continue the story...
+}
+```
+
 ## Parameters
 
 - `target` (required): Mount point where the UI appears
