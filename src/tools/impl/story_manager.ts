@@ -26,6 +26,7 @@ import type {
   WorldContributions,
 } from "../../types/dsf";
 import { world_manager } from "./world_manager";
+import { broadcastStateChange } from "./canvas_ui";
 
 // ============================================================================
 // Constants
@@ -156,6 +157,12 @@ async function createStory(args: StoryManagerArgs): Promise<StoryManagerResult> 
   const filePath = join(worldDir, `${storyId}.json`);
   await writeFile(filePath, JSON.stringify(story, null, 2), "utf-8");
 
+  // Broadcast state change for reactive UI
+  await broadcastStateChange('story_started', {
+    storyId: storyId,
+    worldId: args.world_checkpoint,
+  });
+
   return {
     toolReturn: `Story created: ${args.title}\nID: ${storyId}\nWorld: ${args.world_checkpoint} (v${world.development.version})\nPath: ${filePath}`,
     status: "success",
@@ -213,6 +220,13 @@ async function saveSegment(args: StoryManagerArgs): Promise<StoryManagerResult> 
   const worldDir = join(STORIES_DIR, story.world_checkpoint);
   const filePath = join(worldDir, `${story.id}.json`);
   await writeFile(filePath, JSON.stringify(story, null, 2), "utf-8");
+
+  // Broadcast state change for reactive UI
+  await broadcastStateChange('story_continued', {
+    storyId: story.id,
+    segmentId: segmentId,
+    worldId: story.world_checkpoint,
+  });
 
   return {
     toolReturn: `Segment saved to story "${story.metadata.title}"\nSegment ID: ${segmentId}\nWord count: ${segment.word_count}\nTotal segments: ${story.segments.length}`,

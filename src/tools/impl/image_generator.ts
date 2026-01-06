@@ -13,6 +13,7 @@
 import type { StoryAsset } from "../../types/dsf";
 import { asset_manager } from "./asset_manager";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { broadcastStateChange } from "./canvas_ui";
 
 // ============================================================================
 // Types
@@ -143,6 +144,13 @@ export async function image_generator(
     } else {
       toolReturn += "\n\nTo save this image, use the asset_manager tool or set save_as_asset: true";
     }
+
+    // Broadcast state change for reactive UI
+    await broadcastStateChange('image_generated', {
+      assetPath: asset?.path,
+      storyId: args.story_id,
+      worldId: args.world_checkpoint,
+    });
 
     return {
       toolReturn,

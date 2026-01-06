@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import type { World, Story, StorySegment } from "../types/dsf";
 import type { ComponentSpec } from "./components/types";
@@ -10,6 +10,9 @@ import { ImmersiveStoryReader } from "./components/story";
 import { mockStory } from "./components/story/mockStory";
 import { WorldSpace } from "./components/world";
 import { WelcomeSpace } from "./components/welcome";
+import { FeedbackProvider, useFeedbackSafe } from "./context/FeedbackContext";
+import { ToastContainer, AgentStatus } from "./components/feedback";
+import { FloatingInput, useFloatingInput } from "./components/interaction";
 
 // ============================================================================
 // ASCII Art Logo
@@ -53,6 +56,7 @@ interface AppState {
   agentBusConnected: boolean;
   showImmersiveDemo: boolean; // Toggle for immersive reader demo (mock data)
   agentThinking: boolean; // Agent is processing
+  agentAction?: string; // What agent is currently doing
   useImmersiveWorld: boolean; // Use immersive WorldSpace view
 }
 
@@ -108,6 +112,7 @@ function App() {
   });
 
   const agentBusRef = useRef<AgentBusClient | null>(null);
+  const feedback = useFeedbackSafe();
 
   // WebSocket connection for live updates
   useEffect(() => {
@@ -297,25 +302,70 @@ function App() {
       },
       onStateChange: (event, data) => {
         console.log('[Canvas] State change:', event, data);
-        setState((s) => {
-          switch (event) {
-            case 'agent_thinking':
-              return { ...s, agentThinking: true };
-            case 'agent_done':
-              return { ...s, agentThinking: false };
-            case 'story_continued':
-              // Refresh stories data
-              fetch('/api/stories').then(res => res.json()).then(stories => {
-                setState(prev => ({ ...prev, stories }));
-              });
-              return s;
-            case 'world_entered':
-              // Could navigate to world view
-              return s;
-            default:
-              return s;
-          }
-        });
+
+        // Handle state changes with soft refresh (no full page reload)
+        switch (event) {
+          case 'agent_thinking':
+            setState(s => ({ ...s, agentThinking: true, agentAction: data.action }));
+            feedback?.setAgentThinking(true, data.action);
+            break;
+          case 'agent_done':
+            setState(s => ({ ...s, agentThinking: false, agentAction: undefined }));
+            feedback?.setAgentThinking(false);
+            break;
+          case 'story_started':
+            // Show toast and refresh data
+            feedback?.showToast('New story created!', 'success');
+            Promise.all([
+              fetch('/api/stories').then(res => res.json()) as Promise<Story[]>,
+              fetch('/api/worlds').then(res => res.json()) as Promise<World[]>,
+            ]).then(([stories, worlds]) => {
+              setState(prev => ({
+                ...prev,
+                stories,
+                worlds,
+                agentThinking: false,
+              }));
+            });
+            break;
+          case 'story_continued':
+            // Show toast and refresh data
+            feedback?.showToast('Story continued', 'agent');
+            Promise.all([
+              fetch('/api/stories').then(res => res.json()) as Promise<Story[]>,
+              fetch('/api/worlds').then(res => res.json()) as Promise<World[]>,
+            ]).then(([stories, worlds]) => {
+              setState(prev => ({
+                ...prev,
+                stories,
+                worlds,
+                agentThinking: false,
+              }));
+            });
+            break;
+          case 'world_entered':
+            // Show toast and refresh worlds data
+            feedback?.showToast('World updated', 'agent');
+            (fetch('/api/worlds').then(res => res.json()) as Promise<World[]>).then(worlds => {
+              setState(prev => ({ ...prev, worlds, agentThinking: false }));
+            });
+            break;
+          case 'image_generated':
+            // Show toast and refresh to show new images
+            feedback?.showToast('Image generated', 'success');
+            Promise.all([
+              fetch('/api/stories').then(res => res.json()) as Promise<Story[]>,
+              fetch('/api/worlds').then(res => res.json()) as Promise<World[]>,
+            ]).then(([stories, worlds]) => {
+              setState(prev => ({
+                ...prev,
+                stories,
+                worlds,
+                agentThinking: false,
+              }));
+            });
+            break;
+        }
       },
       onConnect: (clientId) => {
         console.log('[Canvas] Connected to Agent Bus:', clientId);
@@ -336,7 +386,7 @@ function App() {
     return () => {
       agentBus.disconnect();
     };
-  }, []);
+  }, [feedback]);
 
   if (state.loading) {
     return <LoadingScreen />;
@@ -426,27 +476,11 @@ function App() {
         </div>
       )}
 
-      {/* Agent thinking indicator */}
-      {state.agentThinking && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 2500,
-            padding: '8px 16px',
-            background: 'rgba(0, 255, 204, 0.1)',
-            border: '1px solid rgba(0, 255, 204, 0.3)',
-            color: 'var(--neon-cyan)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '11px',
-            letterSpacing: '0.1em',
-          }}
-        >
-          Agent thinking...
-        </div>
-      )}
+      {/* Agent status indicator */}
+      <AgentStatus
+        isThinking={state.agentThinking}
+        action={state.agentAction}
+      />
 
       <main className="main-content">
         {state.view === "canvas" && (
@@ -495,7 +529,62 @@ function App() {
           />
         )}
       </main>
+
+      {/* Global toast notifications */}
+      <ToastContainer />
+
+      {/* Global floating input (Cmd/Ctrl+K) */}
+      <FloatingInputWrapper agentBusRef={agentBusRef} currentView={state.view} />
     </div>
+  );
+}
+
+// Floating input wrapper - needs to be separate to use hooks properly
+function FloatingInputWrapper({
+  agentBusRef,
+  currentView,
+}: {
+  agentBusRef: React.MutableRefObject<AgentBusClient | null>;
+  currentView: string;
+}) {
+  const floatingInput = useFloatingInput();
+
+  const handleSendMessage = useCallback((message: string, context: any) => {
+    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      agentBusRef.current.sendInteraction(
+        'floating-input',
+        'user_message',
+        {
+          message,
+          context: {
+            ...context,
+            view: currentView,
+          },
+        },
+        'agent'
+      );
+    } else {
+      console.warn('[Canvas] Agent Bus not connected, message not sent');
+    }
+  }, [agentBusRef, currentView]);
+
+  return (
+    <FloatingInput
+      isVisible={floatingInput.isVisible}
+      onSend={handleSendMessage}
+      onClose={floatingInput.close}
+      context={floatingInput.context}
+      placeholder="Ask the agent anything... (Ctrl+K)"
+    />
+  );
+}
+
+// Wrapper to provide FeedbackContext
+function AppWithFeedback() {
+  return (
+    <FeedbackProvider>
+      <App />
+    </FeedbackProvider>
   );
 }
 
@@ -1339,6 +1428,6 @@ if (typeof document !== "undefined") {
     rootElement.innerHTML = '';
 
     const root = createRoot(rootElement);
-    root.render(<App />);
+    root.render(<AppWithFeedback />);
   }
 }

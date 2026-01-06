@@ -63,6 +63,20 @@ function routeMessage(message: AgentBusMessage, senderId: string) {
       }
     }
   }
+
+  // Route state_change messages to all clients (both canvas and agent)
+  if (message.type === 'state_change') {
+    for (const [id, client] of clients.entries()) {
+      if (id !== senderId) {
+        try {
+          client.ws.send(JSON.stringify(message));
+          console.log(`[Agent Bus] → ${client.type}:${id} (state_change: ${(message as any).event})`);
+        } catch (err) {
+          console.error(`[Agent Bus] Failed to send to ${client.type}:${id}`, err);
+        }
+      }
+    }
+  }
 }
 
 // ============================================================================

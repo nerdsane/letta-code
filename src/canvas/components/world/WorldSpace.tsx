@@ -19,19 +19,33 @@ export function WorldSpace({
   onStartNewStory,
 }: WorldSpaceProps) {
   // Guard against missing nested properties
-  const foundation = world?.foundation || { name: 'Unknown World', premise: '', rules: [], time_period: '' };
+  const foundation = world?.foundation || { core_premise: 'Unknown World', rules: [] };
   const surface = world?.surface || { visible_elements: [] };
-  const development = world?.development || { version: 0, versions: [] };
+  const development = world?.development || { version: 0, state: 'sketch' };
+
+  // Derive world title from visible elements or premise
+  const worldTitle = (() => {
+    if (surface.visible_elements?.[0]?.name) {
+      return surface.visible_elements[0].name;
+    }
+    const premise = foundation.core_premise || 'Untitled World';
+    const words = premise.split(' ').slice(0, 5);
+    return words.join(' ') + (words.length < premise.split(' ').length ? '...' : '');
+  })();
+
+  // Derive era from history or development state
+  const worldEra = foundation.history?.eras?.[0] || development.state || 'Active';
 
   // Get world cover image if available
   const coverImage = world.asset?.path ? `/api/assets/${world.asset.path}` : undefined;
 
-  // Build timeline from development history
-  const timelineEvents = (development.versions || []).slice(0, 5).map((version, i) => ({
-    id: `v${version.number}`,
-    title: `Version ${version.number}`,
-    description: version.changes,
-    date: new Date(version.timestamp).toLocaleDateString(),
+  // Build timeline from changelog
+  const changelog = world?.changelog || [];
+  const timelineEvents = changelog.slice(0, 5).map((entry, i) => ({
+    id: `v${entry.version}`,
+    title: `Version ${entry.version}`,
+    description: entry.changes.join(', '),
+    date: new Date(entry.timestamp).toLocaleDateString(),
     status: i === 0 ? 'current' as const : 'completed' as const,
   }));
 
@@ -62,10 +76,10 @@ export function WorldSpace({
 
       {/* Hero Section */}
       <Hero
-        title={foundation.name}
-        subtitle={foundation.premise}
+        title={worldTitle}
+        subtitle={foundation.core_premise}
         backgroundImage={coverImage}
-        badge={`Est. ${foundation.time_period || 'Unknown Era'}`}
+        badge={worldEra}
         meta={[
           `${visibleElements.length} Elements`,
           `${stories.length} Stories`,

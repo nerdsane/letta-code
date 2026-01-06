@@ -34449,267 +34449,463 @@ Common errors:
 var init_image_generator = () => {};
 
 // src/tools/descriptions/canvas_ui.md
-var canvas_ui_default = `Create dynamic UI components in the canvas for inline visualizations and interactive elements.
+var canvas_ui_default = `Create dynamic, immersive UI experiences in the canvas. Compose magical, game-like interfaces for stories and worlds.
 
-Allows agents to create contextual UI that appears exactly where it's relevant within stories and worlds, not just as floating overlays.
+## Proactive Visual Storytelling
+
+As a storyteller, you should **proactively create immersive experiences** without waiting for explicit UI requests:
+
+**When to create fullscreen experiences:**
+- When presenting a new story or chapter - wrap it in Hero + ScrollSections
+- When revealing a dramatic moment - use Hero with atmospheric background
+- When introducing a new world - compose an exploration experience
+- When showing character interactions - add inline images and callouts
+
+**When to use inline/overlay:**
+- Quick stats or information during conversation
+- World rule reminders while writing
+- Character relationship visualizations
+
+**Visual immersion is core to storytelling.** Don't just write text - compose experiences that draw the reader in. Generate images for key scenes and weave them into scroll-driven layouts.
+
+## Handling User Interactions
+
+After showing UI with actions, use \`get_canvas_interactions\` to see what the user selected:
+
+\`\`\`typescript
+// 1. Show experience with actions
+canvas_ui({
+  mode: "fullscreen",
+  spec: {
+    type: "Stack",
+    children: [
+      // ... story content ...
+      {
+        type: "ActionBar",
+        props: {
+          actions: [
+            { id: "continue", label: "Continue", variant: "primary" },
+            { id: "explore", label: "Explore world", variant: "branch" }
+          ]
+        }
+      }
+    ]
+  }
+})
+
+// 2. Later, check what user clicked
+const interactions = get_canvas_interactions()
+// Returns: [{ componentId: "...", data: { actionId: "continue" } }]
+
+// 3. React to their choice
+if (interactions[0]?.data?.actionId === "continue") {
+  // Continue the story...
+}
+\`\`\`
+
+## Handling Story Read Requests
+
+When user clicks a story in the canvas, you'll receive a \`story_read_request\` interaction:
+
+\`\`\`typescript
+const interactions = get_canvas_interactions()
+// Returns: [{
+//   interactionType: "story_read_request",
+//   data: {
+//     storyId: "story-123",
+//     title: "The Awakening",
+//     segmentCount: 5,
+//     story: { /* full story object */ }
+//   }
+// }]
+
+// Compose immersive experience for the story
+if (interactions[0]?.interactionType === "story_read_request") {
+  const { story } = interactions[0].data;
+
+  // Generate a cover image for the story
+  const coverImage = await image_generator({ prompt: "..." });
+
+  // Compose fullscreen experience
+  canvas_ui({
+    mode: "fullscreen",
+    target: "story-experience",
+    spec: {
+      type: "Stack",
+      children: [
+        { type: "ProgressBar", props: { position: "top" } },
+        { type: "Hero", props: {
+          title: story.metadata.title,
+          backgroundImage: coverImage,
+          badge: "Chapter 1"
+        }},
+        // Story segments with scroll animations
+        ...story.segments.map(segment => ({
+          type: "ScrollSection",
+          props: { animation: "fade-up" },
+          children: [{ type: "Text", props: { content: segment.content } }]
+        })),
+        // Actions at the end
+        { type: "ActionBar", props: {
+          actions: [
+            { id: "continue", label: "Continue", variant: "primary" },
+            { id: "explore", label: "Explore world", variant: "branch" }
+          ]
+        }}
+      ]
+    }
+  })
+}
+\`\`\`
 
 ## Parameters
 
-- \`target\` (required): Mount point where the UI component should appear
-- \`spec\` (required): Component specification (JSON object) defining the UI to render
-- \`action\` (optional): Action to perform - "create" (default), "update", or "remove"
+- \`target\` (required): Mount point where the UI appears
+- \`spec\` (required): Component specification (JSON) defining the UI
+- \`action\` (optional): "create" (default), "update", or "remove"
+- \`mode\` (optional): "overlay" (floating), "fullscreen" (takeover), "inline" (in content)
 
-## Available Mount Points
+## Display Modes
 
-### Story Mount Points
-- **\`story_header\`**: After story metadata, before first segment - for timelines, metadata dashboards
-- **\`story_segment_{id}_before\`**: Immediately before segment text - for content warnings, scene setting
-- **\`story_segment_{id}\`**: Immediately after segment text - for character analysis, visualizations
-- **\`story_footer\`**: At end of story after all segments - for continue buttons, completion summary
-
-### World Mount Points
-- **\`world_header\`**: After world premise, before world details - for world controls, metadata
-- **\`world_overview\`**: After action message, before story list - for statistics, character directory
-
-### Special Mount Points
-- **\`floating\`**: Fixed overlay at bottom-right corner - for persistent controls, chat interface
-
-## Available Components
-
-### Dialog
-Modal dialog with trigger button. Great for detailed information without cluttering the main view.
+### Fullscreen Mode
+Takes over the entire viewport for immersive experiences. Use for:
+- Story reading experiences
+- World exploration
+- Character reveals
+- Dramatic moments
 
 \`\`\`typescript
-{
-  type: "Dialog",
-  id: "story-timeline",
-  props: {
-    title: "Story Timeline",
-    description: "Key events in chronological order",
-    trigger: {
-      type: "Button",
-      props: { label: "📊 View Timeline", variant: "primary" }
-    }
-  },
-  children: {
+canvas_ui({
+  target: "experience",
+  mode: "fullscreen",
+  spec: {
     type: "Stack",
-    props: { spacing: 16 },
     children: [
-      { type: "Text", props: { content: "Chapter 1: Discovery", variant: "heading" } }
+      { type: "Hero", props: { title: "The Awakening", backgroundImage: "..." } },
+      { type: "ScrollSection", props: { animation: "fade-up" }, children: [...] }
     ]
   }
-}
+})
 \`\`\`
 
-### Button
-Action button with primary/secondary variants.
+### Overlay Mode (default)
+Floating UI at corners, doesn't block content.
+
+### Inline Mode
+Appears within story/world content at mount point.
+
+## Experience Components
+
+Use these to create scroll-driven, immersive experiences:
+
+### Hero
+Full-viewport introduction with parallax background.
 
 \`\`\`typescript
 {
-  type: "Button",
-  id: "continue-story",
+  type: "Hero",
   props: {
-    label: "Continue Story",
-    variant: "primary"  // or "secondary"
+    title: "The Resonance",
+    subtitle: "In a world where emotions became visible...",
+    backgroundImage: "/assets/worlds/resonance/cover.png",
+    badge: "Affective Resonance",
+    meta: ["Chapter 3", "12 min read"],
+    height: "full",  // "full", "large", "medium"
+    overlay: "gradient",  // "gradient", "dark", "none"
+    showScrollIndicator: true
   }
 }
 \`\`\`
 
-### Text
-Styled text with multiple variants and sizes.
+### ScrollSection
+Content that animates when scrolled into view.
 
 \`\`\`typescript
 {
-  type: "Text",
-  id: "character-note",
+  type: "ScrollSection",
   props: {
-    content: "Alice and Bob have met before",
-    variant: "body",  // "heading", "body", or "caption"
-    size: "md",       // "sm", "md", or "lg"
-    color: "var(--neon-cyan)"  // Optional CSS color
-  }
-}
-\`\`\`
-
-### Stack
-Layout container for arranging multiple components.
-
-\`\`\`typescript
-{
-  type: "Stack",
-  id: "character-relationships",
-  props: {
-    direction: "vertical",  // or "horizontal"
-    spacing: 16  // pixels between items
+    animation: "fade-up",  // "fade-up", "fade-in", "slide-left", "slide-right", "scale"
+    delay: 100,  // milliseconds
+    threshold: 0.2  // 0-1, when to trigger
   },
   children: [
-    { type: "Text", props: { content: "Alice → knows → Bob", variant: "body" } },
-    { type: "Text", props: { content: "Bob → trusts → Carol", variant: "body" } }
+    { type: "Text", props: { content: "Story content..." } }
   ]
 }
 \`\`\`
 
-## Usage Examples
+### ProgressBar
+Reading progress indicator.
 
-### Create Story Timeline
+\`\`\`typescript
+{
+  type: "ProgressBar",
+  props: {
+    position: "top",  // "top" or "bottom"
+    height: 2,
+    showLabel: false
+  }
+}
+\`\`\`
+
+### ActionBar
+Action buttons at story/experience end.
+
+\`\`\`typescript
+{
+  type: "ActionBar",
+  props: {
+    title: "What happens next?",
+    actions: [
+      { id: "continue", label: "Continue the story", variant: "primary" },
+      { id: "branch-maya", label: "Follow Maya's path", variant: "branch", description: "She knows something..." }
+    ],
+    onAction: "handle_story_action"
+  }
+}
+\`\`\`
+
+## Creating Immersive Story Experiences
+
+When presenting a story, compose an experience:
+
 \`\`\`typescript
 canvas_ui({
-  target: "story_header",
+  target: "story",
+  mode: "fullscreen",
   spec: {
-    type: "Dialog",
-    id: "timeline-viz",
-    props: {
-      title: "Story Timeline",
-      description: "Visual timeline of key events",
-      trigger: {
-        type: "Button",
-        props: { label: "View Timeline", variant: "primary" }
+    type: "Stack",
+    props: { direction: "vertical" },
+    children: [
+      // Progress indicator
+      { type: "ProgressBar", props: { position: "top" } },
+
+      // Hero opening
+      {
+        type: "Hero",
+        props: {
+          title: story.title,
+          subtitle: story.opening_line,
+          backgroundImage: story.cover_image,
+          badge: world.name,
+          meta: [\`Chapter \${chapter}\`, \`\${readTime} min\`],
+          height: "full"
+        }
+      },
+
+      // Story content with scroll animations
+      {
+        type: "ScrollSection",
+        props: { animation: "fade-up" },
+        children: [
+          { type: "Text", props: { content: paragraph1, variant: "body" } }
+        ]
+      },
+
+      // Inline image
+      {
+        type: "ScrollSection",
+        props: { animation: "scale" },
+        children: [
+          { type: "Image", props: { src: scene_image, size: "full", lightbox: true } }
+        ]
+      },
+
+      // World context callout
+      {
+        type: "ScrollSection",
+        props: { animation: "slide-left" },
+        children: [
+          { type: "Callout", props: { variant: "rule", title: "World Rule", content: "..." } }
+        ]
+      },
+
+      // Actions at the end
+      {
+        type: "ActionBar",
+        props: {
+          title: "Continue the journey",
+          actions: [
+            { id: "continue", label: "Continue", variant: "primary" },
+            { id: "explore-world", label: "Explore the world", variant: "branch" }
+          ]
+        }
       }
-    },
-    children: {
-      type: "Stack",
-      props: { spacing: 20 },
-      children: [
-        { type: "Text", props: { content: "Event 1: Discovery", variant: "heading" } },
-        { type: "Text", props: { content: "Event 2: Conflict", variant: "heading" } }
+    ]
+  }
+})
+\`\`\`
+
+## Primitives
+
+### Image
+\`\`\`typescript
+{ type: "Image", props: { src: "...", alt: "...", caption: "...", size: "full", lightbox: true } }
+\`\`\`
+
+### Gallery
+\`\`\`typescript
+{ type: "Gallery", props: { images: [{src, alt, caption}], columns: 3, variant: "grid" } }
+\`\`\`
+
+### Card
+\`\`\`typescript
+{ type: "Card", props: { title: "...", subtitle: "...", image: "...", variant: "elevated" } }
+\`\`\`
+
+### Timeline
+\`\`\`typescript
+{
+  type: "Timeline",
+  props: {
+    events: [
+      { title: "Discovery", date: "2087", description: "...", status: "completed" }
+    ],
+    orientation: "vertical"
+  }
+}
+\`\`\`
+
+### Callout
+\`\`\`typescript
+{ type: "Callout", props: { variant: "rule", title: "World Rule", content: "In 2087..." } }
+// variants: "info", "warning", "quote", "rule", "tech"
+\`\`\`
+
+### Stats
+\`\`\`typescript
+{
+  type: "Stats",
+  props: {
+    items: [
+      { value: "12", label: "Characters" },
+      { value: "8", label: "Locations" }
+    ],
+    columns: 4
+  }
+}
+\`\`\`
+
+### Badge
+\`\`\`typescript
+{ type: "Badge", props: { label: "Active", variant: "cyan" } }
+\`\`\`
+
+### Divider
+\`\`\`typescript
+{ type: "Divider", props: { variant: "accent", spacing: "lg" } }
+\`\`\`
+
+### Layout: Stack & Grid
+\`\`\`typescript
+{ type: "Stack", props: { direction: "vertical", spacing: "lg" }, children: [...] }
+{ type: "Grid", props: { columns: 3, gap: "md" }, children: [...] }
+\`\`\`
+
+## Interaction Handling
+
+Components can specify interaction handlers:
+
+\`\`\`typescript
+{
+  type: "ActionBar",
+  id: "story-actions",
+  props: {
+    onAction: "story_action_handler",  // Callback name
+    actions: [...]
+  }
+}
+\`\`\`
+
+When user clicks, the interaction flows back to you via Agent Bus.
+
+## Design Guidelines
+
+1. **Use fullscreen mode** for story reading and world exploration
+2. **Add Hero** at the start of every experience
+3. **Wrap content in ScrollSection** for scroll-triggered animations
+4. **Use ProgressBar** for long reading experiences
+5. **End with ActionBar** to guide user's next action
+6. **Stagger animation delays** for visual flow (0, 100, 200ms...)
+7. **Use Callout** to surface world rules and context
+8. **Keep text readable** - use body variant, not too long
+
+## DSF Brand
+
+- Colors: teal \`#00ffcc\`, cyan \`#00ffff\` only
+- No rounded corners
+- No purple, no bright white
+- Monospace fonts for headers
+- Subtle glows and animations
+`;
+var init_canvas_ui = () => {};
+
+// src/tools/descriptions/get_canvas_interactions.md
+var get_canvas_interactions_default = `Get pending user interactions from the canvas UI.
+
+## When to Use
+
+Call this tool after you've created interactive UI with \`canvas_ui\` to see if users have interacted with it. Useful for:
+- Checking if user clicked "Continue" or a branch option
+- Seeing which action they selected from an ActionBar
+- Responding to button clicks or other UI events
+
+## Parameters
+
+- \`peek\` (optional): If true, view interactions without clearing queue
+- \`componentId\` (optional): Filter by specific component
+- \`interactionType\` (optional): Filter by type (e.g., 'click', 'action')
+
+## Response
+
+Returns an array of interactions, each containing:
+- \`id\`: Unique interaction ID
+- \`timestamp\`: When the interaction occurred
+- \`componentId\`: Which component was interacted with
+- \`interactionType\`: Type of interaction ('click', 'action', etc.)
+- \`target\`: Callback target name if specified
+- \`data\`: Interaction payload (e.g., \`{ actionId: 'continue' }\`)
+
+## Example Flow
+
+\`\`\`typescript
+// 1. Create UI with actions
+canvas_ui({
+  target: "story",
+  mode: "fullscreen",
+  spec: {
+    type: "ActionBar",
+    id: "story-actions",
+    props: {
+      title: "What next?",
+      actions: [
+        { id: "continue", label: "Continue", variant: "primary" },
+        { id: "explore", label: "Explore world", variant: "branch" }
       ]
     }
   }
 })
-\`\`\`
 
-### Add Inline Visualization
-\`\`\`typescript
-canvas_ui({
-  target: "story_segment_abc123",
-  spec: {
-    type: "Stack",
-    id: "relationship-viz",
-    props: { direction: "horizontal", spacing: 12 },
-    children: [
-      { type: "Text", props: { content: "🕸️ Character Network", variant: "caption" } },
-      { type: "Button", props: { label: "Expand", variant: "secondary" } }
-    ]
-  }
-})
-\`\`\`
+// 2. Later, check what user clicked
+const { interactions } = await get_canvas_interactions()
 
-### Create World Statistics
-\`\`\`typescript
-canvas_ui({
-  target: "world_overview",
-  spec: {
-    type: "Stack",
-    id: "world-stats",
-    props: { direction: "vertical", spacing: 16 },
-    children: [
-      {
-        type: "Text",
-        props: {
-          content: "🌍 World Statistics",
-          variant: "heading",
-          size: "lg",
-          color: "var(--neon-cyan)"
-        }
-      },
-      {
-        type: "Stack",
-        props: { direction: "horizontal", spacing: 24 },
-        children: [
-          { type: "Text", props: { content: "📖 Stories: 3", variant: "body" } },
-          { type: "Text", props: { content: "👥 Characters: 12", variant: "body" } },
-          { type: "Text", props: { content: "🗺️ Locations: 8", variant: "body" } }
-        ]
-      }
-    ]
-  }
-})
-\`\`\`
-
-### Update Existing Component
-\`\`\`typescript
-canvas_ui({
-  target: "story_header",
-  spec: {
-    id: "timeline-viz",
-    props: { title: "Updated Timeline" }
-  },
-  action: "update"
-})
-\`\`\`
-
-### Remove Component
-\`\`\`typescript
-canvas_ui({
-  target: "story_footer",
-  spec: { id: "continue-button" },
-  action: "remove"
-})
-\`\`\`
-
-## Design Patterns
-
-### Progressive Disclosure
-Use dialogs for detailed information that doesn't clutter the main view:
-\`\`\`typescript
-{
-  type: "Dialog",
-  props: {
-    title: "Detailed Analysis",
-    trigger: { type: "Button", props: { label: "Show Details" } }
-  },
-  children: { /* detailed content */ }
-}
-\`\`\`
-
-### Contextual Actions
-Place action buttons near relevant content:
-\`\`\`typescript
-canvas_ui({
-  target: "story_segment_123",
-  spec: {
-    type: "Stack",
-    props: { direction: "horizontal" },
-    children: [
-      { type: "Button", props: { label: "Analyze Scene" } },
-      { type: "Button", props: { label: "Generate Image" } }
-    ]
-  }
-})
-\`\`\`
-
-### Status Indicators
-Show information without requiring interaction:
-\`\`\`typescript
-{
-  type: "Text",
-  props: {
-    content: "✨ AI-enhanced segment",
-    variant: "caption",
-    color: "var(--neon-cyan)"
+if (interactions.length > 0) {
+  const action = interactions[0]
+  if (action.data?.actionId === 'continue') {
+    // User wants to continue the story
+  } else if (action.data?.actionId === 'explore') {
+    // User wants to explore the world
   }
 }
 \`\`\`
 
-## Usage Notes
+## Notes
 
-- **Agent Bus Required**: canvas_ui requires the Agent Bus server running on port 8284
-- **Canvas Required**: The canvas UI must be running on port 3030
-- **Component IDs**: Include an \`id\` in your spec to identify components for updates/removal
-- **Multiple Components**: Multiple components can be mounted at the same target
-- **Layout**: Mount points stack components vertically by default with 16px spacing
-- **Styling**: Use CSS variables like \`var(--neon-cyan)\` and \`var(--neon-magenta)\` for colors
-- **Interactions**: User interactions (clicks, changes) flow back to the agent (work in progress)
-
-## Architecture
-
-\`\`\`
-Agent → canvas_ui() → Agent Bus (WS) → Canvas UI → Renders at mount point
-\`\`\`
-
-All DSF UI infrastructure (Agent Bus, Canvas, Mount Points) is part of letta-code, making canvas_ui a DSF-specific tool.
+- Interactions expire after 5 minutes
+- Queue holds max 100 interactions (oldest removed first)
+- Reading clears the queue unless \`peek: true\`
 `;
-var init_canvas_ui = () => {};
+var init_get_canvas_interactions = () => {};
 
 // src/tools/descriptions/WriteFileGemini.md
 var WriteFileGemini_default = `Writes content to a specified file in the local filesystem.
@@ -45259,6 +45455,154 @@ ${todoListString}` : "Successfully cleared the todo list.";
   };
 }
 
+// src/tools/impl/canvas_ui.ts
+function getCanvasInteractions() {
+  const now = Date.now();
+  const validInteractions = interactionQueue.filter((i) => now - i.timestamp < INTERACTION_TTL_MS);
+  interactionQueue.length = 0;
+  return validInteractions;
+}
+function peekCanvasInteractions() {
+  const now = Date.now();
+  return interactionQueue.filter((i) => now - i.timestamp < INTERACTION_TTL_MS);
+}
+function handleInteraction(message) {
+  const { target, data, componentId, interactionType } = message;
+  const queuedInteraction = {
+    id: `int-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: Date.now(),
+    componentId,
+    interactionType,
+    target,
+    data
+  };
+  interactionQueue.push(queuedInteraction);
+  while (interactionQueue.length > MAX_QUEUE_SIZE) {
+    interactionQueue.shift();
+  }
+  console.log(`[canvas_ui] Queued interaction: ${interactionType} on ${componentId} (queue size: ${interactionQueue.length})`);
+  if (target && interactionCallbacks.has(target)) {
+    const callback = interactionCallbacks.get(target);
+    Promise.resolve(callback(data)).catch((err) => {
+      console.error(`[canvas_ui] Interaction callback error for ${target}:`, err);
+    });
+    return;
+  }
+  if (interactionCallbacks.has(componentId)) {
+    const callback = interactionCallbacks.get(componentId);
+    Promise.resolve(callback({ ...data, interactionType })).catch((err) => {
+      console.error(`[canvas_ui] Interaction callback error for ${componentId}:`, err);
+    });
+  }
+}
+function ensureAgentBusConnection() {
+  return new Promise((resolve11, reject) => {
+    if (agentBusWs && agentBusWs.readyState === WebSocket.OPEN) {
+      resolve11(agentBusWs);
+      return;
+    }
+    if (isConnecting) {
+      pendingCallbacks.push({ resolve: resolve11, reject });
+      return;
+    }
+    isConnecting = true;
+    const ws = new WebSocket(AGENT_BUS_URL);
+    ws.onopen = () => {
+      console.log("[canvas_ui] Connected to Agent Bus");
+      isConnecting = false;
+      agentBusWs = ws;
+      resolve11(ws);
+      for (const cb of pendingCallbacks) {
+        cb.resolve(ws);
+      }
+      pendingCallbacks = [];
+    };
+    ws.onerror = (event) => {
+      console.error("[canvas_ui] Agent Bus connection error:", event);
+      isConnecting = false;
+      const err = new Error("Failed to connect to Agent Bus");
+      reject(err);
+      for (const cb of pendingCallbacks) {
+        cb.reject(err);
+      }
+      pendingCallbacks = [];
+    };
+    ws.onclose = () => {
+      console.log("[canvas_ui] Agent Bus connection closed");
+      agentBusWs = null;
+      isConnecting = false;
+    };
+    ws.onmessage = (event) => {
+      try {
+        const data = typeof event.data === "string" ? event.data : event.data.toString();
+        const message = JSON.parse(data);
+        if (message.type === "interaction") {
+          console.log("[canvas_ui] User interaction:", message);
+          handleInteraction(message);
+        }
+      } catch (err) {
+        console.error("[canvas_ui] Failed to parse message:", err);
+      }
+    };
+  });
+}
+async function broadcastStateChange(event, data) {
+  try {
+    const ws = await ensureAgentBusConnection();
+    const message = {
+      type: "state_change",
+      event,
+      data
+    };
+    ws.send(JSON.stringify(message));
+    console.log(`[canvas_ui] Broadcast state change: ${event}`);
+  } catch (error) {
+    console.error("[canvas_ui] Failed to broadcast state change:", error);
+  }
+}
+async function canvas_ui(args) {
+  const { target, spec, action = "create", mode = "overlay" } = args;
+  try {
+    const ws = await ensureAgentBusConnection();
+    const componentId = spec.id || `canvas-${Date.now()}`;
+    const message = {
+      type: "canvas_ui",
+      action,
+      target,
+      componentId,
+      spec: action === "remove" ? undefined : spec,
+      mode
+    };
+    ws.send(JSON.stringify(message));
+    console.log(`[canvas_ui] Sent ${action} for ${componentId} at ${target}`);
+    let resultMessage;
+    if (action === "remove") {
+      resultMessage = `Removed component from ${target}`;
+    } else {
+      resultMessage = `Component ${componentId} ${action === "update" ? "updated" : "created"} at ${target}`;
+    }
+    return {
+      toolReturn: resultMessage,
+      status: "success"
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("[canvas_ui] Error:", errorMsg);
+    return {
+      toolReturn: `Failed to ${action} UI component: ${errorMsg}`,
+      status: "error"
+    };
+  }
+}
+var AGENT_BUS_URL, interactionQueue, MAX_QUEUE_SIZE = 100, INTERACTION_TTL_MS, interactionCallbacks, agentBusWs = null, isConnecting = false, pendingCallbacks;
+var init_canvas_ui2 = __esm(() => {
+  AGENT_BUS_URL = process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
+  interactionQueue = [];
+  INTERACTION_TTL_MS = 5 * 60 * 1000;
+  interactionCallbacks = new Map;
+  pendingCallbacks = [];
+});
+
 // src/tools/impl/world_manager.ts
 import { mkdir as mkdir2, readFile as readFile5, writeFile as writeFile2 } from "node:fs/promises";
 import { existsSync as existsSync6 } from "node:fs";
@@ -45348,6 +45692,10 @@ async function saveWorld(args) {
   }
   const filePath = join9(WORLDS_DIR, `${args.checkpoint_name}.json`);
   await writeFile2(filePath, JSON.stringify(worldToSave, null, 2), "utf-8");
+  await broadcastStateChange("world_entered", {
+    worldId: args.checkpoint_name,
+    version: worldToSave.development.version
+  });
   return {
     toolReturn: `World saved to ${filePath}
 Version: ${worldToSave.development.version}
@@ -45669,7 +46017,9 @@ function applyUpdate(world, update) {
   return newWorld;
 }
 var WORLDS_DIR = ".dsf/worlds";
-var init_world_manager2 = () => {};
+var init_world_manager2 = __esm(() => {
+  init_canvas_ui2();
+});
 
 // src/tools/impl/story_manager.ts
 import { mkdir as mkdir3, readFile as readFile6, writeFile as writeFile3, readdir as readdir5 } from "node:fs/promises";
@@ -45770,6 +46120,10 @@ async function createStory(args) {
   await mkdir3(worldDir, { recursive: true });
   const filePath = join10(worldDir, `${storyId}.json`);
   await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
+  await broadcastStateChange("story_started", {
+    storyId,
+    worldId: args.world_checkpoint
+  });
   return {
     toolReturn: `Story created: ${args.title}
 ID: ${storyId}
@@ -45811,6 +46165,11 @@ async function saveSegment(args) {
   const worldDir = join10(STORIES_DIR, story.world_checkpoint);
   const filePath = join10(worldDir, `${story.id}.json`);
   await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
+  await broadcastStateChange("story_continued", {
+    storyId: story.id,
+    segmentId,
+    worldId: story.world_checkpoint
+  });
   return {
     toolReturn: `Segment saved to story "${story.metadata.title}"
 Segment ID: ${segmentId}
@@ -45976,12 +46335,12 @@ async function getContinuationContext(args) {
   const activeEndpoints = story.endpoints.filter((ep) => ep.status === "active" || ep.status === "pending");
   const appliedRuleIds = new Set;
   for (const segment of story.segments) {
-    segment.world_evolution.rules_applied?.forEach((id) => appliedRuleIds.add(id));
+    segment.world_evolution?.rules_applied?.forEach((id) => appliedRuleIds.add(id));
   }
   const rulesInPlay = world.foundation.rules.filter((r) => appliedRuleIds.has(r.id));
   const introducedElementIds = new Set;
   for (const segment of story.segments) {
-    segment.world_evolution.elements_introduced?.forEach((id) => introducedElementIds.add(id));
+    segment.world_evolution?.elements_introduced?.forEach((id) => introducedElementIds.add(id));
   }
   const elementsInPlay = world.surface.visible_elements.filter((e) => introducedElementIds.has(e.id));
   const suggestedDirections = [];
@@ -46093,14 +46452,14 @@ function updateEndpoints(story, newSegment) {
 }
 function updateWorldContributions(story, segment) {
   const contrib = story.world_contributions;
-  if (segment.world_evolution.elements_introduced) {
+  if (segment.world_evolution?.elements_introduced) {
     for (const elemId of segment.world_evolution.elements_introduced) {
       if (!contrib.characters_developed.includes(elemId) && !contrib.locations_explored.includes(elemId)) {
         contrib.characters_developed.push(elemId);
       }
     }
   }
-  if (segment.world_evolution.rules_applied) {
+  if (segment.world_evolution?.rules_applied) {
     for (const ruleId of segment.world_evolution.rules_applied) {
       if (!contrib.rules_tested.includes(ruleId)) {
         contrib.rules_tested.push(ruleId);
@@ -46111,6 +46470,7 @@ function updateWorldContributions(story, segment) {
 var STORIES_DIR = ".dsf/stories";
 var init_story_manager2 = __esm(() => {
   init_world_manager2();
+  init_canvas_ui2();
 });
 
 // src/tools/impl/asset_manager.ts
@@ -47288,6 +47648,11 @@ Path: ${asset.path}`;
 
 To save this image, use the asset_manager tool or set save_as_asset: true`;
     }
+    await broadcastStateChange("image_generated", {
+      assetPath: asset?.path,
+      storyId: args.story_id,
+      worldId: args.world_checkpoint
+    });
     return {
       toolReturn,
       status: "success",
@@ -47320,10 +47685,10 @@ async function generateWithOpenAI(args) {
     model,
     prompt: args.prompt,
     n: 1,
-    size,
-    response_format: "b64_json"
+    size
   };
   if (model.startsWith("dall-e")) {
+    requestBody.response_format = "b64_json";
     requestBody.quality = args.quality || DEFAULT_QUALITY;
     requestBody.style = args.style || DEFAULT_STYLE;
   }
@@ -47456,85 +47821,48 @@ var DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard", DEFAULT_STYLE = "v
 var init_image_generator2 = __esm(() => {
   init_asset_manager2();
   init_dist4();
+  init_canvas_ui2();
 });
 
-// src/tools/impl/canvas_ui.ts
-function ensureAgentBusConnection() {
-  return new Promise((resolve11, reject) => {
-    if (agentBusWs && agentBusWs.readyState === WebSocket.OPEN) {
-      resolve11(agentBusWs);
-      return;
-    }
-    if (isConnecting && agentBusWs) {
-      agentBusWs.once("open", () => resolve11(agentBusWs));
-      agentBusWs.once("error", reject);
-      return;
-    }
-    isConnecting = true;
-    agentBusWs = new WebSocket(AGENT_BUS_URL);
-    agentBusWs.on("open", () => {
-      console.log("[canvas_ui] Connected to Agent Bus");
-      isConnecting = false;
-      resolve11(agentBusWs);
-    });
-    agentBusWs.on("error", (error) => {
-      console.error("[canvas_ui] Agent Bus connection error:", error);
-      isConnecting = false;
-      reject(new Error("Failed to connect to Agent Bus"));
-    });
-    agentBusWs.on("close", () => {
-      console.log("[canvas_ui] Agent Bus connection closed");
-      agentBusWs = null;
-      isConnecting = false;
-    });
-    agentBusWs.on("message", (data) => {
-      try {
-        const message = JSON.parse(data.toString());
-        if (message.type === "interaction") {
-          console.log("[canvas_ui] User interaction:", message);
-        }
-      } catch (err) {
-        console.error("[canvas_ui] Failed to parse message:", err);
-      }
-    });
-  });
-}
-async function canvas_ui(args) {
-  const { target, spec, action = "create" } = args;
+// src/tools/impl/get_canvas_interactions.ts
+async function get_canvas_interactions(args = {}) {
+  const { peek = false, componentId, interactionType } = args;
   try {
-    const ws = await ensureAgentBusConnection();
-    const componentId = spec.id || `canvas-${Date.now()}`;
-    const message = {
-      type: "canvas_ui",
-      action,
-      target,
-      componentId,
-      spec: action === "remove" ? undefined : spec
-    };
-    ws.send(JSON.stringify(message));
-    console.log(`[canvas_ui] Sent ${action} for ${componentId} at ${target}`);
+    let interactions = peek ? peekCanvasInteractions() : getCanvasInteractions();
+    if (componentId) {
+      interactions = interactions.filter((i) => i.componentId === componentId);
+    }
+    if (interactionType) {
+      interactions = interactions.filter((i) => i.interactionType === interactionType);
+    }
+    const count = interactions.length;
     let resultMessage;
-    if (action === "remove") {
-      resultMessage = `Removed component from ${target}`;
+    if (count === 0) {
+      resultMessage = "No pending interactions";
+    } else if (count === 1) {
+      const i = interactions[0];
+      resultMessage = `1 interaction: ${i.interactionType} on ${i.componentId}${i.data?.actionId ? ` (action: ${i.data.actionId})` : ""}`;
     } else {
-      resultMessage = `Component ${componentId} ${action === "update" ? "updated" : "created"} at ${target}`;
+      resultMessage = `${count} pending interactions`;
     }
     return {
       toolReturn: resultMessage,
-      status: "success"
+      status: "success",
+      interactions,
+      count
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error("[canvas_ui] Error:", errorMsg);
     return {
-      toolReturn: `Failed to ${action} UI component: ${errorMsg}`,
-      status: "error"
+      toolReturn: `Failed to get interactions: ${errorMsg}`,
+      status: "error",
+      interactions: [],
+      count: 0
     };
   }
 }
-var AGENT_BUS_URL, agentBusWs = null, isConnecting = false;
-var init_canvas_ui2 = __esm(() => {
-  AGENT_BUS_URL = process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
+var init_get_canvas_interactions2 = __esm(() => {
+  init_canvas_ui2();
 });
 
 // src/tools/schemas/ApplyPatch.json
@@ -48890,6 +49218,33 @@ var init_canvas_ui3 = __esm(() => {
   };
 });
 
+// src/tools/schemas/get_canvas_interactions.json
+var get_canvas_interactions_default2;
+var init_get_canvas_interactions3 = __esm(() => {
+  get_canvas_interactions_default2 = {
+    name: "get_canvas_interactions",
+    description: "Get pending user interactions from the canvas UI. Call this to see what buttons users clicked, actions selected, or other interactions with your UI components.",
+    parameters: {
+      type: "object",
+      properties: {
+        peek: {
+          type: "boolean",
+          description: "If true, look at interactions without clearing the queue. Default: false (clears after reading)"
+        },
+        componentId: {
+          type: "string",
+          description: "Filter interactions by component ID"
+        },
+        interactionType: {
+          type: "string",
+          description: "Filter by interaction type (e.g., 'click', 'action')"
+        }
+      },
+      required: []
+    }
+  };
+});
+
 // src/tools/toolDefinitions.ts
 var toolDefinitions, TOOL_DEFINITIONS;
 var init_toolDefinitions = __esm(async () => {
@@ -48928,6 +49283,7 @@ var init_toolDefinitions = __esm(async () => {
   init_asset_manager();
   init_image_generator();
   init_canvas_ui();
+  init_get_canvas_interactions();
   init_WriteFileGemini();
   init_WriteTodosGemini();
   init_ApplyPatch2();
@@ -48962,6 +49318,7 @@ var init_toolDefinitions = __esm(async () => {
   init_asset_manager2();
   init_image_generator2();
   init_canvas_ui2();
+  init_get_canvas_interactions2();
   init_ApplyPatch3();
   init_AskUserQuestion3();
   init_Bash3();
@@ -48999,6 +49356,7 @@ var init_toolDefinitions = __esm(async () => {
   init_asset_manager3();
   init_image_generator3();
   init_canvas_ui3();
+  init_get_canvas_interactions3();
   await __promiseAll([
     init_Skill2(),
     init_Task2()
@@ -49108,6 +49466,11 @@ var init_toolDefinitions = __esm(async () => {
       schema: canvas_ui_default2,
       description: canvas_ui_default.trim(),
       impl: canvas_ui
+    },
+    get_canvas_interactions: {
+      schema: get_canvas_interactions_default2,
+      description: get_canvas_interactions_default.trim(),
+      impl: get_canvas_interactions
     },
     shell_command: {
       schema: ShellCommand_default2,
@@ -51852,7 +52215,8 @@ var init_manager2 = __esm(async () => {
     "story_manager",
     "asset_manager",
     "image_generator",
-    "canvas_ui"
+    "canvas_ui",
+    "get_canvas_interactions"
   ];
   OPENAI_DEFAULT_TOOLS = [
     "shell_command",
@@ -51960,7 +52324,9 @@ var init_manager2 = __esm(async () => {
     world_manager: { requiresApproval: false },
     story_manager: { requiresApproval: false },
     asset_manager: { requiresApproval: false },
-    image_generator: { requiresApproval: false }
+    image_generator: { requiresApproval: false },
+    canvas_ui: { requiresApproval: false },
+    get_canvas_interactions: { requiresApproval: false }
   };
   REGISTRY_KEY = Symbol.for("@letta/toolRegistry");
   toolRegistry = getRegistry();
@@ -54063,7 +54429,8 @@ var init_manager3 = __esm(async () => {
     "story_manager",
     "asset_manager",
     "image_generator",
-    "canvas_ui"
+    "canvas_ui",
+    "get_canvas_interactions"
   ];
   OPENAI_DEFAULT_TOOLS2 = [
     "shell_command",
@@ -54171,7 +54538,9 @@ var init_manager3 = __esm(async () => {
     world_manager: { requiresApproval: false },
     story_manager: { requiresApproval: false },
     asset_manager: { requiresApproval: false },
-    image_generator: { requiresApproval: false }
+    image_generator: { requiresApproval: false },
+    canvas_ui: { requiresApproval: false },
+    get_canvas_interactions: { requiresApproval: false }
   };
   REGISTRY_KEY2 = Symbol.for("@letta/toolRegistry");
   toolRegistry2 = getRegistry2();
@@ -81311,4 +81680,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=16B9ABCB4E894E1464756E2164756E21
+//# debugId=22AFC6F20D76D7D064756E2164756E21
