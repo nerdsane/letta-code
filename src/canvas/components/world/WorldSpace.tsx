@@ -27,7 +27,7 @@ export function WorldSpace({
   const coverImage = world.asset?.path ? `/api/assets/${world.asset.path}` : undefined;
 
   // Build timeline from development history
-  const timelineEvents = development.versions.slice(0, 5).map((version, i) => ({
+  const timelineEvents = (development.versions || []).slice(0, 5).map((version, i) => ({
     id: `v${version.number}`,
     title: `Version ${version.number}`,
     description: version.changes,
@@ -36,9 +36,10 @@ export function WorldSpace({
   }));
 
   // Group visible elements by type
-  const characters = surface.visible_elements.filter(e => e.type === 'character');
-  const locations = surface.visible_elements.filter(e => e.type === 'location');
-  const technologies = surface.visible_elements.filter(e => e.type === 'technology');
+  const visibleElements = surface.visible_elements || [];
+  const characters = visibleElements.filter(e => e.type === 'character');
+  const locations = visibleElements.filter(e => e.type === 'location');
+  const technologies = visibleElements.filter(e => e.type === 'technology');
 
   // Build actions
   const actions = [
@@ -66,9 +67,9 @@ export function WorldSpace({
         backgroundImage={coverImage}
         badge={`Est. ${foundation.time_period || 'Unknown Era'}`}
         meta={[
-          `${surface.visible_elements.length} Elements`,
+          `${visibleElements.length} Elements`,
           `${stories.length} Stories`,
-          `v${development.version}`,
+          `v${development.version || 0}`,
         ]}
         height="full"
         overlay="gradient"
@@ -82,7 +83,7 @@ export function WorldSpace({
             Foundation Rules
           </h2>
           <div className="world-space__rules">
-            {foundation.rules.map((rule, i) => (
+            {(foundation.rules || []).map((rule, i) => (
               <ScrollSection key={rule.id} animation="slide-left" delay={i * 100}>
                 <div className="world-space__rule">
                   <span className="world-space__rule-type">{rule.type}</span>
