@@ -140,8 +140,12 @@ interface CanvasUIResult {
 let agentBusWs: WebSocket | null = null;
 let isConnecting = false;
 
+// Pending connection callbacks for concurrent requests
+let pendingCallbacks: { resolve: (ws: WebSocket) => void; reject: (err: Error) => void }[] = [];
+
 /**
  * Ensure Agent Bus connection is established
+ * Uses native WebSocket API (not Node.js ws library)
  */
 function ensureAgentBusConnection(): Promise<WebSocket> {
   return new Promise((resolve, reject) => {
@@ -152,37 +156,49 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
     }
 
     // Wait for existing connection attempt
-    if (isConnecting && agentBusWs) {
-      agentBusWs.once('open', () => resolve(agentBusWs!));
-      agentBusWs.once('error', reject);
+    if (isConnecting) {
+      pendingCallbacks.push({ resolve, reject });
       return;
     }
 
     // Create new connection
     isConnecting = true;
-    agentBusWs = new WebSocket(AGENT_BUS_URL);
+    const ws = new WebSocket(AGENT_BUS_URL);
 
-    agentBusWs.on('open', () => {
+    ws.onopen = () => {
       console.log('[canvas_ui] Connected to Agent Bus');
       isConnecting = false;
-      resolve(agentBusWs!);
-    });
+      agentBusWs = ws;
+      resolve(ws);
+      // Resolve any pending callbacks
+      for (const cb of pendingCallbacks) {
+        cb.resolve(ws);
+      }
+      pendingCallbacks = [];
+    };
 
-    agentBusWs.on('error', (error) => {
-      console.error('[canvas_ui] Agent Bus connection error:', error);
+    ws.onerror = (event) => {
+      console.error('[canvas_ui] Agent Bus connection error:', event);
       isConnecting = false;
-      reject(new Error('Failed to connect to Agent Bus'));
-    });
+      const err = new Error('Failed to connect to Agent Bus');
+      reject(err);
+      // Reject any pending callbacks
+      for (const cb of pendingCallbacks) {
+        cb.reject(err);
+      }
+      pendingCallbacks = [];
+    };
 
-    agentBusWs.on('close', () => {
+    ws.onclose = () => {
       console.log('[canvas_ui] Agent Bus connection closed');
       agentBusWs = null;
       isConnecting = false;
-    });
+    };
 
-    agentBusWs.on('message', (data) => {
+    ws.onmessage = (event) => {
       try {
-        const message = JSON.parse(data.toString());
+        const data = typeof event.data === 'string' ? event.data : event.data.toString();
+        const message = JSON.parse(data);
         if (message.type === 'interaction') {
           console.log('[canvas_ui] User interaction:', message);
           handleInteraction(message as InteractionMessage);
@@ -190,7 +206,7 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
       } catch (err) {
         console.error('[canvas_ui] Failed to parse message:', err);
       }
-    });
+    };
   });
 }
 

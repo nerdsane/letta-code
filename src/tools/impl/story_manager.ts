@@ -428,14 +428,14 @@ async function getContinuationContext(args: StoryManagerArgs): Promise<StoryMana
   // Gather rules that have been applied
   const appliedRuleIds = new Set<string>();
   for (const segment of story.segments) {
-    segment.world_evolution.rules_applied?.forEach(id => appliedRuleIds.add(id));
+    segment.world_evolution?.rules_applied?.forEach(id => appliedRuleIds.add(id));
   }
   const rulesInPlay = world.foundation.rules.filter(r => appliedRuleIds.has(r.id));
 
   // Gather elements that have been introduced
   const introducedElementIds = new Set<string>();
   for (const segment of story.segments) {
-    segment.world_evolution.elements_introduced?.forEach(id => introducedElementIds.add(id));
+    segment.world_evolution?.elements_introduced?.forEach(id => introducedElementIds.add(id));
   }
   const elementsInPlay = world.surface.visible_elements.filter(e => introducedElementIds.has(e.id));
 
@@ -581,8 +581,8 @@ function updateEndpoints(story: Story, newSegment: StorySegment): void {
 function updateWorldContributions(story: Story, segment: StorySegment): void {
   const contrib = story.world_contributions;
 
-  // Add new elements
-  if (segment.world_evolution.elements_introduced) {
+  // Add new elements (guard against missing world_evolution)
+  if (segment.world_evolution?.elements_introduced) {
     for (const elemId of segment.world_evolution.elements_introduced) {
       if (!contrib.characters_developed.includes(elemId) && !contrib.locations_explored.includes(elemId)) {
         // Assume character for now (could be smarter)
@@ -591,8 +591,8 @@ function updateWorldContributions(story: Story, segment: StorySegment): void {
     }
   }
 
-  // Add applied rules
-  if (segment.world_evolution.rules_applied) {
+  // Add applied rules (guard against missing world_evolution)
+  if (segment.world_evolution?.rules_applied) {
     for (const ruleId of segment.world_evolution.rules_applied) {
       if (!contrib.rules_tested.includes(ruleId)) {
         contrib.rules_tested.push(ruleId);
