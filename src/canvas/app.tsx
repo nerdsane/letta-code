@@ -32,6 +32,12 @@ const ASCII_LOGO = `██████╗ ███████╗████�
 
 type View = "canvas" | "world" | "story";
 
+interface AgentUIEntry {
+  componentId: string;
+  spec: ComponentSpec;
+  mode: 'overlay' | 'fullscreen' | 'inline';
+}
+
 interface AppState {
   view: View;
   worlds: World[];
@@ -41,9 +47,11 @@ interface AppState {
   loading: boolean;
   error: string | null;
   dynamicUI: ComponentSpec | null; // Temporary test UI (will be removed)
-  agentUI: Map<string, { componentId: string; spec: ComponentSpec }>; // Agent-created UI by target
+  agentUI: Map<string, AgentUIEntry>; // Agent-created UI by target
+  fullscreenUI: AgentUIEntry | null; // Fullscreen UI takes over main content
   agentBusConnected: boolean;
   showImmersiveDemo: boolean; // Toggle for immersive reader demo (mock data)
+  agentThinking: boolean; // Agent is processing
 }
 
 // ============================================================================
@@ -91,8 +99,10 @@ function App() {
     error: null,
     dynamicUI: null,
     agentUI: new Map(),
+    fullscreenUI: null,
     agentBusConnected: false,
     showImmersiveDemo: false,
+    agentThinking: false,
   });
 
   const agentBusRef = useRef<AgentBusClient | null>(null);
@@ -218,17 +228,50 @@ function App() {
   // Initialize Agent Bus connection
   useEffect(() => {
     const agentBus = new AgentBusClient({
-      onCanvasUI: (componentId, target, action, spec) => {
+      onCanvasUI: (componentId, target, action, spec, mode = 'overlay') => {
         setState((s) => {
+          // Handle fullscreen mode - takes over main content
+          if (mode === 'fullscreen') {
+            if (action === 'remove') {
+              return { ...s, fullscreenUI: null };
+            } else if (spec) {
+              return { ...s, fullscreenUI: { componentId, spec, mode } };
+            }
+            return s;
+          }
+
+          // Handle overlay/inline modes - stored by target
           const newAgentUI = new Map(s.agentUI);
 
           if (action === 'remove') {
             newAgentUI.delete(target);
           } else if (spec) {
-            newAgentUI.set(target, { componentId, spec });
+            newAgentUI.set(target, { componentId, spec, mode });
           }
 
           return { ...s, agentUI: newAgentUI };
+        });
+      },
+      onStateChange: (event, data) => {
+        console.log('[Canvas] State change:', event, data);
+        setState((s) => {
+          switch (event) {
+            case 'agent_thinking':
+              return { ...s, agentThinking: true };
+            case 'agent_done':
+              return { ...s, agentThinking: false };
+            case 'story_continued':
+              // Refresh stories data
+              fetch('/api/stories').then(res => res.json()).then(stories => {
+                setState(prev => ({ ...prev, stories }));
+              });
+              return s;
+            case 'world_entered':
+              // Could navigate to world view
+              return s;
+            default:
+              return s;
+          }
         });
       },
       onConnect: (clientId) => {
@@ -409,6 +452,67 @@ function App() {
           </div>
         );
       })}
+
+      {/* Fullscreen UI - takes over entire viewport */}
+      {state.fullscreenUI && (
+        <div
+          className="fullscreen-ui"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 3000,
+            background: 'var(--bg-primary)',
+            overflow: 'auto',
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setState(s => ({ ...s, fullscreenUI: null }))}
+            style={{
+              position: 'fixed',
+              top: '20px',
+              right: '20px',
+              zIndex: 3001,
+              padding: '8px 12px',
+              background: 'rgba(10, 10, 10, 0.9)',
+              border: '1px solid rgba(0, 255, 204, 0.3)',
+              color: 'rgba(0, 255, 204, 0.8)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              letterSpacing: '0.1em',
+              cursor: 'pointer',
+            }}
+          >
+            ESC
+          </button>
+          <DynamicRenderer
+            spec={state.fullscreenUI.spec}
+            onInteraction={handleDynamicUIInteraction}
+          />
+        </div>
+      )}
+
+      {/* Agent thinking indicator */}
+      {state.agentThinking && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 2500,
+            padding: '8px 16px',
+            background: 'rgba(0, 255, 204, 0.1)',
+            border: '1px solid rgba(0, 255, 204, 0.3)',
+            color: 'var(--neon-cyan)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+            letterSpacing: '0.1em',
+          }}
+        >
+          Agent thinking...
+        </div>
+      )}
 
       <main className="main-content">
         {state.view === "canvas" && (

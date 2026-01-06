@@ -19,6 +19,23 @@ export interface CanvasUIMessage {
   target: string; // Mount point: 'story_segment_123', 'world_overview', 'floating'
   componentId: string; // Unique ID for this component
   spec?: ComponentSpec; // The UI component spec (omit for 'remove')
+  mode?: 'overlay' | 'fullscreen' | 'inline'; // How to display: overlay (floating), fullscreen (takeover), inline (in content)
+}
+
+/**
+ * Agent → Canvas/CLI: State change notifications
+ */
+export interface StateChangeMessage {
+  type: 'state_change';
+  event: 'story_started' | 'story_continued' | 'branch_selected' | 'world_entered' | 'image_generated' | 'agent_thinking' | 'agent_done';
+  data: {
+    storyId?: string;
+    worldId?: string;
+    segmentId?: string;
+    branchId?: string;
+    assetPath?: string;
+    [key: string]: any;
+  };
 }
 
 /**
@@ -56,6 +73,7 @@ export interface ErrorMessage {
 export type AgentBusMessage =
   | CanvasUIMessage
   | InteractionMessage
+  | StateChangeMessage
   | ConnectionMessage
   | ErrorMessage;
 

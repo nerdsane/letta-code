@@ -5,10 +5,52 @@
  * multimedia enhancements for stories and worlds displayed in the canvas.
  */
 
-import type { CanvasUIMessage } from '../agent-bus/types';
+import type { CanvasUIMessage, StateChangeMessage, InteractionMessage } from '../agent-bus/types';
 import type { ComponentSpec } from '../canvas/components/types';
 
 const AGENT_BUS_URL = process.env.AGENT_BUS_URL || 'ws://localhost:8284/ws?type=agent';
+
+// ============================================================================
+// Interaction Callback Registry
+// ============================================================================
+
+type InteractionCallback = (data: any) => void | Promise<void>;
+const interactionCallbacks = new Map<string, InteractionCallback>();
+
+/**
+ * Register a callback for when a specific interaction target is triggered
+ */
+export function onInteraction(target: string, callback: InteractionCallback) {
+  interactionCallbacks.set(target, callback);
+  return () => interactionCallbacks.delete(target); // Return unsubscribe function
+}
+
+/**
+ * Handle incoming interaction from canvas
+ */
+function handleInteraction(message: InteractionMessage) {
+  const { target, data, componentId, interactionType } = message;
+
+  // Try target-specific callback first
+  if (target && interactionCallbacks.has(target)) {
+    const callback = interactionCallbacks.get(target)!;
+    Promise.resolve(callback(data)).catch(err => {
+      console.error(`[canvas_ui] Interaction callback error for ${target}:`, err);
+    });
+    return;
+  }
+
+  // Try componentId callback
+  if (interactionCallbacks.has(componentId)) {
+    const callback = interactionCallbacks.get(componentId)!;
+    Promise.resolve(callback({ ...data, interactionType })).catch(err => {
+      console.error(`[canvas_ui] Interaction callback error for ${componentId}:`, err);
+    });
+    return;
+  }
+
+  console.log(`[canvas_ui] Unhandled interaction: ${interactionType} on ${componentId} (target: ${target})`);
+}
 
 // ============================================================================
 // Tool Interface
@@ -18,6 +60,7 @@ interface CanvasUIArgs {
   target: string;
   spec: ComponentSpec;
   action?: 'create' | 'update' | 'remove';
+  mode?: 'overlay' | 'fullscreen' | 'inline';
 }
 
 interface CanvasUIResult {
@@ -77,13 +120,40 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
         const message = JSON.parse(data.toString());
         if (message.type === 'interaction') {
           console.log('[canvas_ui] User interaction:', message);
-          // TODO: Route interaction back to agent context
+          handleInteraction(message as InteractionMessage);
         }
       } catch (err) {
         console.error('[canvas_ui] Failed to parse message:', err);
       }
     });
   });
+}
+
+// ============================================================================
+// State Broadcast
+// ============================================================================
+
+/**
+ * Broadcast state change to all connected clients (Canvas + CLI)
+ */
+export async function broadcastStateChange(
+  event: StateChangeMessage['event'],
+  data: StateChangeMessage['data']
+): Promise<void> {
+  try {
+    const ws = await ensureAgentBusConnection();
+
+    const message: StateChangeMessage = {
+      type: 'state_change',
+      event,
+      data,
+    };
+
+    ws.send(JSON.stringify(message));
+    console.log(`[canvas_ui] Broadcast state change: ${event}`);
+  } catch (error) {
+    console.error('[canvas_ui] Failed to broadcast state change:', error);
+  }
 }
 
 // ============================================================================
@@ -98,7 +168,7 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
  * specified target location.
  */
 export async function canvas_ui(args: CanvasUIArgs): Promise<CanvasUIResult> {
-  const { target, spec, action = 'create' } = args;
+  const { target, spec, action = 'create', mode = 'overlay' } = args;
 
   try {
     const ws = await ensureAgentBusConnection();
@@ -111,6 +181,7 @@ export async function canvas_ui(args: CanvasUIArgs): Promise<CanvasUIResult> {
       target,
       componentId,
       spec: action === 'remove' ? undefined : spec,
+      mode,
     };
 
     ws.send(JSON.stringify(message));

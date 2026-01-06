@@ -4,18 +4,20 @@
  * Connects to Agent Bus and handles bidirectional communication
  */
 
-import type { AgentBusMessage, CanvasUIMessage, InteractionMessage } from '../agent-bus/types';
+import type { AgentBusMessage, CanvasUIMessage, InteractionMessage, StateChangeMessage } from '../agent-bus/types';
 import type { ComponentSpec } from './components/types';
 
 export interface AgentUIComponent {
   componentId: string;
   target: string;
   spec: ComponentSpec;
+  mode: 'overlay' | 'fullscreen' | 'inline';
 }
 
 export interface AgentBusClientOptions {
   url?: string;
-  onCanvasUI?: (componentId: string, target: string, action: 'create' | 'update' | 'remove', spec?: ComponentSpec) => void;
+  onCanvasUI?: (componentId: string, target: string, action: 'create' | 'update' | 'remove', spec?: ComponentSpec, mode?: 'overlay' | 'fullscreen' | 'inline') => void;
+  onStateChange?: (event: StateChangeMessage['event'], data: StateChangeMessage['data']) => void;
   onConnect?: (clientId: string) => void;
   onDisconnect?: () => void;
   onError?: (error: string) => void;
@@ -99,6 +101,10 @@ export class AgentBusClient {
         this.handleCanvasUI(message);
         break;
 
+      case 'state_change':
+        this.handleStateChange(message);
+        break;
+
       case 'error':
         console.error('[Agent Bus Client] Error:', message.error, message.details);
         this.options.onError?.(message.error);
@@ -107,9 +113,15 @@ export class AgentBusClient {
   }
 
   private handleCanvasUI(message: CanvasUIMessage) {
-    const { action, target, componentId, spec } = message;
-    console.log(`[Agent Bus Client] canvas_ui: ${action} ${componentId} at ${target}`);
-    this.options.onCanvasUI?.(componentId, target, action, spec);
+    const { action, target, componentId, spec, mode } = message;
+    console.log(`[Agent Bus Client] canvas_ui: ${action} ${componentId} at ${target} (mode: ${mode})`);
+    this.options.onCanvasUI?.(componentId, target, action, spec, mode || 'overlay');
+  }
+
+  private handleStateChange(message: StateChangeMessage) {
+    const { event, data } = message;
+    console.log(`[Agent Bus Client] state_change: ${event}`, data);
+    this.options.onStateChange?.(event, data);
   }
 
   /**
