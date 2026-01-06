@@ -12,7 +12,7 @@ import { WorldSpace } from "./components/world";
 import { WelcomeSpace } from "./components/welcome";
 import { FeedbackProvider, useFeedbackSafe } from "./context/FeedbackContext";
 import { ToastContainer, AgentStatus } from "./components/feedback";
-import { FloatingInput, useFloatingInput, type ElementType } from "./components/interaction";
+import { FloatingInput, useFloatingInput, InteractiveElement, type ElementType } from "./components/interaction";
 import { AgentSuggestions, type Suggestion } from "./components/agent";
 
 // ============================================================================
@@ -588,6 +588,7 @@ function App() {
             story={state.selectedStory}
             agentUI={state.agentUI}
             onInteraction={handleDynamicUIInteraction}
+            onElementAction={handleElementAction}
           />
         )}
       </main>
@@ -1128,10 +1129,12 @@ function StoryView({
   story,
   agentUI,
   onInteraction,
+  onElementAction,
 }: {
   story: Story;
   agentUI: Map<string, { componentId: string; spec: ComponentSpec }>;
   onInteraction: (componentId: string, interactionType: string, data: any, target?: string) => void;
+  onElementAction?: (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => void;
 }) {
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(story.segments.length - 1);
   const [continuingStory, setContinuingStory] = useState(false);
@@ -1261,11 +1264,17 @@ function StoryView({
           </div>
 
           {segment && (
-            <div className="segment-content">
-              <div className="segment-header">
-                <h3 className="segment-id">{segment.id}</h3>
-                <span className="segment-word-count">{segment.word_count} words</span>
-              </div>
+            <InteractiveElement
+              elementType="story_segment"
+              elementId={segment.id}
+              elementData={segment}
+              onAction={onElementAction || (() => {})}
+            >
+              <div className="segment-content">
+                <div className="segment-header">
+                  <h3 className="segment-id">{segment.id}</h3>
+                  <span className="segment-word-count">{segment.word_count} words</span>
+                </div>
 
               {segment.assets && segment.assets.length > 0 && (
                 <div className="segment-assets">
@@ -1358,7 +1367,8 @@ function StoryView({
                   )}
                 </div>
               )}
-            </div>
+              </div>
+            </InteractiveElement>
           )}
         </>
       )}
