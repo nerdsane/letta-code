@@ -1,6 +1,7 @@
 import React from 'react';
 import type { World, Story } from '../../../types/dsf';
 import { Hero, ScrollSection, ProgressBar, ActionBar } from '../experience';
+import { InteractiveElement, type ElementType } from '../interaction';
 import './world-space.css';
 
 export interface WorldSpaceProps {
@@ -9,6 +10,7 @@ export interface WorldSpaceProps {
   onSelectStory: (story: Story) => void;
   onExploreElement?: (elementId: string, elementType: string) => void;
   onStartNewStory?: () => void;
+  onElementAction?: (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => void;
 }
 
 export function WorldSpace({
@@ -17,7 +19,16 @@ export function WorldSpace({
   onSelectStory,
   onExploreElement,
   onStartNewStory,
+  onElementAction,
 }: WorldSpaceProps) {
+  // Default action handler that falls back to onExploreElement
+  const handleAction = (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => {
+    if (onElementAction) {
+      onElementAction(actionId, elementId, elementType, elementData);
+    } else if (onExploreElement && (actionId === 'develop' || actionId === 'explore')) {
+      onExploreElement(elementId, elementType);
+    }
+  };
   // Guard against missing nested properties
   const foundation = world?.foundation || { core_premise: 'Unknown World', rules: [] };
   const surface = world?.surface || { visible_elements: [] };
@@ -99,10 +110,17 @@ export function WorldSpace({
           <div className="world-space__rules">
             {(foundation.rules || []).map((rule, i) => (
               <ScrollSection key={rule.id} animation="slide-left" delay={i * 100}>
-                <div className="world-space__rule">
-                  <span className="world-space__rule-type">{rule.type}</span>
-                  <p className="world-space__rule-statement">{rule.statement}</p>
-                </div>
+                <InteractiveElement
+                  elementType="rule"
+                  elementId={rule.id}
+                  elementData={rule}
+                  onAction={handleAction}
+                >
+                  <div className="world-space__rule">
+                    <span className="world-space__rule-type">{rule.certainty}</span>
+                    <p className="world-space__rule-statement">{rule.statement}</p>
+                  </div>
+                </InteractiveElement>
               </ScrollSection>
             ))}
           </div>
@@ -120,18 +138,25 @@ export function WorldSpace({
             <div className="world-space__grid">
               {characters.map((char, i) => (
                 <ScrollSection key={char.id} animation="scale" delay={i * 100}>
-                  <button
-                    className="world-space__card"
-                    onClick={() => onExploreElement?.(char.id, 'character')}
+                  <InteractiveElement
+                    elementType="character"
+                    elementId={char.id}
+                    elementData={char}
+                    onAction={handleAction}
                   >
-                    <h3 className="world-space__card-name">{char.name || char.id}</h3>
-                    <p className="world-space__card-desc">{char.description}</p>
-                    {char.first_appearance && (
-                      <span className="world-space__card-meta">
-                        First seen: Segment {char.first_appearance}
-                      </span>
-                    )}
-                  </button>
+                    <button
+                      className="world-space__card"
+                      onClick={() => onExploreElement?.(char.id, 'character')}
+                    >
+                      <h3 className="world-space__card-name">{char.name || char.id}</h3>
+                      <p className="world-space__card-desc">{char.description}</p>
+                      {char.first_appearance && (
+                        <span className="world-space__card-meta">
+                          First seen: Segment {char.first_appearance}
+                        </span>
+                      )}
+                    </button>
+                  </InteractiveElement>
                 </ScrollSection>
               ))}
             </div>
@@ -150,13 +175,20 @@ export function WorldSpace({
             <div className="world-space__grid">
               {locations.map((loc, i) => (
                 <ScrollSection key={loc.id} animation="scale" delay={i * 100}>
-                  <button
-                    className="world-space__card world-space__card--location"
-                    onClick={() => onExploreElement?.(loc.id, 'location')}
+                  <InteractiveElement
+                    elementType="location"
+                    elementId={loc.id}
+                    elementData={loc}
+                    onAction={handleAction}
                   >
-                    <h3 className="world-space__card-name">{loc.name || loc.id}</h3>
-                    <p className="world-space__card-desc">{loc.description}</p>
-                  </button>
+                    <button
+                      className="world-space__card world-space__card--location"
+                      onClick={() => onExploreElement?.(loc.id, 'location')}
+                    >
+                      <h3 className="world-space__card-name">{loc.name || loc.id}</h3>
+                      <p className="world-space__card-desc">{loc.description}</p>
+                    </button>
+                  </InteractiveElement>
                 </ScrollSection>
               ))}
             </div>
@@ -175,13 +207,20 @@ export function WorldSpace({
             <div className="world-space__grid">
               {technologies.map((tech, i) => (
                 <ScrollSection key={tech.id} animation="scale" delay={i * 100}>
-                  <button
-                    className="world-space__card world-space__card--tech"
-                    onClick={() => onExploreElement?.(tech.id, 'technology')}
+                  <InteractiveElement
+                    elementType="technology"
+                    elementId={tech.id}
+                    elementData={tech}
+                    onAction={handleAction}
                   >
-                    <h3 className="world-space__card-name">{tech.name || tech.id}</h3>
-                    <p className="world-space__card-desc">{tech.description}</p>
-                  </button>
+                    <button
+                      className="world-space__card world-space__card--tech"
+                      onClick={() => onExploreElement?.(tech.id, 'technology')}
+                    >
+                      <h3 className="world-space__card-name">{tech.name || tech.id}</h3>
+                      <p className="world-space__card-desc">{tech.description}</p>
+                    </button>
+                  </InteractiveElement>
                 </ScrollSection>
               ))}
             </div>
@@ -225,18 +264,25 @@ export function WorldSpace({
           <div className="world-space__stories">
             {stories.map((story, i) => (
               <ScrollSection key={story.id} animation="fade-up" delay={i * 100}>
-                <button
-                  className="world-space__story"
-                  onClick={() => onSelectStory(story)}
+                <InteractiveElement
+                  elementType="story_card"
+                  elementId={story.id}
+                  elementData={story}
+                  onAction={handleAction}
                 >
-                  <div className="world-space__story-info">
-                    <h3 className="world-space__story-title">{story.metadata.title}</h3>
-                    <span className="world-space__story-meta">
-                      {story.segments.length} segments · {story.metadata.status}
-                    </span>
-                  </div>
-                  <span className="world-space__story-arrow">→</span>
-                </button>
+                  <button
+                    className="world-space__story"
+                    onClick={() => onSelectStory(story)}
+                  >
+                    <div className="world-space__story-info">
+                      <h3 className="world-space__story-title">{story.metadata.title}</h3>
+                      <span className="world-space__story-meta">
+                        {story.segments.length} segments · {story.metadata.status}
+                      </span>
+                    </div>
+                    <span className="world-space__story-arrow">→</span>
+                  </button>
+                </InteractiveElement>
               </ScrollSection>
             ))}
           </div>

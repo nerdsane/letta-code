@@ -12,7 +12,8 @@ import { WorldSpace } from "./components/world";
 import { WelcomeSpace } from "./components/welcome";
 import { FeedbackProvider, useFeedbackSafe } from "./context/FeedbackContext";
 import { ToastContainer, AgentStatus } from "./components/feedback";
-import { FloatingInput, useFloatingInput } from "./components/interaction";
+import { FloatingInput, useFloatingInput, type ElementType } from "./components/interaction";
+import { AgentSuggestions, type Suggestion } from "./components/agent";
 
 // ============================================================================
 // ASCII Art Logo
@@ -272,6 +273,65 @@ function App() {
     }
   }
 
+  // Handle element context menu actions
+  function handleElementAction(actionId: string, elementId: string, elementType: ElementType, elementData?: any) {
+    console.log('[Canvas] Element action:', { actionId, elementId, elementType });
+
+    // Send to agent via Agent Bus
+    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      agentBusRef.current.sendInteraction(
+        `element-${elementType}-${elementId}`,
+        `element_action`,
+        {
+          action: actionId,
+          elementId,
+          elementType,
+          elementData,
+          context: {
+            view: state.view,
+            worldId: state.selectedWorld ? getWorldCheckpointName(state.selectedWorld) : undefined,
+            storyId: state.selectedStory?.id,
+          },
+        },
+        'agent'
+      );
+
+      // Show feedback
+      feedback?.showToast(`Action: ${actionId}`, 'agent');
+      setState(s => ({ ...s, agentThinking: true, agentAction: `Processing ${actionId}...` }));
+    } else {
+      feedback?.showToast('Agent not connected', 'warning');
+    }
+  }
+
+  // Handle suggestion acceptance
+  function handleSuggestionAccept(suggestion: Suggestion) {
+    console.log('[Canvas] Suggestion accepted:', suggestion);
+
+    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      agentBusRef.current.sendInteraction(
+        `suggestion-${suggestion.id}`,
+        'suggestion_accepted',
+        {
+          suggestion,
+          context: {
+            view: state.view,
+            worldId: state.selectedWorld ? getWorldCheckpointName(state.selectedWorld) : undefined,
+            storyId: state.selectedStory?.id,
+          },
+        },
+        'agent'
+      );
+
+      feedback?.showToast(`Working on: ${suggestion.title}`, 'agent');
+      setState(s => ({ ...s, agentThinking: true, agentAction: suggestion.action }));
+    }
+  }
+
+  function handleSuggestionDismiss(suggestionId: string) {
+    console.log('[Canvas] Suggestion dismissed:', suggestionId);
+  }
+
   // Initialize Agent Bus connection
   useEffect(() => {
     const agentBus = new AgentBusClient({
@@ -489,6 +549,7 @@ function App() {
             stories={state.stories}
             onSelectWorld={selectWorld}
             onSelectStory={selectStory}
+            onElementAction={handleElementAction}
           />
         )}
 
@@ -507,6 +568,7 @@ function App() {
                   .then(() => window.location.reload())
                   .catch(console.error);
               }}
+              onElementAction={handleElementAction}
             />
           ) : (
             <WorldView
@@ -529,6 +591,16 @@ function App() {
           />
         )}
       </main>
+
+      {/* Agent Suggestions */}
+      <AgentSuggestions
+        world={state.selectedWorld}
+        story={state.selectedStory}
+        stories={state.stories}
+        onAccept={handleSuggestionAccept}
+        onDismiss={handleSuggestionDismiss}
+        position="floating"
+      />
 
       {/* Global toast notifications */}
       <ToastContainer />
