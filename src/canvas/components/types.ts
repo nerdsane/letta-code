@@ -172,6 +172,63 @@ export interface DividerSpec extends BaseComponentSpec {
   };
 }
 
+// ============================================================================
+// Experience Components - Scroll-driven, immersive primitives
+// ============================================================================
+
+export interface HeroSpec extends BaseComponentSpec {
+  type: 'Hero';
+  props: {
+    title: string;
+    subtitle?: string;
+    backgroundImage?: string;
+    badge?: string;
+    meta?: string[];
+    showScrollIndicator?: boolean;
+    height?: 'full' | 'large' | 'medium';
+    overlay?: 'dark' | 'gradient' | 'none';
+    onBadgeClick?: string;
+    onScrollClick?: string;
+  };
+}
+
+export interface ScrollSectionSpec extends BaseComponentSpec {
+  type: 'ScrollSection';
+  props: {
+    animation?: 'fade-up' | 'fade-in' | 'slide-left' | 'slide-right' | 'scale' | 'none';
+    delay?: number;
+    threshold?: number;
+  };
+  children?: ComponentSpec | ComponentSpec[];
+}
+
+export interface ProgressBarSpec extends BaseComponentSpec {
+  type: 'ProgressBar';
+  props: {
+    containerId?: string;
+    position?: 'top' | 'bottom';
+    height?: number;
+    showLabel?: boolean;
+  };
+}
+
+export interface ActionItemSpec {
+  id: string;
+  label: string;
+  description?: string;
+  icon?: string;
+  variant?: 'primary' | 'secondary' | 'branch';
+}
+
+export interface ActionBarSpec extends BaseComponentSpec {
+  type: 'ActionBar';
+  props: {
+    actions: ActionItemSpec[];
+    title?: string;
+    onAction?: string;
+  };
+}
+
 export type ComponentSpec =
   | DialogSpec
   | ButtonSpec
@@ -185,7 +242,11 @@ export type ComponentSpec =
   | CalloutSpec
   | StatsSpec
   | BadgeSpec
-  | DividerSpec;
+  | DividerSpec
+  | HeroSpec
+  | ScrollSectionSpec
+  | ProgressBarSpec
+  | ActionBarSpec;
 
 export interface CanvasState {
   rootComponent: ComponentSpec | null;

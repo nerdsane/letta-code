@@ -31525,6 +31525,61 @@ Don't present work to user if evaluation tools reveal failures. Keep iterating u
 
 Once user selects a world, write the story grounded in that world's rules. See the \`<storytelling>\` section for detailed guidance on story quality, completeness, and consistency.
 
+**Proactive Visual Storytelling:**
+As you write, generate images for key story moments WITHOUT waiting to be asked. Visual storytelling is integral to the experience, not an afterthought.
+
+**When to generate images (do this automatically):**
+- Opening scenes that establish atmosphere and setting
+- Character introductions or pivotal character moments
+- Key locations when first described
+- Dramatic turning points or climactic moments
+- Technology or scientific concepts that benefit from visualization
+- Any moment where "showing" beats "telling"
+
+**How to integrate images into story segments:**
+
+1. **Generate the image** with \`story_id\` parameter:
+\`\`\`
+image_result = image_generator(
+  prompt="[Detailed visual description matching the scene]",
+  save_as_asset=true,
+  story_id="[current_story_id]",
+  asset_description="[Brief description for caption]"
+)
+\`\`\`
+
+2. **Include asset in segment** when saving:
+\`\`\`
+story_manager(
+  operation="save_segment",
+  story_id="[current_story_id]",
+  segment={
+    content="Story text with ![caption](asset_id) embedded...",
+    word_count=...,
+    parent_segment=...,
+    assets=[{
+      id: "[asset_id from image_result]",
+      type: "image",
+      path: "[path from image_result]",
+      description: "[caption]",
+      generated: true,
+      prompt: "[original prompt]"
+    }],
+    world_evolution={...}
+  }
+)
+\`\`\`
+
+**Image prompt guidelines:**
+- Match the story's tone and atmosphere
+- Include specific details from the narrative (technology, setting, lighting)
+- **Visual style**: Clean illustration style with geometric shapes and pixel elements
+- **Color palette**: Neon cyan (#00ffcc), bright cyan (#00ffff), neon magenta (#aa00ff), pure black, light grays
+- **CRITICAL**: Always include "edge-to-edge composition, no borders, no paper texture, no white background, full bleed, dark background" for UI compatibility
+- Reference the world's year and technology level for visual accuracy
+
+**Frequency guideline:** Aim for 1-3 images per story segment, focusing on moments of highest visual impact. Don't over-saturate - each image should earn its place.
+
 Before presenting story:
 
 Run \`check_logical_consistency(content=story, format="text")\` to ensure it follows world rules.
@@ -31573,6 +31628,7 @@ The goal: Quality worlds and stories that users actually want. How you get there
 - **Forces thought**: Make readers stop, digest, and absorb - not just entertain
 - **Tight plotting**: Every element earns its place - no unnecessary verbosity
 - **Speculative focus**: Prioritize speculation over genre conventions
+- **Visual immersion**: Generate images for key moments - opening scenes, character introductions, dramatic turning points. Don't wait to be asked; visual storytelling is part of the craft.
 
 ## Quality Standards
 - Science should feel plausible to domain experts
@@ -46123,6 +46179,8 @@ async function saveAsset(args) {
     assetPath = join11(worldDir, args.asset.path);
   } else {
     assetPath = join11(ASSETS_DIR, args.asset.path);
+    const parentDir = join11(assetPath, "..");
+    await mkdir4(parentDir, { recursive: true });
   }
   let fileData;
   if (args.data.startsWith("data:")) {
@@ -47249,45 +47307,57 @@ async function generateWithOpenAI(args) {
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY environment variable not set");
   }
-  const size = args.size || DEFAULT_SIZE;
-  const quality = args.quality || DEFAULT_QUALITY;
-  const imageModel = args.model || "gpt-image-1.5";
-  const mainlineModel = "gpt-5.2";
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  let size = args.size || DEFAULT_SIZE;
+  if (size === "1792x1024") {
+    size = "1536x1024";
+  } else if (size === "1024x1792") {
+    size = "1024x1536";
+  } else if (size === "512x512" || size === "256x256") {
+    size = "1024x1024";
+  }
+  const model = args.model || "gpt-image-1.5";
+  const requestBody = {
+    model,
+    prompt: args.prompt,
+    n: 1,
+    size,
+    response_format: "b64_json"
+  };
+  if (model.startsWith("dall-e")) {
+    requestBody.quality = args.quality || DEFAULT_QUALITY;
+    requestBody.style = args.style || DEFAULT_STYLE;
+  }
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`
     },
-    body: JSON.stringify({
-      model: mainlineModel,
-      input: args.prompt,
-      tools: [
-        {
-          type: "image_generation",
-          size,
-          quality: quality === "hd" ? "high" : quality === "standard" ? "medium" : "auto",
-          format: "png",
-          background: "auto"
-        }
-      ],
-      tool_choice: { type: "image_generation" }
-    })
+    body: JSON.stringify(requestBody)
   });
   if (!response.ok) {
     const error = await response.text();
     throw new Error(`OpenAI API error (${response.status}): ${error}`);
   }
   const data = await response.json();
-  const imageGenCall = data.output.find((item) => item.type === "image_generation_call");
-  if (!imageGenCall || !imageGenCall.result) {
+  if (!data.data || data.data.length === 0) {
     throw new Error("No image returned from OpenAI");
   }
-  const base64Data = imageGenCall.result;
-  const dataUrl = `data:image/png;base64,${base64Data}`;
+  const imageData = data.data[0];
+  let imageUrl;
+  if (imageData.b64_json) {
+    imageUrl = `data:image/png;base64,${imageData.b64_json}`;
+  } else if (imageData.url) {
+    const imgResponse = await fetch(imageData.url);
+    const imgBuffer = await imgResponse.arrayBuffer();
+    const base64 = Buffer.from(imgBuffer).toString("base64");
+    imageUrl = `data:image/png;base64,${base64}`;
+  } else {
+    throw new Error("No image data in response");
+  }
   return {
-    imageUrl: dataUrl,
-    revisedPrompt: imageGenCall.revised_prompt
+    imageUrl,
+    revisedPrompt: imageData.revised_prompt
   };
 }
 async function generateWithGoogle(args) {
@@ -47346,18 +47416,34 @@ async function saveAsAsset(imageUrl, args) {
   const dataUrl = `data:image/png;base64,${base64Data}`;
   const assetId = args.asset_id || `img_${Date.now()}`;
   const fileName = `${assetId}.png`;
+  let fullPath;
+  if (args.asset_path) {
+    if (args.story_id) {
+      fullPath = `${args.story_id}/${args.asset_path}`;
+    } else if (args.world_checkpoint) {
+      fullPath = `worlds/${args.world_checkpoint}/${args.asset_path}`;
+    } else {
+      fullPath = args.asset_path;
+    }
+  } else {
+    if (args.story_id) {
+      fullPath = `${args.story_id}/${fileName}`;
+    } else if (args.world_checkpoint) {
+      fullPath = `worlds/${args.world_checkpoint}/${fileName}`;
+    } else {
+      fullPath = fileName;
+    }
+  }
   const asset = {
     id: assetId,
     type: "image",
-    path: args.asset_path || fileName,
+    path: fullPath,
     description: args.asset_description || `Generated image: ${args.prompt.slice(0, 100)}`,
     generated: true,
     prompt: args.prompt
   };
   const result = await asset_manager({
     operation: "save",
-    story_id: args.story_id,
-    world_checkpoint: args.world_checkpoint,
     asset,
     data: dataUrl
   });
@@ -47366,7 +47452,7 @@ async function saveAsAsset(imageUrl, args) {
   }
   return asset;
 }
-var DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard";
+var DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard", DEFAULT_STYLE = "vivid";
 var init_image_generator2 = __esm(() => {
   init_asset_manager2();
   init_dist4();
@@ -81225,4 +81311,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=C00AA3359FC9A61B64756E2164756E21
+//# debugId=16B9ABCB4E894E1464756E2164756E21

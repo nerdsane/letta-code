@@ -6,6 +6,8 @@ import "./styles.css";
 import { DynamicRenderer } from "./components/DynamicRenderer";
 import { MountPoint } from "./components/MountPoint";
 import { AgentBusClient } from "./agentBusClient";
+import { ImmersiveStoryReader } from "./components/story";
+import { mockStory } from "./components/story/mockStory";
 
 // ============================================================================
 // ASCII Art Logo
@@ -41,6 +43,7 @@ interface AppState {
   dynamicUI: ComponentSpec | null; // Temporary test UI (will be removed)
   agentUI: Map<string, { componentId: string; spec: ComponentSpec }>; // Agent-created UI by target
   agentBusConnected: boolean;
+  showImmersiveDemo: boolean; // Toggle for immersive reader demo (mock data)
 }
 
 // ============================================================================
@@ -89,6 +92,7 @@ function App() {
     dynamicUI: null,
     agentUI: new Map(),
     agentBusConnected: false,
+    showImmersiveDemo: false,
   });
 
   const agentBusRef = useRef<AgentBusClient | null>(null);
@@ -182,7 +186,12 @@ function App() {
       view: "canvas",
       selectedWorld: null,
       selectedStory: null,
+      showImmersiveDemo: false,
     }));
+  }
+
+  function toggleImmersiveDemo() {
+    setState((s) => ({ ...s, showImmersiveDemo: !s.showImmersiveDemo }));
   }
 
   function handleDynamicUIInteraction(
@@ -319,6 +328,20 @@ function App() {
     return <ErrorScreen error={state.error} onRetry={loadData} />;
   }
 
+  // Show immersive demo mode (full-screen experience)
+  if (state.showImmersiveDemo) {
+    return (
+      <ImmersiveStoryReader
+        story={mockStory}
+        onContinue={() => console.log('Continue story')}
+        onBranch={(branchId) => console.log('Branch selected:', branchId)}
+        onWorldExplore={() => {
+          toggleImmersiveDemo();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="app">
       <Header
@@ -328,6 +351,37 @@ function App() {
         onBack={goBack}
         onHome={goHome}
       />
+
+      {/* Demo toggle - temporary for testing immersive components */}
+      <button
+        onClick={toggleImmersiveDemo}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '20px',
+          zIndex: 2000,
+          padding: '8px 12px',
+          background: 'rgba(10, 10, 10, 0.9)',
+          border: '1px solid rgba(0, 255, 204, 0.2)',
+          color: 'rgba(0, 255, 204, 0.6)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '10px',
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(0, 255, 204, 0.5)';
+          e.currentTarget.style.color = '#00ffcc';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(0, 255, 204, 0.2)';
+          e.currentTarget.style.color = 'rgba(0, 255, 204, 0.6)';
+        }}
+      >
+        {state.showImmersiveDemo ? 'Exit Demo' : 'Demo'}
+      </button>
 
       {/* Test dynamic UI (temporary) */}
       {state.dynamicUI && (
