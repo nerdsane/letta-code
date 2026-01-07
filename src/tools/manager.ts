@@ -1,9 +1,3 @@
-import { createHash } from "node:crypto";
-import type Letta from "@letta-ai/letta-client";
-import {
-  AuthenticationError,
-  PermissionDeniedError,
-} from "@letta-ai/letta-client";
 import { getModelInfo } from "../agent/model";
 import { getAllSubagentConfigs } from "../agent/subagents";
 import { INTERRUPTED_BY_USER } from "../constants";
@@ -265,33 +259,28 @@ function resolveInternalToolName(name: string): string | undefined {
 }
 
 /**
- * Generates a Python stub for a tool that will be executed client-side.
- * This is registered with Letta so the agent knows about the tool.
+ * ClientTool interface matching the Letta SDK's expected format.
+ * Used when passing client-side tools via the client_tools field.
  */
-function generatePythonStub(
-  name: string,
-  _description: string,
-  schema: JsonSchema,
-): string {
-  const params = (schema.properties ?? {}) as Record<string, JsonSchema>;
-  const required = schema.required ?? [];
+export interface ClientTool {
+  name: string;
+  description?: string | null;
+  parameters?: { [key: string]: unknown } | null;
+}
 
-  // Split parameters into required and optional
-  const allKeys = Object.keys(params);
-  const requiredParams = allKeys.filter((key) => required.includes(key));
-  const optionalParams = allKeys.filter((key) => !required.includes(key));
-
-  // Generate function parameters: required first, then optional with defaults
-  const paramList = [
-    ...requiredParams,
-    ...optionalParams.map((key) => `${key}=None`),
-  ].join(", ");
-
-  return `def ${name}(${paramList}):
-    """Stub method. This tool is executed client-side via the approval flow.
-    """
-    raise Exception("This is a stub tool. Execution should happen on client.")  
-`;
+/**
+ * Get all loaded tools in the format expected by the Letta API's client_tools field.
+ * Maps internal tool names to server-facing names for proper tool invocation.
+ */
+export function getClientToolsFromRegistry(): ClientTool[] {
+  return Array.from(toolRegistry.entries()).map(([name, tool]) => {
+    const serverName = getServerToolName(name);
+    return {
+      name: serverName,
+      description: tool.schema.description,
+      parameters: tool.schema.input_schema,
+    };
+  });
 }
 
 /**

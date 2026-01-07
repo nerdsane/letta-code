@@ -1,21 +1,24 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util";
 import type { AgentState } from "@letta-ai/letta-client/resources/agents/agents";
+import type { Message } from "@letta-ai/letta-client/resources/agents/messages";
 import { getResumeData, type ResumeData } from "./agent/check-approval";
 import { getClient } from "./agent/client";
 import { initializeLoadedSkillsFlag, setAgentContext } from "./agent/context";
 import type { AgentProvenance } from "./agent/create";
 import { LETTA_CLOUD_API_URL } from "./auth/oauth";
+import type { ApprovalRequest } from "./cli/helpers/stream";
 import { ProfileSelectionInline } from "./cli/profile-selection";
 import { permissionMode } from "./permissions/mode";
 import { settingsManager } from "./settings-manager";
 import { telemetry } from "./telemetry";
-import {
-  forceUpsertTools,
-  isToolsNotFoundError,
-  loadTools,
-  upsertToolsIfNeeded,
-} from "./tools/manager";
+import { loadTools } from "./tools/manager";
+
+// Stable empty array constants to prevent new references on every render
+// These are used as fallbacks when resumeData is null, avoiding the React
+// anti-pattern of creating new [] on every render which triggers useEffect re-runs
+const EMPTY_APPROVAL_ARRAY: ApprovalRequest[] = [];
+const EMPTY_MESSAGE_ARRAY: Message[] = [];
 
 function printHelp() {
   // Keep this plaintext (no colors) so output pipes cleanly
@@ -49,6 +52,10 @@ OPTIONS
   -p, --prompt          Headless prompt mode
   --output-format <fmt> Output format for headless mode (text, json, stream-json)
                         Default: text
+  --input-format <fmt>  Input format for headless mode (stream-json)
+                        When set, reads JSON messages from stdin for bidirectional communication
+  --include-partial-messages
+                        Emit stream_event wrappers for each chunk (stream-json only)
   --skills <path>       Custom path to skills directory (default: .skills in current directory)
   --sleeptime           Enable sleeptime memory management (only for new agents)
   --from-af <path>      Create agent from an AgentFile (.af) template
@@ -320,6 +327,10 @@ async function main(): Promise<void> {
         name: { type: "string", short: "n" },
         model: { type: "string", short: "m" },
         system: { type: "string", short: "s" },
+        "system-custom": { type: "string" },
+        "system-append": { type: "string" },
+        "memory-blocks": { type: "string" },
+        "block-value": { type: "string", multiple: true },
         toolset: { type: "string" },
         prompt: { type: "boolean", short: "p" },
         run: { type: "boolean" },
@@ -329,9 +340,9 @@ async function main(): Promise<void> {
         "permission-mode": { type: "string" },
         yolo: { type: "boolean" },
         "output-format": { type: "string" },
+        "input-format": { type: "string" },
+        "include-partial-messages": { type: "boolean" },
         skills: { type: "string" },
-        link: { type: "boolean" },
-        unlink: { type: "boolean" },
         sleeptime: { type: "boolean" },
         "from-af": { type: "string" },
       },
@@ -392,7 +403,12 @@ async function main(): Promise<void> {
   let specifiedAgentId = (values.agent as string | undefined) ?? null;
   const specifiedAgentName = (values.name as string | undefined) ?? null;
   const specifiedModel = (values.model as string | undefined) ?? undefined;
-  const systemPromptId = (values.system as string | undefined) ?? undefined;
+  const systemPromptPreset = (values.system as string | undefined) ?? undefined;
+  const systemCustom =
+    (values["system-custom"] as string | undefined) ?? undefined;
+  // Note: systemAppend is also parsed but only used in headless mode (headless.ts handles it)
+  const memoryBlocksJson =
+    (values["memory-blocks"] as string | undefined) ?? undefined;
   const specifiedToolset = (values.toolset as string | undefined) ?? undefined;
   const skillsDirectory = (values.skills as string | undefined) ?? undefined;
   const sleeptimeFlag = (values.sleeptime as boolean | undefined) ?? undefined;
@@ -462,8 +478,16 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Validate system prompt if provided (can be a system prompt ID or subagent name)
-  if (systemPromptId) {
+  // Validate system prompt options (--system and --system-custom are mutually exclusive)
+  if (systemPromptPreset && systemCustom) {
+    console.error(
+      "Error: --system and --system-custom are mutually exclusive. Use one or the other.",
+    );
+    process.exit(1);
+  }
+
+  // Validate system prompt preset if provided (can be a system prompt ID or subagent name)
+  if (systemPromptPreset) {
     const { SYSTEM_PROMPTS } = await import("./agent/promptAssets");
     const { getAllSubagentConfigs } = await import("./agent/subagents");
 
@@ -471,13 +495,42 @@ async function main(): Promise<void> {
     const subagentConfigs = await getAllSubagentConfigs();
     const validSubagentNames = Object.keys(subagentConfigs);
 
-    const isValidSystemPrompt = validSystemPrompts.includes(systemPromptId);
-    const isValidSubagent = validSubagentNames.includes(systemPromptId);
+    const isValidSystemPrompt = validSystemPrompts.includes(systemPromptPreset);
+    const isValidSubagent = validSubagentNames.includes(systemPromptPreset);
 
     if (!isValidSystemPrompt && !isValidSubagent) {
       const allValid = [...validSystemPrompts, ...validSubagentNames];
       console.error(
-        `Error: Invalid system prompt "${systemPromptId}". Must be one of: ${allValid.join(", ")}.`,
+        `Error: Invalid system prompt "${systemPromptPreset}". Must be one of: ${allValid.join(", ")}.`,
+      );
+      process.exit(1);
+    }
+  }
+
+  // Parse memory blocks JSON if provided
+  let memoryBlocks:
+    | Array<{ label: string; value: string; description?: string }>
+    | undefined;
+  if (memoryBlocksJson) {
+    try {
+      memoryBlocks = JSON.parse(memoryBlocksJson);
+      if (!Array.isArray(memoryBlocks)) {
+        throw new Error("memory-blocks must be a JSON array");
+      }
+      // Validate each block has required fields
+      for (const block of memoryBlocks) {
+        if (
+          typeof block.label !== "string" ||
+          typeof block.value !== "string"
+        ) {
+          throw new Error(
+            "Each memory block must have 'label' and 'value' string fields",
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        `Error: Invalid --memory-blocks JSON: ${error instanceof Error ? error.message : String(error)}`,
       );
       process.exit(1);
     }
@@ -675,22 +728,6 @@ async function main(): Promise<void> {
     }
   }
 
-  // Handle --link and --unlink flags (modify tools before starting session)
-  const shouldLink = values.link as boolean | undefined;
-  const shouldUnlink = values.unlink as boolean | undefined;
-
-  // Validate --link/--unlink flags require --agent
-  // Validate --link/--unlink flags require --agent
-  if (shouldLink || shouldUnlink) {
-    if (!specifiedAgentId) {
-      console.error(
-        `Error: --${shouldLink ? "link" : "unlink"} requires --agent <id>`,
-      );
-      process.exit(1);
-    }
-    // Implementation is in InteractiveSession init()
-  }
-
   if (isHeadless) {
     // For headless mode, load tools synchronously (respecting model/toolset when provided)
     const modelForTools = getModelForToolLoading(
@@ -698,8 +735,6 @@ async function main(): Promise<void> {
       specifiedToolset as "codex" | "default" | undefined,
     );
     await loadTools(modelForTools);
-    const client = await getClient();
-    await upsertToolsIfNeeded(client, baseURL);
 
     const { handleHeadlessCommand } = await import("./headless");
     await handleHeadlessCommand(process.argv, specifiedModel, skillsDirectory);
@@ -731,7 +766,7 @@ async function main(): Promise<void> {
     baseTools,
     agentIdArg,
     model,
-    systemPromptId,
+    systemPromptPreset,
     toolset,
     skillsDirectory,
     fromAfFile,
@@ -742,7 +777,7 @@ async function main(): Promise<void> {
     baseTools?: string[];
     agentIdArg: string | null;
     model?: string;
-    systemPromptId?: string;
+    systemPromptPreset?: string;
     toolset?: "codex" | "default" | "gemini";
     skillsDirectory?: string;
     fromAfFile?: string;
@@ -754,8 +789,6 @@ async function main(): Promise<void> {
       | "selecting"
       | "selecting_global"
       | "assembling"
-      | "upserting"
-      | "updating_tools"
       | "importing"
       | "initializing"
       | "checking"
@@ -903,7 +936,10 @@ async function main(): Promise<void> {
               await client.agents.retrieve(localProjectSettings.lastAgent);
               resumingAgentId = localProjectSettings.lastAgent;
             } catch {
-              // Agent no longer exists, will create new
+              // LRU agent doesn't exist (wrong org, deleted, etc.)
+              // Show selector instead of silently creating a new agent
+              setLoadingState("selecting_global");
+              return;
             }
           }
 
@@ -913,7 +949,9 @@ async function main(): Promise<void> {
               await client.agents.retrieve(settings.lastAgent);
               resumingAgentId = settings.lastAgent;
             } catch {
-              // Agent no longer exists
+              // Global agent doesn't exist - show selector
+              setLoadingState("selecting_global");
+              return;
             }
           }
 
@@ -931,59 +969,13 @@ async function main(): Promise<void> {
         // Set resuming state early so loading messages are accurate
         setIsResumingSession(!!resumingAgentId);
 
-        // If resuming an existing agent, load the exact tools attached to it
-        // Otherwise, load a full toolset based on model/toolset preference
-        if (resumingAgentId && !toolset) {
-          try {
-            const { getAttachedLettaTools } = await import("./tools/toolset");
-            const { loadSpecificTools } = await import("./tools/manager");
-            const attachedTools = await getAttachedLettaTools(
-              client,
-              resumingAgentId,
-            );
-            if (attachedTools.length > 0) {
-              // Load only the specific tools attached to this agent
-              await loadSpecificTools(attachedTools);
-            } else {
-              // No Deep Sci-Fi tools attached, load default based on model
-              const modelForTools = getModelForToolLoading(model, undefined);
-              await loadTools(modelForTools);
-            }
-          } catch {
-            // Detection failed, use model-based default
-            const modelForTools = getModelForToolLoading(model, undefined);
-            await loadTools(modelForTools);
-          }
-        } else {
-          // Creating new agent or explicit toolset specified - load full toolset
-          const modelForTools = getModelForToolLoading(model, toolset);
-          await loadTools(modelForTools);
-        }
-
-        setLoadingState("upserting");
-        await upsertToolsIfNeeded(client, baseURL);
-
-        // Handle --link/--unlink after upserting tools
-        if (shouldLink || shouldUnlink) {
-          if (!agentIdArg) {
-            console.error("Error: --link/--unlink requires --agent <id>");
-            process.exit(1);
-          }
-
-          setLoadingState("updating_tools");
-          const { linkToolsToAgent, unlinkToolsFromAgent } = await import(
-            "./agent/modify"
-          );
-
-          const result = shouldLink
-            ? await linkToolsToAgent(agentIdArg)
-            : await unlinkToolsFromAgent(agentIdArg);
-
-          if (!result.success) {
-            console.error(`✗ ${result.message}`);
-            process.exit(1);
-          }
-        }
+        // Load toolset: use explicit --toolset flag if provided, otherwise derive from model
+        // NOTE: We don't persist toolset per-agent. On resume, toolset is re-derived from model.
+        const modelForTools = getModelForToolLoading(
+          model,
+          toolset as "codex" | "default" | "gemini" | undefined,
+        );
+        await loadTools(modelForTools);
 
         setLoadingState("initializing");
         const { createAgent } = await import("./agent/create");
@@ -1013,13 +1005,13 @@ async function main(): Promise<void> {
             agent = await client.agents.retrieve(agentIdArg);
 
             // Apply --system flag to existing agent if provided
-            if (systemPromptId) {
+            if (systemPromptPreset) {
               const { updateAgentSystemPrompt } = await import(
                 "./agent/modify"
               );
               const result = await updateAgentSystemPrompt(
                 agent.id,
-                systemPromptId,
+                systemPromptPreset,
               );
               if (!result.success || !result.agent) {
                 console.error(
@@ -1044,124 +1036,71 @@ async function main(): Promise<void> {
         // Priority 3: Check if --new flag was passed - create new agent
         if (!agent && forceNew) {
           const updateArgs = getModelUpdateArgs(model);
-          try {
-            const result = await createAgent(
-              undefined,
-              model,
-              undefined,
-              updateArgs,
-              skillsDirectory,
-              true, // parallelToolCalls always enabled
-              sleeptimeFlag ?? settings.enableSleeptime,
-              systemPromptId,
-              initBlocks,
-              baseTools,
-            );
-            agent = result.agent;
-            setAgentProvenance(result.provenance);
-          } catch (err) {
-            // Check if tools are missing on server (stale hash cache)
-            if (isToolsNotFoundError(err)) {
-              console.warn(
-                "Tools missing on server, re-uploading and retrying...",
-              );
-              await forceUpsertTools(client, baseURL);
-              // Retry agent creation
-              const result = await createAgent(
-                undefined,
-                model,
-                undefined,
-                updateArgs,
-                skillsDirectory,
-                true,
-                sleeptimeFlag ?? settings.enableSleeptime,
-                systemPromptId,
-                initBlocks,
-                baseTools,
-              );
-              agent = result.agent;
-              setAgentProvenance(result.provenance);
-            } else {
-              throw err;
-            }
-          }
+          const result = await createAgent(
+            undefined,
+            model,
+            undefined,
+            updateArgs,
+            skillsDirectory,
+            true, // parallelToolCalls always enabled
+            sleeptimeFlag ?? settings.enableSleeptime,
+            systemPromptPreset,
+            initBlocks,
+            baseTools,
+          );
+          agent = result.agent;
+          setAgentProvenance(result.provenance);
         }
 
         // Priority 4: Try to resume from project settings LRU (.letta/settings.local.json)
-        if (!agent) {
-          await settingsManager.loadLocalProjectSettings();
-          const localProjectSettings =
-            settingsManager.getLocalProjectSettings();
-          if (localProjectSettings?.lastAgent) {
-            try {
-              agent = await client.agents.retrieve(
-                localProjectSettings.lastAgent,
-              );
-              // console.log(`Resuming project agent ${localProjectSettings.lastAgent}...`);
-            } catch (error) {
-              console.error(
-                `Project agent ${localProjectSettings.lastAgent} not found (error: ${JSON.stringify(error)}), creating new one...`,
-              );
-            }
+        // Note: If LRU retrieval failed in early validation, we already showed selector and returned
+        // This block handles the case where we have a valid resumingAgentId from early validation
+        if (!agent && resumingAgentId) {
+          try {
+            agent = await client.agents.retrieve(resumingAgentId);
+          } catch (error) {
+            // Agent disappeared between validation and now - show selector
+            console.error(
+              `Agent ${resumingAgentId} not found (error: ${JSON.stringify(error)})`,
+            );
+            setLoadingState("selecting_global");
+            return;
           }
         }
 
         // Priority 6: Try to reuse global lastAgent if --continue flag is passed
+        // Note: If global lastAgent retrieval failed in early validation (with --continue),
+        // we already showed selector and returned. This is a safety fallback.
         if (!agent && continueSession && settings.lastAgent) {
           try {
             agent = await client.agents.retrieve(settings.lastAgent);
-            // console.log(`Continuing previous agent ${settings.lastAgent}...`);
           } catch (error) {
+            // Agent disappeared - show selector instead of silently creating
             console.error(
-              `Previous agent ${settings.lastAgent} not found (error: ${JSON.stringify(error)}), creating new one...`,
+              `Previous agent ${settings.lastAgent} not found (error: ${JSON.stringify(error)})`,
             );
+            setLoadingState("selecting_global");
+            return;
           }
         }
 
         // Priority 7: Create a new agent
         if (!agent) {
           const updateArgs = getModelUpdateArgs(model);
-          try {
-            const result = await createAgent(
-              undefined,
-              model,
-              undefined,
-              updateArgs,
-              skillsDirectory,
-              true, // parallelToolCalls always enabled
-              sleeptimeFlag ?? settings.enableSleeptime,
-              systemPromptId,
-              undefined,
-              undefined,
-            );
-            agent = result.agent;
-            setAgentProvenance(result.provenance);
-          } catch (err) {
-            // Check if tools are missing on server (stale hash cache)
-            if (isToolsNotFoundError(err)) {
-              console.warn(
-                "Tools missing on server, re-uploading and retrying...",
-              );
-              await forceUpsertTools(client, baseURL);
-              // Retry agent creation
-              const result = await createAgent(
-                undefined,
-                model,
-                undefined,
-                updateArgs,
-                skillsDirectory,
-                true,
-                sleeptimeFlag ?? settings.enableSleeptime,
-                systemPromptId,
-                undefined,
-                undefined,
-              );
-              agent = result.agent;
-              setAgentProvenance(result.provenance);
-            } else {
-              throw err;
-            }
-          }
+          const result = await createAgent(
+            undefined,
+            model,
+            undefined,
+            updateArgs,
+            skillsDirectory,
+            true, // parallelToolCalls always enabled
+            sleeptimeFlag ?? settings.enableSleeptime,
+            systemPromptPreset,
+            undefined,
+            undefined,
+          );
+          agent = result.agent;
+          setAgentProvenance(result.provenance);
         }
 
         // Ensure local project settings are loaded before updating
@@ -1233,7 +1172,7 @@ async function main(): Promise<void> {
         setIsResumingSession(resuming);
 
         // If resuming and a model or system prompt was specified, apply those changes
-        if (resuming && (model || systemPromptId)) {
+        if (resuming && (model || systemPromptPreset)) {
           if (model) {
             const { resolveModel } = await import("./agent/model");
             const modelHandle = resolveModel(model);
@@ -1257,11 +1196,11 @@ async function main(): Promise<void> {
             }
           }
 
-          if (systemPromptId) {
+          if (systemPromptPreset) {
             const { updateAgentSystemPrompt } = await import("./agent/modify");
             const result = await updateAgentSystemPrompt(
               agent.id,
-              systemPromptId,
+              systemPromptPreset,
             );
             if (!result.success || !result.agent) {
               console.error(`Error: ${result.message}`);
@@ -1298,7 +1237,7 @@ async function main(): Promise<void> {
       forceNew,
       agentIdArg,
       model,
-      systemPromptId,
+      systemPromptPreset,
       fromAfFile,
       loadingState,
       selectedGlobalAgentId,
@@ -1342,8 +1281,8 @@ async function main(): Promise<void> {
         loadingState,
         continueSession: isResumingSession,
         startupApproval: resumeData?.pendingApproval ?? null,
-        startupApprovals: resumeData?.pendingApprovals ?? [],
-        messageHistory: resumeData?.messageHistory ?? [],
+        startupApprovals: resumeData?.pendingApprovals ?? EMPTY_APPROVAL_ARRAY,
+        messageHistory: resumeData?.messageHistory ?? EMPTY_MESSAGE_ARRAY,
         tokenStreaming: settings.tokenStreaming,
         agentProvenance,
       });
@@ -1355,8 +1294,8 @@ async function main(): Promise<void> {
       loadingState,
       continueSession: isResumingSession,
       startupApproval: resumeData?.pendingApproval ?? null,
-      startupApprovals: resumeData?.pendingApprovals ?? [],
-      messageHistory: resumeData?.messageHistory ?? [],
+      startupApprovals: resumeData?.pendingApprovals ?? EMPTY_APPROVAL_ARRAY,
+      messageHistory: resumeData?.messageHistory ?? EMPTY_MESSAGE_ARRAY,
       tokenStreaming: settings.tokenStreaming,
       agentProvenance,
     });
@@ -1370,7 +1309,7 @@ async function main(): Promise<void> {
       baseTools: baseTools,
       agentIdArg: specifiedAgentId,
       model: specifiedModel,
-      systemPromptId: systemPromptId,
+      systemPromptPreset: systemPromptPreset,
       toolset: specifiedToolset as "codex" | "default" | "gemini" | undefined,
       skillsDirectory: skillsDirectory,
       fromAfFile: fromAfFile,

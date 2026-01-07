@@ -12,8 +12,15 @@
     "deep-scifi.js",
     "scripts",
     "skills",
-    "vendor"
+    "vendor",
+    "dist/types"
   ],
+  "exports": {
+    ".": "./letta.js",
+    "./protocol": {
+      "types": "./dist/types/protocol.d.ts"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/sesh/letta-code.git"
@@ -24,7 +31,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@letta-ai/letta-client": "1.6.1",
+    "@letta-ai/letta-client": "1.6.4",
     "@radix-ui/react-dialog": "^1.1.15",
     "glob": "^13.0.0",
     "ink-link": "^5.0.0",

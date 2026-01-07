@@ -1,3 +1,5 @@
+// existsSync, readFileSync removed - no longer needed since plan content
+// is shown via StaticPlanApproval during approval, not in tool result
 import { Box, Text } from "ink";
 import { memo } from "react";
 import { INTERRUPTED_BY_USER } from "../../constants";
@@ -18,6 +20,14 @@ import {
   isTaskTool,
   isTodoTool,
 } from "../helpers/toolNameMapping.js";
+
+/**
+ * Check if tool is AskUserQuestion
+ */
+function isQuestionTool(name: string): boolean {
+  return name === "AskUserQuestion";
+}
+
 import { useTerminalWidth } from "../hooks/useTerminalWidth";
 import { AdvancedDiffRenderer } from "./AdvancedDiffRenderer";
 import { BlinkDot } from "./BlinkDot.js";
@@ -57,9 +67,11 @@ export const ToolCallMessage = memo(
   ({
     line,
     precomputedDiffs,
+    lastPlanFilePath,
   }: {
     line: ToolCallLine;
     precomputedDiffs?: Map<string, AdvancedDiffSuccess>;
+    lastPlanFilePath?: string | null;
   }) => {
     const columns = useTerminalWidth();
 
@@ -67,15 +79,18 @@ export const ToolCallMessage = memo(
     const rawName = line.name ?? "?";
     const argsText = line.argsText ?? "...";
 
-    // Task tool - handled by SubagentGroupDisplay, don't render here
-    // Exception: Cancelled/rejected Task tools should be rendered inline
-    // since they won't appear in SubagentGroupDisplay
+    // Task tool rendering decision:
+    // - Cancelled/rejected: render as error tool call (won't appear in SubagentGroupDisplay)
+    // - Finished with success: render as normal tool call (for backfilled tools without subagent data)
+    // - In progress: don't render here (SubagentGroupDisplay handles running subagents,
+    //   and liveItems handles pending approvals via InlineGenericApproval)
     if (isTaskTool(rawName)) {
-      const isCancelledOrRejected =
-        line.phase === "finished" && line.resultOk === false;
-      if (!isCancelledOrRejected) {
+      const isFinished = line.phase === "finished";
+      if (!isFinished) {
+        // Not finished - SubagentGroupDisplay or approval UI handles this
         return null;
       }
+      // Finished Task tools render here (both success and error)
     }
 
     // Apply tool name remapping
@@ -99,10 +114,20 @@ export const ToolCallMessage = memo(
       }
     }
 
+    // For AskUserQuestion, show friendly header only after completion
+    if (isQuestionTool(rawName)) {
+      if (line.phase === "finished" && line.resultOk !== false) {
+        displayName = "User answered Letta Code's questions:";
+      } else {
+        displayName = "Asking user questions...";
+      }
+    }
+
     // Format arguments for display using the old formatting logic
     // Pass rawName to enable special formatting for file tools
     const formatted = formatArgsDisplay(argsText, rawName);
-    const args = `(${formatted.display})`;
+    // Hide args for question tool (shown in result instead)
+    const args = isQuestionTool(rawName) ? "" : `(${formatted.display})`;
 
     const rightWidth = Math.max(0, columns - 2); // gutter is 2 cols
 
@@ -265,6 +290,63 @@ export const ToolCallMessage = memo(
           return memoryDiff;
         }
         // If MemoryDiffRenderer returns null, fall through to regular handling
+      }
+
+      // Check if this is AskUserQuestion - show pretty Q&A format
+      if (isQuestionTool(rawName) && line.resultOk !== false) {
+        // Parse the result to extract questions and answers
+        // Format: "Question"="Answer", "Question2"="Answer2"
+        const qaPairs: Array<{ question: string; answer: string }> = [];
+        const qaRegex = /"([^"]+)"="([^"]*)"/g;
+        const resultText = line.resultText || "";
+        const matches = resultText.matchAll(qaRegex);
+        for (const match of matches) {
+          if (match[1] && match[2] !== undefined) {
+            qaPairs.push({ question: match[1], answer: match[2] });
+          }
+        }
+
+        if (qaPairs.length > 0) {
+          return (
+            <Box flexDirection="column">
+              {qaPairs.map((qa) => (
+                <Box key={qa.question} flexDirection="row">
+                  <Box width={prefixWidth} flexShrink={0}>
+                    <Text>{prefix}</Text>
+                  </Box>
+                  <Box flexGrow={1} width={contentWidth}>
+                    <Text wrap="wrap">
+                      <Text dimColor>·</Text> {qa.question}{" "}
+                      <Text dimColor>→</Text> {qa.answer}
+                    </Text>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          );
+        }
+        // Fall through to regular handling if parsing fails
+      }
+
+      // Check if this is ExitPlanMode - just show path, not plan content
+      // The plan content was already shown during approval via StaticPlanApproval
+      // (rendered via Ink's <Static> and is visible in terminal scrollback)
+      if (rawName === "ExitPlanMode" && line.resultOk !== false) {
+        const planFilePath = lastPlanFilePath;
+
+        if (planFilePath) {
+          return (
+            <Box flexDirection="row">
+              <Box width={prefixWidth} flexShrink={0}>
+                <Text>{prefix}</Text>
+              </Box>
+              <Box flexGrow={1} width={contentWidth}>
+                <Text dimColor>Plan saved to: {planFilePath}</Text>
+              </Box>
+            </Box>
+          );
+        }
+        // Fall through to default if no plan path
       }
 
       // Check if this is a file edit tool - show diff instead of success message

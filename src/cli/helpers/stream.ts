@@ -56,12 +56,22 @@ export async function drainStream(
   // Track if we triggered abort via our listener (for eager cancellation)
   let abortedViaListener = false;
 
+  // Capture the abort generation at stream start to detect if handleInterrupt ran
+  const startAbortGen = buffers.abortGeneration || 0;
+
   // Set up abort listener to propagate our signal to SDK's stream controller
   // This immediately cancels the HTTP request instead of waiting for next chunk
   const abortHandler = () => {
     abortedViaListener = true;
     // Abort the SDK's stream controller to cancel the underlying HTTP request
-    if (stream.controller && !stream.controller.signal.aborted) {
+    if (!stream.controller) {
+      debugWarn(
+        "drainStream",
+        "stream.controller is undefined - cannot abort HTTP request",
+      );
+      return;
+    }
+    if (!stream.controller.signal.aborted) {
       stream.controller.abort();
     }
   };
@@ -71,11 +81,23 @@ export async function drainStream(
   } else if (abortSignal?.aborted) {
     // Already aborted before we started
     abortedViaListener = true;
+    if (stream.controller && !stream.controller.signal.aborted) {
+      stream.controller.abort();
+    }
   }
 
   try {
     for await (const chunk of stream) {
       // console.log("chunk", chunk);
+
+      // Check if abort generation changed (handleInterrupt ran while we were waiting)
+      // This catches cases where the abort signal might not propagate correctly
+      if ((buffers.abortGeneration || 0) !== startAbortGen) {
+        stopReason = "cancelled";
+        // Don't call markIncompleteToolsAsCancelled - handleInterrupt already did
+        queueMicrotask(refresh);
+        break;
+      }
 
       // Check if stream was aborted
       if (abortSignal?.aborted) {
@@ -169,6 +191,18 @@ export async function drainStream(
         markIncompleteToolsAsCancelled(buffers);
         queueMicrotask(refresh);
         break;
+      }
+
+      // Suppress mid-stream desync errors (match headless behavior)
+      // These are transient and will be handled by end-of-turn desync recovery
+      const errObj = (chunk as unknown as { error?: { detail?: string } })
+        .error;
+      if (
+        errObj?.detail?.includes("No tool call is currently awaiting approval")
+      ) {
+        // Server isn't ready for approval yet; let the stream continue
+        // Suppress the error frame from output
+        continue;
       }
 
       onChunk(buffers, chunk);
@@ -318,22 +352,39 @@ export async function drainStreamWithResume(
   );
 
   // If stream ended without proper stop_reason and we have resume info, try once to reconnect
+  // Only resume if we have an abortSignal AND it's not aborted (explicit check prevents
+  // undefined abortSignal from accidentally allowing resume after user cancellation)
   if (
     result.stopReason === "error" &&
     result.lastRunId &&
     result.lastSeqId !== null &&
-    !abortSignal?.aborted
+    abortSignal &&
+    !abortSignal.aborted
   ) {
     // Preserve the original error in case resume fails
     const originalFallbackError = result.fallbackError;
 
     try {
       const client = await getClient();
+
+      // Reset interrupted flag so resumed chunks can be processed by onChunk.
+      // Without this, tool_return_message for server-side tools (web_search, fetch_webpage)
+      // would be silently ignored, showing "Interrupted by user" even on successful resume.
+      // Increment commitGeneration to invalidate any pending setTimeout refreshes that would
+      // commit the stale "Interrupted by user" state before the resume stream completes.
+      buffers.commitGeneration = (buffers.commitGeneration || 0) + 1;
+      buffers.interrupted = false;
+
       // Resume from Redis where we left off
-      const resumeStream = await client.runs.messages.stream(result.lastRunId, {
-        starting_after: result.lastSeqId,
-        batch_size: 1000, // Fetch buffered chunks quickly
-      });
+      // Disable SDK retries - state management happens outside, retries would create race conditions
+      const resumeStream = await client.runs.messages.stream(
+        result.lastRunId,
+        {
+          starting_after: result.lastSeqId,
+          batch_size: 1000, // Fetch buffered chunks quickly
+        },
+        { maxRetries: 0 },
+      );
 
       // Continue draining from where we left off
       // Note: Don't pass onFirstMessage again - already called in initial drain

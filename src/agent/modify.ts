@@ -9,7 +9,6 @@ import type {
 } from "@letta-ai/letta-client/resources/agents/agents";
 import type { LlmConfig } from "@letta-ai/letta-client/resources/models/models";
 import { ANTHROPIC_PROVIDER_NAME } from "../providers/anthropic-provider";
-import { getAllLettaToolNames, getToolNames } from "../tools/manager";
 import { getClient } from "./client";
 
 type ModelSettings =
@@ -145,6 +144,23 @@ export async function updateAgentLLMConfig(
 
   const finalAgent = await client.agents.retrieve(agentId);
   return finalAgent.llm_config;
+}
+
+// Helper functions imported dynamically to avoid circular dependencies
+function getToolNames(): string[] {
+  // These are the DSF-specific tool names to link
+  return [
+    "assess_output_quality",
+    "check_logical_consistency",
+    "compare_versions",
+    "analyze_information_gain",
+    "search_trajectories",
+    "canvas_ui",
+  ];
+}
+
+function getAllLettaToolNames(): string[] {
+  return getToolNames();
 }
 
 export interface LinkResult {

@@ -4,6 +4,7 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { PermissionRules } from "./permissions/types";
+import { debugWarn } from "./utils/debug.js";
 import { exists, mkdir, readFile, writeFile } from "./utils/fs.js";
 import {
   deleteSecureTokens,
@@ -28,8 +29,6 @@ export interface Settings {
   refreshToken?: string; // DEPRECATED: kept for migration, now stored in secrets
   tokenExpiresAt?: number; // Unix timestamp in milliseconds
   deviceId?: string;
-  // Tool upsert cache: maps serverUrl -> hash of upserted tools
-  toolUpsertHashes?: Record<string, string>;
   // Anthropic OAuth
   anthropicOAuth?: {
     access_token: string;
@@ -131,15 +130,14 @@ class SettingsManager {
     try {
       const available = await this.isKeychainAvailable();
       if (!available) {
-        console.warn(
-          "⚠️  System secrets are not available - using fallback storage",
-        );
-        console.warn(
-          "   This may occur when running in Node.js or restricted environments",
+        // Only show warning in debug mode - fallback storage is expected for npm users
+        debugWarn(
+          "secrets",
+          "System secrets not available - using fallback storage",
         );
       }
     } catch (error) {
-      console.warn("⚠️  Could not check secrets availability:", error);
+      debugWarn("secrets", `Could not check secrets availability: ${error}`);
     }
   }
 
@@ -461,10 +459,8 @@ class SettingsManager {
     if (!this.settings) return;
 
     const settingsPath = this.getSettingsPath();
-    const dirPath = join(
-      process.env.XDG_CONFIG_HOME || join(homedir(), ".config"),
-      "letta",
-    );
+    const home = process.env.HOME || homedir();
+    const dirPath = join(home, ".letta");
 
     try {
       if (!exists(dirPath)) {
@@ -516,11 +512,9 @@ class SettingsManager {
   }
 
   private getSettingsPath(): string {
-    return join(
-      process.env.XDG_CONFIG_HOME || join(homedir(), ".config"),
-      "letta",
-      "settings.json",
-    );
+    // Use ~/.letta/ like other AI tools (.claude, .cursor, etc.)
+    const home = process.env.HOME || homedir();
+    return join(home, ".letta", "settings.json");
   }
 
   private getProjectSettingsPath(workingDirectory: string): string {

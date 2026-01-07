@@ -1,6 +1,7 @@
 // src/cli/App.tsx
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+
 import { APIUserAbortError } from "@letta-ai/letta-client/core/error";
 import type {
   AgentState,
@@ -18,6 +19,11 @@ import {
   type ApprovalResult,
   executeAutoAllowedTools,
 } from "../agent/approval-execution";
+import {
+  buildApprovalRecoveryMessage,
+  fetchRunErrorDetail,
+  isApprovalStateDesyncError,
+} from "../agent/approval-recovery";
 import { prefetchAvailableModelHandles } from "../agent/available-models";
 import { getResumeData } from "../agent/check-approval";
 import { getClient } from "../agent/client";
@@ -28,15 +34,22 @@ import { getModelDisplayName, getModelInfo } from "../agent/model";
 import { SessionStats } from "../agent/stats";
 import type { ApprovalContext } from "../permissions/analyzer";
 import { type PermissionMode, permissionMode } from "../permissions/mode";
+import {
+  DEFAULT_COMPLETION_PROMISE,
+  type RalphState,
+  ralphMode,
+} from "../ralph/mode";
 import { updateProjectSettings } from "../settings";
 import { settingsManager } from "../settings-manager";
 import { telemetry } from "../telemetry";
-import type { ToolExecutionResult } from "../tools/manager";
 import {
   analyzeToolApproval,
   checkToolPermission,
   executeTool,
+  isGeminiModel,
+  isOpenAIModel,
   savePermissionRule,
+  type ToolExecutionResult,
 } from "../tools/manager";
 import {
   handleMcpAdd,
@@ -54,15 +67,22 @@ import {
   validateProfileLoad,
 } from "./commands/profile";
 import { AgentSelector } from "./components/AgentSelector";
-import { ApprovalDialog } from "./components/ApprovalDialogRich";
+// ApprovalDialog removed - all approvals now render inline
+import { ApprovalPreview } from "./components/ApprovalPreview";
 import { AssistantMessage } from "./components/AssistantMessageRich";
 import { BashCommandMessage } from "./components/BashCommandMessage";
 import { CommandMessage } from "./components/CommandMessage";
 import { colors } from "./components/colors";
-import { EnterPlanModeDialog } from "./components/EnterPlanModeDialog";
+// EnterPlanModeDialog removed - now using InlineEnterPlanModeApproval
 import { ErrorMessage } from "./components/ErrorMessageRich";
 import { FeedbackDialog } from "./components/FeedbackDialog";
 import { HelpDialog } from "./components/HelpDialog";
+import { InlineBashApproval } from "./components/InlineBashApproval";
+import { InlineEnterPlanModeApproval } from "./components/InlineEnterPlanModeApproval";
+import { InlineFileEditApproval } from "./components/InlineFileEditApproval";
+import { InlineGenericApproval } from "./components/InlineGenericApproval";
+import { InlineQuestionApproval } from "./components/InlineQuestionApproval";
+import { InlineTaskApproval } from "./components/InlineTaskApproval";
 import { Input } from "./components/InputRich";
 import { McpSelector } from "./components/McpSelector";
 import { MemoryViewer } from "./components/MemoryViewer";
@@ -70,12 +90,15 @@ import { MessageSearch } from "./components/MessageSearch";
 import { ModelSelector } from "./components/ModelSelector";
 import { NewAgentDialog } from "./components/NewAgentDialog";
 import { OAuthCodeDialog } from "./components/OAuthCodeDialog";
+import { PendingApprovalStub } from "./components/PendingApprovalStub";
 import { PinDialog, validateAgentName } from "./components/PinDialog";
-import { PlanModeDialog } from "./components/PlanModeDialog";
-import { QuestionDialog } from "./components/QuestionDialog";
+// QuestionDialog removed - now using InlineQuestionApproval
 import { ReasoningMessage } from "./components/ReasoningMessageRich";
 import { ResumeSelector } from "./components/ResumeSelector";
 import { formatUsageStats } from "./components/SessionStats";
+// InlinePlanApproval kept for easy rollback if needed
+// import { InlinePlanApproval } from "./components/InlinePlanApproval";
+import { StaticPlanApproval } from "./components/StaticPlanApproval";
 import { StatusMessage } from "./components/StatusMessage";
 import { SubagentGroupDisplay } from "./components/SubagentGroupDisplay";
 import { SubagentGroupStatic } from "./components/SubagentGroupStatic";
@@ -127,12 +150,17 @@ import {
   isFileEditTool,
   isFileWriteTool,
   isPatchTool,
+  isShellTool,
 } from "./helpers/toolNameMapping";
-import { isFancyUITool, isTaskTool } from "./helpers/toolNameMapping.js";
+import {
+  alwaysRequiresUserInput,
+  isTaskTool,
+} from "./helpers/toolNameMapping.js";
 import { useSuspend } from "./hooks/useSuspend/useSuspend.ts";
 import { useSyncedState } from "./hooks/useSyncedState";
 import { useTerminalWidth } from "./hooks/useTerminalWidth";
 
+// Used only for terminal resize, not for dialog dismissal (see PR for details)
 const CLEAR_SCREEN_AND_HOME = "\u001B[2J\u001B[H";
 
 // Feature flag: Check for pending approvals before sending messages
@@ -149,9 +177,20 @@ const EAGER_CANCEL = true;
 // Maximum retries for transient LLM API errors (matches headless.ts)
 const LLM_API_ERROR_MAX_RETRIES = 3;
 
+// Message shown when user interrupts the stream
+const INTERRUPT_MESSAGE =
+  "Interrupted – tell the agent what to do differently. Something went wrong? Use /feedback to report the issue.";
+
 // tiny helper for unique ids (avoid overwriting prior user lines)
 function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Send desktop notification via terminal bell
+// Modern terminals (iTerm2, Ghostty, WezTerm, Kitty) convert this to a desktop
+// notification when the terminal is not focused
+function sendDesktopNotification() {
+  process.stdout.write("\x07");
 }
 
 // Check if error is retriable based on stop reason and run metadata
@@ -171,9 +210,37 @@ async function isRetriableError(
       const client = await getClient();
       const run = await client.runs.retrieve(lastRunId);
       const metaError = run.metadata?.error as
-        | { error_type?: string }
+        | {
+            error_type?: string;
+            detail?: string;
+            // Handle nested error structure (error.error) that can occur in some edge cases
+            error?: { error_type?: string; detail?: string };
+          }
         | undefined;
-      return metaError?.error_type === "llm_error";
+
+      // Check for llm_error at top level or nested (handles error.error nesting)
+      const errorType = metaError?.error_type ?? metaError?.error?.error_type;
+      if (errorType === "llm_error") return true;
+
+      // Fallback: detect LLM provider errors from detail even if misclassified as internal_error
+      // This handles edge cases where streaming errors weren't properly converted to LLMError
+      // Patterns are derived from handle_llm_error() message formats in the backend
+      const detail = metaError?.detail ?? metaError?.error?.detail ?? "";
+      const llmProviderPatterns = [
+        "Anthropic API error", // anthropic_client.py:759
+        "OpenAI API error", // openai_client.py:1034
+        "Google Vertex API error", // google_vertex_client.py:848
+        "overloaded", // anthropic_client.py:753 - used for LLMProviderOverloaded
+        "api_error", // Anthropic SDK error type field
+      ];
+      if (
+        errorType === "internal_error" &&
+        llmProviderPatterns.some((pattern) => detail.includes(pattern))
+      ) {
+        return true;
+      }
+
+      return false;
     } catch {
       return false;
     }
@@ -203,7 +270,7 @@ function getPlanModeReminder(): string {
 
   // Generate dynamic reminder with plan file path
   return `<system-reminder>
-Plan mode is active. The user indicated that they do not want you to execute yet -- you MUST NOT make any edits (with the exception of the plan file mentioned below), run any non-readonly tools (including changing configs or making commits), or otherwise make any changes to the system. This supercedes any other instructions you have received.
+      Plan mode is active. The user indicated that they do not want you to execute yet -- you MUST NOT make any edits (with the exception of the plan file mentioned below), run any non-readonly tools (including changing configs or making commits), or otherwise make any changes to the system. This supersedes any other instructions you have received.
 
 ## Plan File Info:
 ${planFilePath ? `No plan file exists yet. You should create your plan at ${planFilePath} using a write tool (e.g. Write, ApplyPatch, etc. depending on your toolset).` : "No plan file path assigned."}
@@ -258,7 +325,7 @@ function planFileExists(): boolean {
 }
 
 // Read plan content from the plan file
-function readPlanFile(): string {
+function _readPlanFile(): string {
   const planFilePath = permissionMode.getPlanFilePath();
   if (!planFilePath) {
     return "No plan file path set.";
@@ -299,6 +366,100 @@ function getSkillUnloadReminder(): string {
   return "";
 }
 
+// Parse /ralph or /yolo-ralph command arguments
+function parseRalphArgs(input: string): {
+  prompt: string | null;
+  completionPromise: string | null | undefined; // undefined = use default, null = no promise
+  maxIterations: number;
+} {
+  let rest = input.replace(/^\/(yolo-)?ralph\s*/, "");
+
+  // Extract --completion-promise "value" or --completion-promise 'value'
+  // Also handles --completion-promise "" or none for opt-out
+  let completionPromise: string | null | undefined;
+  const promiseMatch = rest.match(/--completion-promise\s+["']([^"']*)["']/);
+  if (promiseMatch) {
+    const val = promiseMatch[1] ?? "";
+    completionPromise = val === "" || val.toLowerCase() === "none" ? null : val;
+    rest = rest.replace(/--completion-promise\s+["'][^"']*["']\s*/, "");
+  }
+
+  // Extract --max-iterations N
+  const maxMatch = rest.match(/--max-iterations\s+(\d+)/);
+  const maxIterations = maxMatch?.[1] ? parseInt(maxMatch[1], 10) : 0;
+  rest = rest.replace(/--max-iterations\s+\d+\s*/, "");
+
+  // Remaining text is the inline prompt (may be quoted)
+  const prompt = rest.trim().replace(/^["']|["']$/g, "") || null;
+  return { prompt, completionPromise, maxIterations };
+}
+
+// Build Ralph first-turn reminder (when activating)
+// Uses exact wording from claude-code/plugins/ralph-wiggum/scripts/setup-ralph-loop.sh
+function buildRalphFirstTurnReminder(state: RalphState): string {
+  const iterInfo =
+    state.maxIterations > 0
+      ? `${state.currentIteration}/${state.maxIterations}`
+      : `${state.currentIteration}`;
+
+  let reminder = `<system-reminder>
+🔄 Ralph Wiggum mode activated (iteration ${iterInfo})
+`;
+
+  if (state.completionPromise) {
+    reminder += `
+═══════════════════════════════════════════════════════════
+RALPH LOOP COMPLETION PROMISE
+═══════════════════════════════════════════════════════════
+
+To complete this loop, output this EXACT text:
+  <promise>${state.completionPromise}</promise>
+
+STRICT REQUIREMENTS (DO NOT VIOLATE):
+  ✓ Use <promise> XML tags EXACTLY as shown above
+  ✓ The statement MUST be completely and unequivocally TRUE
+  ✓ Do NOT output false statements to exit the loop
+  ✓ Do NOT lie even if you think you should exit
+
+IMPORTANT - Do not circumvent the loop:
+  Even if you believe you're stuck, the task is impossible,
+  or you've been running too long - you MUST NOT output a
+  false promise statement. The loop is designed to continue
+  until the promise is GENUINELY TRUE. Trust the process.
+
+  If the loop should stop, the promise statement will become
+  true naturally. Do not force it by lying.
+═══════════════════════════════════════════════════════════
+`;
+  } else {
+    reminder += `
+No completion promise set - loop runs until --max-iterations or ESC/Shift+Tab to exit.
+`;
+  }
+
+  reminder += `</system-reminder>`;
+  return reminder;
+}
+
+// Build Ralph continuation reminder (on subsequent iterations)
+// Exact format from claude-code/plugins/ralph-wiggum/hooks/stop-hook.sh line 160
+function buildRalphContinuationReminder(state: RalphState): string {
+  const iterInfo =
+    state.maxIterations > 0
+      ? `${state.currentIteration}/${state.maxIterations}`
+      : `${state.currentIteration}`;
+
+  if (state.completionPromise) {
+    return `<system-reminder>
+🔄 Ralph iteration ${iterInfo} | To stop: output <promise>${state.completionPromise}</promise> (ONLY when statement is TRUE - do not lie to exit!)
+</system-reminder>`;
+  } else {
+    return `<system-reminder>
+🔄 Ralph iteration ${iterInfo} | No completion promise set - loop runs infinitely
+</system-reminder>`;
+  }
+}
+
 // Items that have finished rendering and no longer change
 type StaticItem =
   | {
@@ -325,6 +486,20 @@ type StaticItem =
         error?: string;
       }>;
     }
+  | {
+      // Preview content committed early during approval to enable flicker-free UI
+      // When an approval's content is tall enough to overflow the viewport,
+      // we commit the preview to static and only show small approval options in dynamic
+      kind: "approval_preview";
+      id: string;
+      toolCallId: string;
+      toolName: string;
+      toolArgs: string;
+      // Optional precomputed/cached data for rendering
+      precomputedDiff?: AdvancedDiffSuccess;
+      planContent?: string; // For ExitPlanMode
+      planFilePath?: string; // For ExitPlanMode
+    }
   | Line;
 
 export default function App({
@@ -342,8 +517,6 @@ export default function App({
   agentState?: AgentState | null;
   loadingState?:
     | "assembling"
-    | "upserting"
-    | "updating_tools"
     | "importing"
     | "initializing"
     | "checking"
@@ -410,6 +583,10 @@ export default function App({
   // Tracks depth to allow intentional reentry while blocking parallel calls
   const processingConversationRef = useRef(0);
 
+  // Generation counter - incremented on each ESC interrupt.
+  // Allows processConversation to detect if it's been superseded.
+  const conversationGenerationRef = useRef(0);
+
   // Whether an interrupt has been requested for the current stream
   const [interruptRequested, setInterruptRequested] = useState(false);
 
@@ -466,9 +643,115 @@ export default function App({
     [],
   );
 
+  // Ralph Wiggum mode: config waiting for next message to capture as prompt
+  const [pendingRalphConfig, setPendingRalphConfig] = useState<{
+    completionPromise: string | null | undefined;
+    maxIterations: number;
+    isYolo: boolean;
+  } | null>(null);
+
+  // Track ralph mode for UI updates (singleton state doesn't trigger re-renders)
+  const [uiRalphActive, setUiRalphActive] = useState(
+    ralphMode.getState().isActive,
+  );
+
   // Derive current approval from pending approvals and results
   // This is the approval currently being shown to the user
   const currentApproval = pendingApprovals[approvalResults.length];
+  const currentApprovalContext = approvalContexts[approvalResults.length];
+  const activeApprovalId = currentApproval?.toolCallId ?? null;
+
+  // Build Sets/Maps for three approval states (excluding the active one):
+  // - pendingIds: undecided approvals (index > approvalResults.length)
+  // - queuedIds: decided but not yet executed (index < approvalResults.length)
+  // Used to render appropriate stubs while one approval is active
+  const {
+    pendingIds,
+    queuedIds,
+    approvalMap,
+    stubDescriptions,
+    queuedDecisions,
+  } = useMemo(() => {
+    const pending = new Set<string>();
+    const queued = new Set<string>();
+    const map = new Map<string, ApprovalRequest>();
+    const descriptions = new Map<string, string>();
+    const decisions = new Map<
+      string,
+      { type: "approve" | "deny"; reason?: string }
+    >();
+
+    // Helper to compute stub description - called once per approval during memo
+    const computeStubDescription = (
+      approval: ApprovalRequest,
+    ): string | undefined => {
+      try {
+        const args = JSON.parse(approval.toolArgs || "{}");
+
+        if (
+          isFileEditTool(approval.toolName) ||
+          isFileWriteTool(approval.toolName)
+        ) {
+          return args.file_path || undefined;
+        }
+        if (isShellTool(approval.toolName)) {
+          const cmd =
+            typeof args.command === "string"
+              ? args.command
+              : Array.isArray(args.command)
+                ? args.command.join(" ")
+                : "";
+          return cmd.length > 50 ? `${cmd.slice(0, 50)}...` : cmd || undefined;
+        }
+        if (isPatchTool(approval.toolName)) {
+          return "patch operation";
+        }
+        return undefined;
+      } catch {
+        return undefined;
+      }
+    };
+
+    const activeIndex = approvalResults.length;
+
+    for (let i = 0; i < pendingApprovals.length; i++) {
+      const approval = pendingApprovals[i];
+      if (!approval?.toolCallId || approval.toolCallId === activeApprovalId) {
+        continue;
+      }
+
+      const id = approval.toolCallId;
+      map.set(id, approval);
+
+      const desc = computeStubDescription(approval);
+      if (desc) {
+        descriptions.set(id, desc);
+      }
+
+      if (i < activeIndex) {
+        // Decided but not yet executed
+        queued.add(id);
+        const result = approvalResults[i];
+        if (result) {
+          decisions.set(id, {
+            type: result.type,
+            reason: result.type === "deny" ? result.reason : undefined,
+          });
+        }
+      } else {
+        // Undecided (waiting in queue)
+        pending.add(id);
+      }
+    }
+
+    return {
+      pendingIds: pending,
+      queuedIds: queued,
+      approvalMap: map,
+      stubDescriptions: descriptions,
+      queuedDecisions: decisions,
+    };
+  }, [pendingApprovals, approvalResults, activeApprovalId]);
 
   // Overlay/selector state - only one can be open at a time
   type ActiveOverlay =
@@ -686,9 +969,23 @@ export default function App({
         continue;
       }
       // Handle Task tool_calls specially - track position but don't add individually
+      // (unless there's no subagent data, in which case commit as regular tool call)
       if (ln.kind === "tool_call" && ln.name && isTaskTool(ln.name)) {
-        if (firstTaskIndex === -1 && finishedTaskToolCalls.length > 0) {
-          firstTaskIndex = newlyCommitted.length;
+        // Check if this specific Task tool has subagent data (will be grouped)
+        const hasSubagentData = finishedTaskToolCalls.some(
+          (tc) => tc.lineId === id,
+        );
+        if (hasSubagentData) {
+          // Has subagent data - will be grouped later
+          if (firstTaskIndex === -1) {
+            firstTaskIndex = newlyCommitted.length;
+          }
+          continue;
+        }
+        // No subagent data (e.g., backfilled from history) - commit as regular tool call
+        if (ln.phase === "finished") {
+          emittedIdsRef.current.add(id);
+          newlyCommitted.push({ ...ln });
         }
         continue;
       }
@@ -742,7 +1039,15 @@ export default function App({
     new Map(),
   );
 
-  // Recompute UI state from buffers after chunks (micro-batched)
+  // Store the last plan file path for post-approval rendering
+  // (needed because plan mode is exited before rendering the result)
+  const lastPlanFilePathRef = useRef<string | null>(null);
+
+  // Track which approval tool call IDs have had their previews eagerly committed
+  // This prevents double-committing when the approval changes
+  const eagerCommittedPreviewsRef = useRef<Set<string>>(new Set());
+
+  // Recompute UI state from buffers after each streaming chunk
   const refreshDerived = useCallback(() => {
     const b = buffersRef.current;
     setTokenCount(b.tokenCount);
@@ -756,11 +1061,18 @@ export default function App({
     // Use a ref to track pending refresh
     if (!buffersRef.current.pendingRefresh) {
       buffersRef.current.pendingRefresh = true;
+      // Capture the current generation to detect if resume invalidates this refresh
+      const capturedGeneration = buffersRef.current.commitGeneration || 0;
       setTimeout(() => {
         buffersRef.current.pendingRefresh = false;
         // Skip refresh if stream was interrupted - prevents stale updates appearing
         // after user cancels. Normal stream completion still renders (interrupted=false).
-        if (!buffersRef.current.interrupted) {
+        // Also skip if commitGeneration changed - this means a resume is in progress and
+        // committing now would lock in the stale "Interrupted by user" state.
+        if (
+          !buffersRef.current.interrupted &&
+          (buffersRef.current.commitGeneration || 0) === capturedGeneration
+        ) {
           refreshDerived();
         }
       }, 16); // ~60fps
@@ -805,6 +1117,48 @@ export default function App({
       analyzeStartupApprovals();
     }
   }, [loadingState, startupApproval, startupApprovals]);
+
+  // Eager commit for ExitPlanMode: Always commit plan preview to staticItems
+  // This keeps the dynamic area small (just approval options) to avoid flicker
+  useEffect(() => {
+    if (!currentApproval) return;
+    if (currentApproval.toolName !== "ExitPlanMode") return;
+
+    const toolCallId = currentApproval.toolCallId;
+    if (!toolCallId) return;
+
+    // Already committed preview for this approval?
+    if (eagerCommittedPreviewsRef.current.has(toolCallId)) return;
+
+    const planFilePath = permissionMode.getPlanFilePath();
+    if (!planFilePath) return;
+
+    try {
+      const { readFileSync, existsSync } = require("node:fs");
+      if (!existsSync(planFilePath)) return;
+
+      const planContent = readFileSync(planFilePath, "utf-8");
+
+      // Commit preview to static area
+      const previewItem: StaticItem = {
+        kind: "approval_preview",
+        id: `approval-preview-${toolCallId}`,
+        toolCallId,
+        toolName: currentApproval.toolName,
+        toolArgs: currentApproval.toolArgs || "{}",
+        planContent,
+        planFilePath,
+      };
+
+      setStaticItems((prev) => [...prev, previewItem]);
+      eagerCommittedPreviewsRef.current.add(toolCallId);
+
+      // Also capture plan file path for post-approval rendering
+      lastPlanFilePathRef.current = planFilePath;
+    } catch {
+      // Failed to read plan, don't commit preview
+    }
+  }, [currentApproval]);
 
   // Backfill message history when resuming (only once)
   useEffect(() => {
@@ -919,11 +1273,14 @@ export default function App({
             setCurrentModelId(agentModelHandle || null);
           }
 
-          // Detect current toolset from attached tools
-          const { detectToolsetFromAgent } = await import("../tools/toolset");
-          const detected = await detectToolsetFromAgent(client, agentId);
-          if (detected) {
-            setCurrentToolset(detected);
+          // Derive toolset from agent's model (not persisted, computed on resume)
+          if (agentModelHandle) {
+            const derivedToolset = isOpenAIModel(agentModelHandle)
+              ? "codex"
+              : isGeminiModel(agentModelHandle)
+                ? "gemini"
+                : "default";
+            setCurrentToolset(derivedToolset);
           }
         } catch (error) {
           console.error("Error fetching agent config:", error);
@@ -937,18 +1294,26 @@ export default function App({
   // Also tracks the error in telemetry so we know an error was shown
   const appendError = useCallback(
     (message: string, skipTelemetry = false) => {
+      // Defensive: ensure message is always a string (guards against [object Object])
+      const text =
+        typeof message === "string"
+          ? message
+          : message != null
+            ? JSON.stringify(message)
+            : "[Unknown error]";
+
       const id = uid("err");
       buffersRef.current.byId.set(id, {
         kind: "error",
         id,
-        text: message,
+        text,
       });
       buffersRef.current.order.push(id);
       refreshDerived();
 
       // Track error in telemetry (unless explicitly skipped for user-initiated actions)
       if (!skipTelemetry) {
-        telemetry.trackError("ui_error", message, "error_display", {
+        telemetry.trackError("ui_error", text, "error_display", {
           modelId: currentModelId || undefined,
         });
       }
@@ -960,10 +1325,108 @@ export default function App({
   const processConversation = useCallback(
     async (
       initialInput: Array<MessageCreate | ApprovalCreate>,
-      options?: { allowReentry?: boolean },
+      options?: { allowReentry?: boolean; submissionGeneration?: number },
     ): Promise<void> => {
-      const currentInput = initialInput;
+      // Helper function for Ralph Wiggum mode continuation
+      // Defined here to have access to buffersRef, processConversation via closure
+      const handleRalphContinuation = () => {
+        const ralphState = ralphMode.getState();
+
+        // Extract LAST assistant message from buffers to check for promise
+        // (We only want to check the most recent response, not the entire transcript)
+        const lines = toLines(buffersRef.current);
+        const assistantLines = lines.filter(
+          (l): l is Line & { kind: "assistant" } => l.kind === "assistant",
+        );
+        const lastAssistantText =
+          assistantLines.length > 0
+            ? (assistantLines[assistantLines.length - 1]?.text ?? "")
+            : "";
+
+        // Check for completion promise
+        if (ralphMode.checkForPromise(lastAssistantText)) {
+          // Promise matched - exit ralph mode
+          const wasYolo = ralphState.isYolo;
+          ralphMode.deactivate();
+          setUiRalphActive(false);
+          if (wasYolo) {
+            permissionMode.setMode("default");
+          }
+
+          // Add completion status to transcript
+          const statusId = uid("status");
+          buffersRef.current.byId.set(statusId, {
+            kind: "status",
+            id: statusId,
+            lines: [
+              `✅ Ralph loop complete: promise detected after ${ralphState.currentIteration} iteration(s)`,
+            ],
+          });
+          buffersRef.current.order.push(statusId);
+          refreshDerived();
+          return;
+        }
+
+        // Check iteration limit
+        if (!ralphMode.shouldContinue()) {
+          // Max iterations reached - exit ralph mode
+          const wasYolo = ralphState.isYolo;
+          ralphMode.deactivate();
+          setUiRalphActive(false);
+          if (wasYolo) {
+            permissionMode.setMode("default");
+          }
+
+          // Add status to transcript
+          const statusId = uid("status");
+          buffersRef.current.byId.set(statusId, {
+            kind: "status",
+            id: statusId,
+            lines: [
+              `🛑 Ralph loop: Max iterations (${ralphState.maxIterations}) reached`,
+            ],
+          });
+          buffersRef.current.order.push(statusId);
+          refreshDerived();
+          return;
+        }
+
+        // Continue loop - increment iteration and re-send prompt
+        ralphMode.incrementIteration();
+        const newState = ralphMode.getState();
+        const systemMsg = buildRalphContinuationReminder(newState);
+
+        // Re-inject original prompt with ralph reminder prepended
+        // Use setTimeout to avoid blocking the current render cycle
+        setTimeout(() => {
+          processConversation(
+            [
+              {
+                type: "message",
+                role: "user",
+                content: `${systemMsg}\n\n${newState.originalPrompt}`,
+              },
+            ],
+            { allowReentry: true },
+          );
+        }, 0);
+      };
+
+      // Copy so we can safely mutate for retry recovery flows
+      const currentInput = [...initialInput];
       const allowReentry = options?.allowReentry ?? false;
+
+      // Use provided generation (from onSubmit) or capture current
+      // This allows detecting if ESC was pressed during async work before this function was called
+      const myGeneration =
+        options?.submissionGeneration ?? conversationGenerationRef.current;
+
+      // Check if we're already stale (ESC was pressed while we were queued in onSubmit).
+      // This can happen if ESC was pressed during async work before processConversation was called.
+      // We check early to avoid setting state (streaming, etc.) for stale conversations.
+      if (myGeneration !== conversationGenerationRef.current) {
+        return;
+      }
 
       // Guard against concurrent processConversation calls
       // This can happen if user submits two messages in quick succession
@@ -988,12 +1451,19 @@ export default function App({
           return;
         }
 
+        // Double-check we haven't become stale between entry and try block
+        if (myGeneration !== conversationGenerationRef.current) {
+          return;
+        }
+
         setStreaming(true);
         abortControllerRef.current = new AbortController();
 
         // Clear any stale pending tool calls from previous turns
         // If we're sending a new message, old pending state is no longer relevant
-        markIncompleteToolsAsCancelled(buffersRef.current);
+        // Pass false to avoid setting interrupted=true, which causes race conditions
+        // with concurrent processConversation calls reading the flag
+        markIncompleteToolsAsCancelled(buffersRef.current, false);
         // Reset interrupted flag since we're starting a fresh stream
         buffersRef.current.interrupted = false;
 
@@ -1007,7 +1477,13 @@ export default function App({
 
           // Check if cancelled before starting new stream
           if (signal?.aborted) {
-            setStreaming(false);
+            const isStaleAtAbort =
+              myGeneration !== conversationGenerationRef.current;
+            // Only set streaming=false if this is the current generation.
+            // If stale, a newer processConversation might be running and we shouldn't affect its UI.
+            if (!isStaleAtAbort) {
+              setStreaming(false);
+            }
             return;
           }
 
@@ -1019,7 +1495,13 @@ export default function App({
 
           // Check again after network call - user may have pressed Escape during sendMessageStream
           if (signal?.aborted) {
-            setStreaming(false);
+            const isStaleAtAbort =
+              myGeneration !== conversationGenerationRef.current;
+            // Only set streaming=false if this is the current generation.
+            // If stale, a newer processConversation might be running and we shouldn't affect its UI.
+            if (!isStaleAtAbort) {
+              setStreaming(false);
+            }
             return;
           }
 
@@ -1095,13 +1577,44 @@ export default function App({
           sessionStatsRef.current.endTurn(apiDurationMs);
           sessionStatsRef.current.updateUsageFromBuffers(buffersRef.current);
 
-          // Immediate refresh after stream completes to show final state
-          refreshDerived();
+          const wasInterrupted = !!buffersRef.current.interrupted;
+          const wasAborted = !!signal?.aborted;
+          let stopReasonToHandle = wasAborted ? "cancelled" : stopReason;
+
+          // Check if this conversation became stale while the stream was running.
+          // If stale, a newer processConversation is running and we shouldn't modify UI state.
+          const isStaleAfterDrain =
+            myGeneration !== conversationGenerationRef.current;
+
+          // If this conversation is stale, exit without modifying UI state.
+          // A newer conversation is running and should control the UI.
+          if (isStaleAfterDrain) {
+            return;
+          }
+
+          // Immediate refresh after stream completes to show final state unless
+          // the user already cancelled (handleInterrupt rendered the UI).
+          if (!wasInterrupted) {
+            refreshDerived();
+          }
+
+          // If the turn was interrupted client-side but the backend had already emitted
+          // requires_approval, treat it as a cancel. This avoids re-entering approval flow
+          // and keeps queue-cancel flags consistent with the normal cancel branch below.
+          if (wasInterrupted && stopReasonToHandle === "requires_approval") {
+            stopReasonToHandle = "cancelled";
+          }
 
           // Case 1: Turn ended normally
-          if (stopReason === "end_turn") {
+          if (stopReasonToHandle === "end_turn") {
             setStreaming(false);
             llmApiErrorRetriesRef.current = 0; // Reset retry counter on success
+
+            // Send desktop notification when turn completes
+            // and we're not about to auto-send another queued message
+            if (!waitingForQueueCancelRef.current) {
+              sendDesktopNotification();
+            }
 
             // Check if we were waiting for cancel but stream finished naturally
             if (waitingForQueueCancelRef.current) {
@@ -1127,11 +1640,19 @@ export default function App({
               queueSnapshotRef.current = [];
             }
 
+            // === RALPH WIGGUM CONTINUATION CHECK ===
+            // Check if ralph mode is active and should auto-continue
+            // This happens at the very end, right before we'd release input
+            if (ralphMode.getState().isActive) {
+              handleRalphContinuation();
+              return;
+            }
+
             return;
           }
 
           // Case 1.5: Stream was cancelled by user
-          if (stopReason === "cancelled") {
+          if (stopReasonToHandle === "cancelled") {
             setStreaming(false);
 
             // Check if this cancel was triggered by queue threshold
@@ -1159,7 +1680,24 @@ export default function App({
             } else {
               // Regular user cancellation - show error
               if (!EAGER_CANCEL) {
-                appendError("Stream interrupted by user", true);
+                appendError(INTERRUPT_MESSAGE, true);
+              }
+
+              // In ralph mode, ESC interrupts but does NOT exit ralph
+              // User can type additional instructions, which will get ralph prefix prepended
+              // (Similar to how plan mode works)
+              if (ralphMode.getState().isActive) {
+                // Add status to transcript showing ralph is paused
+                const statusId = uid("status");
+                buffersRef.current.byId.set(statusId, {
+                  kind: "status",
+                  id: statusId,
+                  lines: [
+                    `⏸️ Ralph loop paused - type to continue or shift+tab to exit`,
+                  ],
+                });
+                buffersRef.current.order.push(statusId);
+                refreshDerived();
               }
             }
 
@@ -1167,7 +1705,7 @@ export default function App({
           }
 
           // Case 2: Requires approval
-          if (stopReason === "requires_approval") {
+          if (stopReasonToHandle === "requires_approval") {
             // Clear stale state immediately to prevent ID mismatch bugs
             setAutoHandledResults([]);
             setAutoDeniedApprovals([]);
@@ -1293,9 +1831,11 @@ export default function App({
               const { approval, permission } = ac;
               let decision = permission.decision;
 
-              // Fancy tools should always go through a UI dialog in interactive mode,
-              // even if a rule says "allow". Deny rules are still respected.
-              if (isFancyUITool(approval.toolName) && decision === "allow") {
+              // Some tools always need user input regardless of yolo mode
+              if (
+                alwaysRequiresUserInput(approval.toolName) &&
+                decision === "allow"
+              ) {
                 decision = "ask";
               }
 
@@ -1309,8 +1849,9 @@ export default function App({
               }
             }
 
-            // Precompute diffs for auto-allowed file edit tools before execution
-            for (const ac of autoAllowed) {
+            // Precompute diffs for file edit tools before execution (both auto-allowed and needs-user-input)
+            // This is needed for inline approval UI to show diffs, and for post-approval rendering
+            for (const ac of [...autoAllowed, ...needsUserInput]) {
               const toolName = ac.approval.toolName;
               const toolCallId = ac.approval.toolCallId;
               try {
@@ -1571,12 +2112,109 @@ export default function App({
             setAutoHandledResults(autoAllowedResults);
             setAutoDeniedApprovals(autoDeniedResults);
             setStreaming(false);
+            // Notify user that approval is needed
+            sendDesktopNotification();
             return;
           }
 
           // Unexpected stop reason (error, llm_api_error, etc.)
+          // Cache desync detection and last failure for consistent handling
+          // Check if payload contains approvals (could be approval-only or mixed with user message)
+          const hasApprovalInPayload = currentInput.some(
+            (item) => item?.type === "approval",
+          );
+          const isApprovalOnlyPayload =
+            hasApprovalInPayload && currentInput.length === 1;
+
+          // Capture the most recent error text in this turn (if any)
+          let latestErrorText: string | null = null;
+          for (let i = buffersRef.current.order.length - 1; i >= 0; i -= 1) {
+            const id = buffersRef.current.order[i];
+            if (!id) continue;
+            const entry = buffersRef.current.byId.get(id);
+            if (entry?.kind === "error" && typeof entry.text === "string") {
+              latestErrorText = entry.text;
+              break;
+            }
+          }
+
+          // Detect approval desync once per turn
+          const detailFromRun = await fetchRunErrorDetail(lastRunId);
+          const desyncDetected =
+            isApprovalStateDesyncError(detailFromRun) ||
+            isApprovalStateDesyncError(latestErrorText);
+
+          // Track last failure info so we can emit it if retries stop
+          const lastFailureMessage = latestErrorText || detailFromRun || null;
+
+          // Check for approval desync errors even if stop_reason isn't llm_api_error.
+          // Handle both approval-only payloads and mixed [approval, message] payloads.
+          if (hasApprovalInPayload && desyncDetected) {
+            if (llmApiErrorRetriesRef.current < LLM_API_ERROR_MAX_RETRIES) {
+              llmApiErrorRetriesRef.current += 1;
+              const statusId = uid("status");
+              buffersRef.current.byId.set(statusId, {
+                kind: "status",
+                id: statusId,
+                lines: [
+                  "Approval state desynced; resending keep-alive recovery prompt...",
+                ],
+              });
+              buffersRef.current.order.push(statusId);
+              refreshDerived();
+
+              if (isApprovalOnlyPayload) {
+                // Approval-only payload: send recovery prompt
+                currentInput.splice(
+                  0,
+                  currentInput.length,
+                  buildApprovalRecoveryMessage(),
+                );
+              } else {
+                // Mixed payload [approval, message]: strip stale approval, keep user message
+                const messageItems = currentInput.filter(
+                  (item) => item?.type !== "approval",
+                );
+                if (messageItems.length > 0) {
+                  currentInput.splice(0, currentInput.length, ...messageItems);
+                } else {
+                  // Fallback if somehow no message items remain
+                  currentInput.splice(
+                    0,
+                    currentInput.length,
+                    buildApprovalRecoveryMessage(),
+                  );
+                }
+              }
+
+              // Remove the transient status before retrying
+              buffersRef.current.byId.delete(statusId);
+              buffersRef.current.order = buffersRef.current.order.filter(
+                (id) => id !== statusId,
+              );
+              refreshDerived();
+
+              // Reset interrupted flag so retry stream chunks are processed
+              buffersRef.current.interrupted = false;
+              continue;
+            }
+
+            // No retries left: emit the failure and exit
+            const errorToShow =
+              lastFailureMessage ||
+              `An error occurred during agent execution\n(run_id: ${lastRunId ?? "unknown"}, stop_reason: ${stopReasonToHandle})`;
+            appendError(errorToShow, true);
+            setStreaming(false);
+            sendDesktopNotification();
+            refreshDerived();
+            return;
+          }
+
           // Check if this is a retriable error (transient LLM API error)
-          const retriable = await isRetriableError(stopReason, lastRunId);
+          const retriable = await isRetriableError(
+            stopReasonToHandle,
+            lastRunId,
+          );
 
           if (
             retriable &&
@@ -1588,10 +2226,13 @@ export default function App({
 
             // Show subtle grey status message
             const statusId = uid("status");
+            const statusLines = [
+              "Unexpected downstream LLM API error, retrying...",
+            ];
             buffersRef.current.byId.set(statusId, {
               kind: "status",
               id: statusId,
-              lines: ["Unexpected downstream LLM API error, retrying..."],
+              lines: statusLines,
             });
             buffersRef.current.order.push(statusId);
             refreshDerived();
@@ -1618,6 +2259,8 @@ export default function App({
             refreshDerived();
 
             if (!cancelled) {
+              // Reset interrupted flag so retry stream chunks are processed
+              buffersRef.current.interrupted = false;
               // Retry by continuing the while loop (same currentInput)
               continue;
             }
@@ -1634,8 +2277,9 @@ export default function App({
           telemetry.trackError(
             fallbackError
               ? "FallbackError"
-              : stopReason || "unknown_stop_reason",
-            fallbackError || `Stream stopped with reason: ${stopReason}`,
+              : stopReasonToHandle || "unknown_stop_reason",
+            fallbackError ||
+              `Stream stopped with reason: ${stopReasonToHandle}`,
             "message_stream",
             {
               modelId: currentModelId || undefined,
@@ -1651,6 +2295,7 @@ export default function App({
               : `Stream error: ${fallbackError}`;
             appendError(errorMsg, true); // Skip telemetry - already tracked above
             setStreaming(false);
+            sendDesktopNotification(); // Notify user of error
             refreshDerived();
             return;
           }
@@ -1705,6 +2350,7 @@ export default function App({
           }
 
           setStreaming(false);
+          sendDesktopNotification(); // Notify user of error
           refreshDerived();
           return;
         }
@@ -1744,13 +2390,22 @@ export default function App({
         const errorDetails = formatErrorDetails(e, agentIdRef.current);
         appendError(errorDetails, true); // Skip telemetry - already tracked above with more context
         setStreaming(false);
+        sendDesktopNotification(); // Notify user of error
         refreshDerived();
       } finally {
+        // Check if this conversation was superseded by an ESC interrupt
+        const isStale = myGeneration !== conversationGenerationRef.current;
+
         abortControllerRef.current = null;
-        processingConversationRef.current = Math.max(
-          0,
-          processingConversationRef.current - 1,
-        );
+
+        // Only decrement ref if this conversation is still current.
+        // If stale (ESC was pressed), handleInterrupt already reset ref to 0.
+        if (!isStale) {
+          processingConversationRef.current = Math.max(
+            0,
+            processingConversationRef.current - 1,
+          );
+        }
       }
     },
     [
@@ -1785,17 +2440,43 @@ export default function App({
   }, []);
 
   const handleInterrupt = useCallback(async () => {
-    // If we're executing client-side tools, abort them locally instead of hitting the backend
-    // Don't show "Stream interrupted" banner - the tool result will show "Interrupted by user"
+    // If we're executing client-side tools, abort them AND the main stream
     if (isExecutingTool && toolAbortControllerRef.current) {
       toolAbortControllerRef.current.abort();
+
+      // ALSO abort the main stream - don't leave it running
+      buffersRef.current.abortGeneration =
+        (buffersRef.current.abortGeneration || 0) + 1;
+      const toolsCancelled = markIncompleteToolsAsCancelled(buffersRef.current);
+
+      // Show interrupt feedback (yellow message if no tools were cancelled)
+      if (!toolsCancelled) {
+        appendError(INTERRUPT_MESSAGE, true);
+      }
+
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+
+      userCancelledRef.current = true; // Prevent dequeue
       setStreaming(false);
       setIsExecutingTool(false);
       refreshDerived();
+
+      // Delay flag reset to ensure React has flushed state updates before dequeue can fire.
+      // Use setTimeout(50) instead of setTimeout(0) - the longer delay ensures React's
+      // batched state updates have been fully processed before we allow the dequeue effect.
+      setTimeout(() => {
+        userCancelledRef.current = false;
+      }, 50);
+
       return;
     }
 
-    if (!streaming || interruptRequested) return;
+    if (!streaming || interruptRequested) {
+      return;
+    }
 
     // If we're in the middle of queue cancel, set flag to restore instead of auto-send
     if (waitingForQueueCancelRef.current) {
@@ -1808,7 +2489,13 @@ export default function App({
       // Prevent multiple handleInterrupt calls while state updates are pending
       setInterruptRequested(true);
 
-      // Abort the stream via abort signal
+      // Set interrupted flag FIRST, before abort() triggers any async work.
+      // This ensures onChunk and other guards see interrupted=true immediately.
+      buffersRef.current.abortGeneration =
+        (buffersRef.current.abortGeneration || 0) + 1;
+      const toolsCancelled = markIncompleteToolsAsCancelled(buffersRef.current);
+
+      // NOW abort the stream - interrupted flag is already set
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null; // Clear ref so isAgentBusy() returns false
@@ -1817,27 +2504,40 @@ export default function App({
       // Set cancellation flag to prevent processConversation from starting
       userCancelledRef.current = true;
 
+      // Increment generation to mark any in-flight processConversation as stale.
+      // The stale processConversation will check this and exit quietly without
+      // decrementing the ref (since we reset it here).
+      conversationGenerationRef.current += 1;
+
+      // Reset the processing guard so the next message can start a new conversation.
+      processingConversationRef.current = 0;
+
       // Stop streaming and show error message (unless tool calls were cancelled,
       // since the tool result will show "Interrupted by user")
       setStreaming(false);
-      const toolsCancelled = markIncompleteToolsAsCancelled(buffersRef.current);
       if (!toolsCancelled) {
-        appendError("Stream interrupted by user", true);
+        appendError(INTERRUPT_MESSAGE, true);
       }
       refreshDerived();
 
-      // Clear any pending approvals since we're cancelling
+      // Cache any pending approvals as denials to send with the next message
+      // This tells the server "I'm rejecting these approvals" so it doesn't stay stuck waiting
+      if (pendingApprovals.length > 0) {
+        const denialResults = pendingApprovals.map((approval) => ({
+          type: "approval" as const,
+          tool_call_id: approval.toolCallId,
+          approve: false,
+          reason: "User interrupted the stream",
+        }));
+        setQueuedApprovalResults(denialResults);
+      }
+
+      // Clear local approval state
       setPendingApprovals([]);
       setApprovalContexts([]);
       setApprovalResults([]);
       setAutoHandledResults([]);
       setAutoDeniedApprovals([]);
-
-      // Force clean re-render to avoid streaking artifacts
-      if (process.stdout.isTTY) {
-        process.stdout.write(CLEAR_SCREEN_AND_HOME);
-      }
-      setStaticRenderEpoch((e) => e + 1);
 
       // Send cancel request to backend asynchronously (fire-and-forget)
       // Don't wait for it or show errors since user already got feedback
@@ -1848,13 +2548,13 @@ export default function App({
         });
 
       // Reset cancellation flags after cleanup is complete.
-      // This allows the dequeue effect to process any queued messages.
-      // We use setTimeout to ensure React state updates (setStreaming, etc.)
-      // have been processed before the dequeue effect runs.
+      // Use setTimeout(50) instead of setTimeout(0) to ensure React has fully processed
+      // the streaming=false state before we allow the dequeue effect to start a new conversation.
+      // This prevents the "Maximum update depth exceeded" infinite render loop.
       setTimeout(() => {
         userCancelledRef.current = false;
         setInterruptRequested(false);
-      }, 0);
+      }, 50);
 
       return;
     } else {
@@ -1880,6 +2580,7 @@ export default function App({
     isExecutingTool,
     refreshDerived,
     setStreaming,
+    pendingApprovals,
   ]);
 
   // Keep ref to latest processConversation to avoid circular deps in useEffect
@@ -1887,13 +2588,6 @@ export default function App({
   useEffect(() => {
     processConversationRef.current = processConversation;
   }, [processConversation]);
-
-  // Reset interrupt flag when streaming ends
-  useEffect(() => {
-    if (!streaming) {
-      setInterruptRequested(false);
-    }
-  }, [streaming]);
 
   const handleAgentSelect = useCallback(
     async (targetAgentId: string, _opts?: { profileName?: string }) => {
@@ -2184,6 +2878,154 @@ export default function App({
     [refreshDerived],
   );
 
+  /**
+   * Check and handle any pending approvals before sending a slash command.
+   * Returns true if approvals need user input (caller should return { submitted: false }).
+   * Returns false if no approvals or all auto-handled (caller can proceed).
+   */
+  const checkPendingApprovalsForSlashCommand = useCallback(async (): Promise<
+    { blocked: true } | { blocked: false }
+  > => {
+    if (!CHECK_PENDING_APPROVALS_BEFORE_SEND) {
+      return { blocked: false };
+    }
+
+    try {
+      const client = await getClient();
+      const agent = await client.agents.retrieve(agentId);
+      const { pendingApprovals: existingApprovals } = await getResumeData(
+        client,
+        agent,
+      );
+
+      if (!existingApprovals || existingApprovals.length === 0) {
+        return { blocked: false };
+      }
+
+      // There are pending approvals - check permissions (respects yolo mode)
+      const approvalResults = await Promise.all(
+        existingApprovals.map(async (approvalItem) => {
+          if (!approvalItem.toolName) {
+            return {
+              approval: approvalItem,
+              permission: {
+                decision: "deny" as const,
+                reason: "Tool call incomplete - missing name",
+              },
+              context: null,
+            };
+          }
+          const parsedArgs = safeJsonParseOr<Record<string, unknown>>(
+            approvalItem.toolArgs,
+            {},
+          );
+          const permission = await checkToolPermission(
+            approvalItem.toolName,
+            parsedArgs,
+          );
+          const context = await analyzeToolApproval(
+            approvalItem.toolName,
+            parsedArgs,
+          );
+          return { approval: approvalItem, permission, context };
+        }),
+      );
+
+      // Categorize by permission decision
+      const needsUserInput: typeof approvalResults = [];
+      const autoAllowed: typeof approvalResults = [];
+      const autoDenied: typeof approvalResults = [];
+
+      for (const ac of approvalResults) {
+        const { approval, permission } = ac;
+        let decision = permission.decision;
+
+        if (
+          alwaysRequiresUserInput(approval.toolName) &&
+          decision === "allow"
+        ) {
+          decision = "ask";
+        }
+
+        if (decision === "ask") {
+          needsUserInput.push(ac);
+        } else if (decision === "deny") {
+          autoDenied.push(ac);
+        } else {
+          autoAllowed.push(ac);
+        }
+      }
+
+      // If any approvals need user input, show dialog
+      if (needsUserInput.length > 0) {
+        setPendingApprovals(needsUserInput.map((ac) => ac.approval));
+        setApprovalContexts(
+          needsUserInput
+            .map((ac) => ac.context)
+            .filter((ctx): ctx is ApprovalContext => ctx !== null),
+        );
+        return { blocked: true };
+      }
+
+      // All approvals can be auto-handled - execute them before proceeding
+      const allResults: ApprovalResult[] = [];
+
+      // Execute auto-allowed tools
+      if (autoAllowed.length > 0) {
+        const autoAllowedResults = await executeAutoAllowedTools(
+          autoAllowed,
+          (chunk) => onChunk(buffersRef.current, chunk),
+        );
+        // Map to ApprovalResult format (ToolReturn)
+        allResults.push(
+          ...autoAllowedResults.map((ar) => ({
+            type: "tool" as const,
+            tool_call_id: ar.toolCallId,
+            tool_return: ar.result.toolReturn,
+            status: ar.result.status,
+            stdout: ar.result.stdout,
+            stderr: ar.result.stderr,
+          })),
+        );
+      }
+
+      // Create denial results for auto-denied
+      for (const ac of autoDenied) {
+        const reason = ac.permission.reason || "Permission denied";
+        // Update UI with denial
+        onChunk(buffersRef.current, {
+          message_type: "tool_return_message",
+          id: "dummy",
+          date: new Date().toISOString(),
+          tool_call_id: ac.approval.toolCallId,
+          tool_return: `Error: request to call tool denied. User reason: ${reason}`,
+          status: "error",
+          stdout: null,
+          stderr: null,
+        });
+        // Map to ApprovalResult format (ApprovalReturn)
+        allResults.push({
+          type: "approval" as const,
+          tool_call_id: ac.approval.toolCallId,
+          approve: false,
+          reason,
+        });
+      }
+
+      // Send all results to server if any
+      if (allResults.length > 0) {
+        await processConversation([
+          { type: "approval", approvals: allResults },
+        ]);
+      }
+
+      return { blocked: false };
+    } catch {
+      // If check fails, proceed anyway (don't block user)
+      return { blocked: false };
+    }
+  }, [agentId, processConversation]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: refs read .current dynamically, complex callback with intentional deps
   const onSubmit = useCallback(
     async (message?: string): Promise<{ submitted: boolean }> => {
@@ -2220,6 +3062,10 @@ export default function App({
 
       if (!msg) return { submitted: false };
 
+      // Capture the generation at submission time, BEFORE any async work.
+      // This allows detecting if ESC was pressed during async operations.
+      const submissionGeneration = conversationGenerationRef.current;
+
       // Track user input (agent_id automatically added from telemetry.currentAgentId)
       telemetry.trackUserInput(msg, "user", currentModelId || "unknown");
 
@@ -2253,6 +3099,12 @@ export default function App({
             waitingForQueueCancelRef.current = true;
             queueSnapshotRef.current = [...newQueue];
 
+            // Abort client-side tool execution if in progress
+            // This makes tool interruption visible immediately instead of waiting for completion
+            if (toolAbortControllerRef.current) {
+              toolAbortControllerRef.current.abort();
+            }
+
             // Send cancel request to backend (fire-and-forget)
             getClient()
               .then((client) => client.agents.messages.cancel(agentId))
@@ -2270,6 +3122,44 @@ export default function App({
 
       // Note: userCancelledRef.current was already reset above before the queue check
       // to ensure the dequeue effect isn't blocked by a stale cancellation flag.
+
+      // Handle pending Ralph config - activate ralph mode but let message flow through normal path
+      // This ensures session context and other reminders are included
+      // Track if we just activated so we can use first turn reminder vs continuation
+      let justActivatedRalph = false;
+      if (pendingRalphConfig && !msg.startsWith("/")) {
+        const { completionPromise, maxIterations, isYolo } = pendingRalphConfig;
+        ralphMode.activate(msg, completionPromise, maxIterations, isYolo);
+        setUiRalphActive(true);
+        setPendingRalphConfig(null);
+        justActivatedRalph = true;
+        if (isYolo) {
+          permissionMode.setMode("bypassPermissions");
+        }
+
+        const ralphState = ralphMode.getState();
+
+        // Add status to transcript
+        const statusId = uid("status");
+        const promiseDisplay = ralphState.completionPromise
+          ? `"${ralphState.completionPromise.slice(0, 50)}${ralphState.completionPromise.length > 50 ? "..." : ""}"`
+          : "(none)";
+        buffersRef.current.byId.set(statusId, {
+          kind: "status",
+          id: statusId,
+          lines: [
+            `🔄 ${isYolo ? "yolo-ralph" : "ralph"} mode started (iter 1/${maxIterations || "∞"})`,
+            `Promise: ${promiseDisplay}`,
+          ],
+        });
+        buffersRef.current.order.push(statusId);
+        refreshDerived();
+
+        // Don't return - let message flow through normal path which will:
+        // 1. Add session context reminder (if first message)
+        // 2. Add ralph mode reminder (since ralph is now active)
+        // 3. Add other reminders (skill unload, memory, etc.)
+      }
 
       let aliasedMsg = msg;
       if (msg === "exit" || msg === "quit") {
@@ -2592,6 +3482,75 @@ export default function App({
             refreshDerived();
           } finally {
             setCommandRunning(false);
+          }
+          return { submitted: true };
+        }
+
+        // Special handling for /ralph and /yolo-ralph commands - Ralph Wiggum mode
+        if (trimmed.startsWith("/yolo-ralph") || trimmed.startsWith("/ralph")) {
+          const isYolo = trimmed.startsWith("/yolo-ralph");
+          const { prompt, completionPromise, maxIterations } =
+            parseRalphArgs(trimmed);
+
+          const cmdId = uid("cmd");
+
+          if (prompt) {
+            // Inline prompt - activate immediately and send
+            ralphMode.activate(
+              prompt,
+              completionPromise,
+              maxIterations,
+              isYolo,
+            );
+            setUiRalphActive(true);
+            if (isYolo) {
+              permissionMode.setMode("bypassPermissions");
+            }
+
+            const ralphState = ralphMode.getState();
+            const promiseDisplay = ralphState.completionPromise
+              ? `"${ralphState.completionPromise.slice(0, 50)}${ralphState.completionPromise.length > 50 ? "..." : ""}"`
+              : "(none)";
+
+            buffersRef.current.byId.set(cmdId, {
+              kind: "command",
+              id: cmdId,
+              input: trimmed,
+              output: `🔄 ${isYolo ? "yolo-ralph" : "ralph"} mode activated (iter 1/${maxIterations || "∞"})\nPromise: ${promiseDisplay}`,
+              phase: "finished",
+              success: true,
+            });
+            buffersRef.current.order.push(cmdId);
+            refreshDerived();
+
+            // Send the prompt with ralph reminder prepended
+            const systemMsg = buildRalphFirstTurnReminder(ralphState);
+            processConversation([
+              {
+                type: "message",
+                role: "user",
+                content: `${systemMsg}\n\n${prompt}`,
+              },
+            ]);
+          } else {
+            // No inline prompt - wait for next message
+            setPendingRalphConfig({ completionPromise, maxIterations, isYolo });
+
+            const defaultPromisePreview = DEFAULT_COMPLETION_PROMISE.slice(
+              0,
+              40,
+            );
+
+            buffersRef.current.byId.set(cmdId, {
+              kind: "command",
+              id: cmdId,
+              input: trimmed,
+              output: `🔄 ${isYolo ? "yolo-ralph" : "ralph"} mode ready (waiting for task)\nMax iterations: ${maxIterations || "unlimited"}\nPromise: ${completionPromise === null ? "(none)" : (completionPromise ?? `"${defaultPromisePreview}..." (default)`)}\n\nType your task to begin the loop.`,
+              phase: "finished",
+              success: true,
+            });
+            buffersRef.current.order.push(cmdId);
+            refreshDerived();
           }
           return { submitted: true };
         }
@@ -3093,7 +4052,7 @@ export default function App({
           return { submitted: true };
         }
 
-        // Special handling for /link command - attach all Deep Sci-Fi tools (deprecated)
+        // Special handling for /link command - attach all Deep Sci-Fi tools
         if (msg.trim() === "/link" || msg.trim().startsWith("/link ")) {
           const cmdId = uid("cmd");
           buffersRef.current.byId.set(cmdId, {
@@ -3138,7 +4097,7 @@ export default function App({
           return { submitted: true };
         }
 
-        // Special handling for /unlink command - remove all Deep Sci-Fi tools (deprecated)
+        // Special handling for /unlink command - remove all Deep Sci-Fi tools
         if (msg.trim() === "/unlink" || msg.trim().startsWith("/unlink ")) {
           const cmdId = uid("cmd");
           buffersRef.current.byId.set(cmdId, {
@@ -3269,6 +4228,12 @@ export default function App({
 
         // Special handling for /skill command - enter skill creation mode
         if (trimmed.startsWith("/skill")) {
+          // Check for pending approvals before sending
+          const approvalCheck = await checkPendingApprovalsForSlashCommand();
+          if (approvalCheck.blocked) {
+            return { submitted: false }; // Keep /skill in input box, user handles approval first
+          }
+
           const cmdId = uid("cmd");
 
           // Extract optional description after `/skill`
@@ -3344,6 +4309,12 @@ export default function App({
 
         // Special handling for /remember command - remember something from conversation
         if (trimmed.startsWith("/remember")) {
+          // Check for pending approvals before sending (mirrors regular message flow)
+          const approvalCheck = await checkPendingApprovalsForSlashCommand();
+          if (approvalCheck.blocked) {
+            return { submitted: false }; // Keep /remember in input box, user handles approval first
+          }
+
           const cmdId = uid("cmd");
 
           // Extract optional description after `/remember`
@@ -3418,6 +4389,12 @@ export default function App({
 
         // Special handling for /init command - initialize agent memory
         if (trimmed === "/init") {
+          // Check for pending approvals before sending
+          const approvalCheck = await checkPendingApprovalsForSlashCommand();
+          if (approvalCheck.blocked) {
+            return { submitted: false }; // Keep /init in input box, user handles approval first
+          }
+
           const cmdId = uid("cmd");
           buffersRef.current.byId.set(cmdId, {
             kind: "command",
@@ -3564,6 +4541,12 @@ ${gitContext}
         const matchedCustom = await findCustomCommand(commandName);
 
         if (matchedCustom) {
+          // Check for pending approvals before sending
+          const approvalCheck = await checkPendingApprovalsForSlashCommand();
+          if (approvalCheck.blocked) {
+            return { submitted: false }; // Keep custom command in input box, user handles approval first
+          }
+
           const cmdId = uid("cmd");
 
           // Extract arguments (everything after command name)
@@ -3683,6 +4666,21 @@ ${gitContext}
       // Prepend plan mode reminder if in plan mode
       const planModeReminder = getPlanModeReminder();
 
+      // Prepend ralph mode reminder if in ralph mode
+      let ralphModeReminder = "";
+      if (ralphMode.getState().isActive) {
+        if (justActivatedRalph) {
+          // First turn - use full first turn reminder, don't increment (already at 1)
+          const ralphState = ralphMode.getState();
+          ralphModeReminder = `${buildRalphFirstTurnReminder(ralphState)}\n\n`;
+        } else {
+          // Continuation after ESC - increment iteration and use shorter reminder
+          ralphMode.incrementIteration();
+          const ralphState = ralphMode.getState();
+          ralphModeReminder = `${buildRalphContinuationReminder(ralphState)}\n\n`;
+        }
+      }
+
       // Prepend skill unload reminder if skills are loaded (using cached flag)
       const skillUnloadReminder = getSkillUnloadReminder();
 
@@ -3729,10 +4727,11 @@ DO NOT respond to these messages or otherwise consider them in your response unl
       // Increment turn count for next iteration
       turnCountRef.current += 1;
 
-      // Combine reminders with content (session context first, then plan mode, then skill unload, then bash commands, then memory reminder)
+      // Combine reminders with content (session context first, then plan mode, then ralph mode, then skill unload, then bash commands, then memory reminder)
       const allReminders =
         sessionContextReminder +
         planModeReminder +
+        ralphModeReminder +
         skillUnloadReminder +
         bashCommandPrefix +
         memoryReminderContent;
@@ -3844,8 +4843,11 @@ DO NOT respond to these messages or otherwise consider them in your response unl
               const { approval, permission } = ac;
               let decision = permission.decision;
 
-              // Fancy tools always need user input (except if denied)
-              if (isFancyUITool(approval.toolName) && decision === "allow") {
+              // Some tools always need user input regardless of yolo mode
+              if (
+                alwaysRequiresUserInput(approval.toolName) &&
+                decision === "allow"
+              ) {
                 decision = "ask";
               }
 
@@ -3860,8 +4862,8 @@ DO NOT respond to these messages or otherwise consider them in your response unl
 
             // If all approvals can be auto-handled (yolo mode), process them immediately
             if (needsUserInput.length === 0) {
-              // Precompute diffs for auto-allowed file edit tools before execution
-              for (const ac of autoAllowed) {
+              // Precompute diffs for file edit tools before execution (both auto-allowed and needs-user-input)
+              for (const ac of [...autoAllowed, ...needsUserInput]) {
                 const toolName = ac.approval.toolName;
                 const toolCallId = ac.approval.toolCallId;
                 try {
@@ -4016,8 +5018,8 @@ DO NOT respond to these messages or otherwise consider them in your response unl
                   .filter(Boolean) as ApprovalContext[],
               );
 
-              // Precompute diffs for auto-allowed file edit tools before execution
-              for (const ac of autoAllowed) {
+              // Precompute diffs for file edit tools before execution (both auto-allowed and needs-user-input)
+              for (const ac of [...autoAllowed, ...needsUserInput]) {
                 const toolName = ac.approval.toolName;
                 const toolCallId = ac.approval.toolCallId;
                 try {
@@ -4153,7 +5155,7 @@ DO NOT respond to these messages or otherwise consider them in your response unl
         content: messageContent as unknown as MessageCreate["content"],
       });
 
-      await processConversation(initialInput);
+      await processConversation(initialInput, { submissionGeneration });
 
       // Clean up placeholders after submission
       clearPlaceholdersInText(msg);
@@ -4179,6 +5181,7 @@ DO NOT respond to these messages or otherwise consider them in your response unl
       isAgentBusy,
       setStreaming,
       setCommandRunning,
+      pendingRalphConfig,
     ],
   );
 
@@ -4235,11 +5238,6 @@ DO NOT respond to these messages or otherwise consider them in your response unl
           setApprovalResults([]);
           setAutoHandledResults([]);
           setAutoDeniedApprovals([]);
-          // Force clean re-render to avoid streaking artifacts
-          if (process.stdout.isTTY) {
-            process.stdout.write(CLEAR_SCREEN_AND_HOME);
-          }
-          setStaticRenderEpoch((e) => e + 1);
           return;
         }
 
@@ -4255,13 +5253,6 @@ DO NOT respond to these messages or otherwise consider them in your response unl
         setApprovalResults([]);
         setAutoHandledResults([]);
         setAutoDeniedApprovals([]);
-
-        // Force clean re-render to avoid streaking artifacts
-        // The large approval dialog disappearing causes line count mismatch in Ink
-        if (process.stdout.isTTY) {
-          process.stdout.write(CLEAR_SCREEN_AND_HOME);
-        }
-        setStaticRenderEpoch((e) => e + 1);
 
         // Show "thinking" state and lock input while executing approved tools client-side
         setStreaming(true);
@@ -4362,6 +5353,10 @@ DO NOT respond to these messages or otherwise consider them in your response unl
             setQueuedApprovalResults(allResults as ApprovalResult[]);
           }
           setStreaming(false);
+
+          // Reset queue-cancel flag so dequeue effect can fire
+          waitingForQueueCancelRef.current = false;
+          queueSnapshotRef.current = [];
         } else {
           // Continue conversation with all results
           await processConversation([
@@ -4516,11 +5511,18 @@ DO NOT respond to these messages or otherwise consider them in your response unl
 
           setIsExecutingTool(true);
 
-          // Build ALL decisions: current + auto-allowed remaining
-          const allDecisions: Array<{
-            type: "approve";
-            approval: ApprovalRequest;
-          }> = [
+          // Snapshot current state BEFORE clearing (critical for ID matching!)
+          // This must include ALL previous decisions, auto-handled, and auto-denied
+          const approvalResultsSnapshot = [...approvalResults];
+          const autoHandledSnapshot = [...autoHandledResults];
+          const autoDeniedSnapshot = [...autoDeniedApprovals];
+
+          // Build ALL decisions: previous + current + auto-allowed remaining
+          const allDecisions: Array<
+            | { type: "approve"; approval: ApprovalRequest }
+            | { type: "deny"; approval: ApprovalRequest; reason: string }
+          > = [
+            ...approvalResultsSnapshot, // Include decisions from previous rounds
             { type: "approve", approval: currentApproval },
             ...nowAutoAllowed.map((r) => ({
               type: "approve" as const,
@@ -4534,11 +5536,6 @@ DO NOT respond to these messages or otherwise consider them in your response unl
           setApprovalResults([]);
           setAutoHandledResults([]);
           setAutoDeniedApprovals([]);
-
-          if (process.stdout.isTTY) {
-            process.stdout.write(CLEAR_SCREEN_AND_HOME);
-          }
-          setStaticRenderEpoch((e) => e + 1);
 
           setStreaming(true);
           buffersRef.current.interrupted = false;
@@ -4556,6 +5553,25 @@ DO NOT respond to these messages or otherwise consider them in your response unl
               },
             );
 
+            // Combine with auto-handled and auto-denied results (from initial check)
+            const allResults = [
+              ...autoHandledSnapshot.map((ar) => ({
+                type: "tool" as const,
+                tool_call_id: ar.toolCallId,
+                tool_return: ar.result.toolReturn,
+                status: ar.result.status,
+                stdout: ar.result.stdout,
+                stderr: ar.result.stderr,
+              })),
+              ...autoDeniedSnapshot.map((ad) => ({
+                type: "approval" as const,
+                tool_call_id: ad.approval.toolCallId,
+                approve: false,
+                reason: ad.reason,
+              })),
+              ...executedResults,
+            ];
+
             setThinkingMessage(getRandomThinkingVerb());
             refreshDerived();
 
@@ -4563,7 +5579,7 @@ DO NOT respond to these messages or otherwise consider them in your response unl
             await processConversation([
               {
                 type: "approval",
-                approvals: executedResults as ApprovalResult[],
+                approvals: allResults as ApprovalResult[],
               },
             ]);
           } finally {
@@ -4580,6 +5596,8 @@ DO NOT respond to these messages or otherwise consider them in your response unl
       approvalResults,
       approvalContexts,
       pendingApprovals,
+      autoHandledResults,
+      autoDeniedApprovals,
       handleApproveCurrent,
       processConversation,
       refreshDerived,
@@ -4660,12 +5678,6 @@ DO NOT respond to these messages or otherwise consider them in your response unl
     setApprovalResults([]);
     setAutoHandledResults([]);
     setAutoDeniedApprovals([]);
-
-    // Force clean re-render to avoid streaking artifacts
-    if (process.stdout.isTTY) {
-      process.stdout.write(CLEAR_SCREEN_AND_HOME);
-    }
-    setStaticRenderEpoch((e) => e + 1);
   }, [pendingApprovals, refreshDerived]);
 
   const handleModelSelect = useCallback(
@@ -5059,6 +6071,20 @@ DO NOT respond to these messages or otherwise consider them in your response unl
     permissionMode.getMode(),
   );
 
+  // Handle ralph mode exit from Input component (shift+tab)
+  const handleRalphExit = useCallback(() => {
+    const ralph = ralphMode.getState();
+    if (ralph.isActive) {
+      const wasYolo = ralph.isYolo;
+      ralphMode.deactivate();
+      setUiRalphActive(false);
+      if (wasYolo) {
+        permissionMode.setMode("default");
+        setUiPermissionMode("default");
+      }
+    }
+  }, []);
+
   // Handle permission mode changes from the Input component (e.g., shift+tab cycling)
   const handlePermissionModeChange = useCallback((mode: PermissionMode) => {
     // When entering plan mode via tab cycling, generate and set the plan file path
@@ -5077,6 +6103,10 @@ DO NOT respond to these messages or otherwise consider them in your response unl
       if (!approval) return;
 
       const isLast = currentIndex + 1 >= pendingApprovals.length;
+
+      // Capture plan file path BEFORE exiting plan mode (for post-approval rendering)
+      const planFilePath = permissionMode.getPlanFilePath();
+      lastPlanFilePathRef.current = planFilePath;
 
       // Exit plan mode
       const newMode = acceptEdits ? "acceptEdits" : "default";
@@ -5331,9 +6361,12 @@ Plan file path: ${planFilePath}`;
         return ln.phase === "running";
       }
       if (ln.kind === "tool_call") {
-        // Skip Task tool_calls - SubagentGroupDisplay handles them
+        // Task tool_calls need special handling:
+        // - Only include if pending approval (phase: "ready" or "streaming")
+        // - Running/finished Task tools are handled by SubagentGroupDisplay
         if (ln.name && isTaskTool(ln.name)) {
-          return false;
+          // Only show Task tools that are awaiting approval (not running/finished)
+          return ln.phase === "ready" || ln.phase === "streaming";
         }
         // Always show other tool calls in progress
         return ln.phase !== "finished";
@@ -5430,7 +6463,7 @@ Plan file path: ${planFilePath}`;
   ]);
 
   return (
-    <Box key={resumeKey} flexDirection="column" gap={1}>
+    <Box key={resumeKey} flexDirection="column">
       <Static
         key={staticRenderEpoch}
         items={staticItems}
@@ -5450,6 +6483,7 @@ Plan file path: ${planFilePath}`;
               <ToolCallMessage
                 line={item}
                 precomputedDiffs={precomputedDiffsRef.current}
+                lastPlanFilePath={lastPlanFilePathRef.current}
               />
             ) : item.kind === "subagent_group" ? (
               <SubagentGroupStatic agents={item.agents} />
@@ -5463,12 +6497,22 @@ Plan file path: ${planFilePath}`;
               <CommandMessage line={item} />
             ) : item.kind === "bash_command" ? (
               <BashCommandMessage line={item} />
+            ) : item.kind === "approval_preview" ? (
+              <ApprovalPreview
+                toolName={item.toolName}
+                toolArgs={item.toolArgs}
+                precomputedDiff={item.precomputedDiff}
+                allDiffs={precomputedDiffsRef.current}
+                planContent={item.planContent}
+                planFilePath={item.planFilePath}
+                toolCallId={item.toolCallId}
+              />
             ) : null}
           </Box>
         )}
       </Static>
 
-      <Box flexDirection="column" gap={1}>
+      <Box flexDirection="column">
         {/* Loading screen / intro text */}
         {loadingState !== "ready" && (
           <WelcomeScreen
@@ -5481,32 +6525,321 @@ Plan file path: ${planFilePath}`;
         {loadingState === "ready" && (
           <>
             {/* Transcript */}
-            {liveItems.length > 0 && pendingApprovals.length === 0 && (
+            {/* Show liveItems always - all approvals now render inline */}
+            {liveItems.length > 0 && (
               <Box flexDirection="column">
-                {liveItems.map((ln) => (
-                  <Box key={ln.id} marginTop={1}>
-                    {ln.kind === "user" ? (
-                      <UserMessage line={ln} />
-                    ) : ln.kind === "reasoning" ? (
-                      <ReasoningMessage line={ln} />
-                    ) : ln.kind === "assistant" ? (
-                      <AssistantMessage line={ln} />
-                    ) : ln.kind === "tool_call" ? (
-                      <ToolCallMessage
-                        line={ln}
-                        precomputedDiffs={precomputedDiffsRef.current}
-                      />
-                    ) : ln.kind === "error" ? (
-                      <ErrorMessage line={ln} />
-                    ) : ln.kind === "status" ? (
-                      <StatusMessage line={ln} />
-                    ) : ln.kind === "command" ? (
-                      <CommandMessage line={ln} />
-                    ) : ln.kind === "bash_command" ? (
-                      <BashCommandMessage line={ln} />
-                    ) : null}
-                  </Box>
-                ))}
+                {liveItems.map((ln) => {
+                  // Check if this tool call matches the current ExitPlanMode approval
+                  const isExitPlanModeApproval =
+                    ln.kind === "tool_call" &&
+                    currentApproval?.toolName === "ExitPlanMode" &&
+                    ln.toolCallId === currentApproval?.toolCallId;
+
+                  // Check if this tool call matches a file edit/write/patch approval
+                  const isFileEditApproval =
+                    ln.kind === "tool_call" &&
+                    currentApproval &&
+                    (isFileEditTool(currentApproval.toolName) ||
+                      isFileWriteTool(currentApproval.toolName) ||
+                      isPatchTool(currentApproval.toolName)) &&
+                    ln.toolCallId === currentApproval.toolCallId;
+
+                  // Check if this tool call matches a bash/shell approval
+                  const isBashApproval =
+                    ln.kind === "tool_call" &&
+                    currentApproval &&
+                    isShellTool(currentApproval.toolName) &&
+                    ln.toolCallId === currentApproval.toolCallId;
+
+                  // Check if this tool call matches an EnterPlanMode approval
+                  const isEnterPlanModeApproval =
+                    ln.kind === "tool_call" &&
+                    currentApproval?.toolName === "EnterPlanMode" &&
+                    ln.toolCallId === currentApproval?.toolCallId;
+
+                  // Check if this tool call matches an AskUserQuestion approval
+                  const isAskUserQuestionApproval =
+                    ln.kind === "tool_call" &&
+                    currentApproval?.toolName === "AskUserQuestion" &&
+                    ln.toolCallId === currentApproval?.toolCallId;
+
+                  // Check if this tool call matches a Task tool approval
+                  const isTaskToolApproval =
+                    ln.kind === "tool_call" &&
+                    currentApproval &&
+                    isTaskTool(currentApproval.toolName) &&
+                    ln.toolCallId === currentApproval.toolCallId;
+
+                  // Parse file edit info from approval args
+                  const getFileEditInfo = () => {
+                    if (!isFileEditApproval || !currentApproval) return null;
+                    try {
+                      const args = JSON.parse(currentApproval.toolArgs || "{}");
+
+                      // For patch tools, use the input field
+                      if (isPatchTool(currentApproval.toolName)) {
+                        return {
+                          toolName: currentApproval.toolName,
+                          filePath: "", // Patch can have multiple files
+                          patchInput: args.input as string | undefined,
+                          toolCallId: ln.toolCallId,
+                        };
+                      }
+
+                      // For regular file edit/write tools
+                      return {
+                        toolName: currentApproval.toolName,
+                        filePath: String(args.file_path || ""),
+                        content: args.content as string | undefined,
+                        oldString: args.old_string as string | undefined,
+                        newString: args.new_string as string | undefined,
+                        replaceAll: args.replace_all as boolean | undefined,
+                        edits: args.edits as
+                          | Array<{
+                              old_string: string;
+                              new_string: string;
+                              replace_all?: boolean;
+                            }>
+                          | undefined,
+                        toolCallId: ln.toolCallId,
+                      };
+                    } catch {
+                      return null;
+                    }
+                  };
+
+                  const fileEditInfo = getFileEditInfo();
+
+                  // Parse bash info from approval args
+                  const getBashInfo = () => {
+                    if (!isBashApproval || !currentApproval) return null;
+                    try {
+                      const args = JSON.parse(currentApproval.toolArgs || "{}");
+                      const t = currentApproval.toolName.toLowerCase();
+
+                      // Handle different bash tool arg formats
+                      let command = "";
+                      let description = "";
+
+                      if (t === "shell") {
+                        // Shell tool uses command array and justification
+                        const cmdVal = args.command;
+                        command = Array.isArray(cmdVal)
+                          ? cmdVal.join(" ")
+                          : typeof cmdVal === "string"
+                            ? cmdVal
+                            : "(no command)";
+                        description =
+                          typeof args.justification === "string"
+                            ? args.justification
+                            : "";
+                      } else {
+                        // Bash/shell_command uses command string and description
+                        command =
+                          typeof args.command === "string"
+                            ? args.command
+                            : "(no command)";
+                        description =
+                          typeof args.description === "string"
+                            ? args.description
+                            : "";
+                      }
+
+                      return {
+                        toolName: currentApproval.toolName,
+                        command,
+                        description,
+                      };
+                    } catch {
+                      return null;
+                    }
+                  };
+
+                  const bashInfo = getBashInfo();
+
+                  // Parse Task tool info from approval args
+                  const getTaskInfo = () => {
+                    if (!isTaskToolApproval || !currentApproval) return null;
+                    try {
+                      const args = JSON.parse(currentApproval.toolArgs || "{}");
+                      return {
+                        subagentType:
+                          typeof args.subagent_type === "string"
+                            ? args.subagent_type
+                            : "unknown",
+                        description:
+                          typeof args.description === "string"
+                            ? args.description
+                            : "(no description)",
+                        prompt:
+                          typeof args.prompt === "string"
+                            ? args.prompt
+                            : "(no prompt)",
+                        model:
+                          typeof args.model === "string"
+                            ? args.model
+                            : undefined,
+                      };
+                    } catch {
+                      return null;
+                    }
+                  };
+
+                  const taskInfo = getTaskInfo();
+
+                  return (
+                    <Box key={ln.id} flexDirection="column" marginTop={1}>
+                      {/* For ExitPlanMode awaiting approval: render StaticPlanApproval */}
+                      {/* Plan preview is eagerly committed to staticItems, so this only shows options */}
+                      {isExitPlanModeApproval ? (
+                        <StaticPlanApproval
+                          onApprove={() => handlePlanApprove(false)}
+                          onApproveAndAcceptEdits={() =>
+                            handlePlanApprove(true)
+                          }
+                          onKeepPlanning={handlePlanKeepPlanning}
+                          isFocused={true}
+                        />
+                      ) : isFileEditApproval && fileEditInfo ? (
+                        <InlineFileEditApproval
+                          fileEdit={fileEditInfo}
+                          precomputedDiff={
+                            ln.toolCallId
+                              ? precomputedDiffsRef.current.get(ln.toolCallId)
+                              : undefined
+                          }
+                          allDiffs={precomputedDiffsRef.current}
+                          onApprove={(diffs) => handleApproveCurrent(diffs)}
+                          onApproveAlways={(scope, diffs) =>
+                            handleApproveAlways(scope, diffs)
+                          }
+                          onDeny={(reason) => handleDenyCurrent(reason)}
+                          onCancel={handleCancelApprovals}
+                          isFocused={true}
+                          approveAlwaysText={
+                            currentApprovalContext?.approveAlwaysText
+                          }
+                          allowPersistence={
+                            currentApprovalContext?.allowPersistence ?? true
+                          }
+                        />
+                      ) : isBashApproval && bashInfo ? (
+                        <InlineBashApproval
+                          bashInfo={bashInfo}
+                          onApprove={() => handleApproveCurrent()}
+                          onApproveAlways={(scope) =>
+                            handleApproveAlways(scope)
+                          }
+                          onDeny={(reason) => handleDenyCurrent(reason)}
+                          onCancel={handleCancelApprovals}
+                          isFocused={true}
+                          approveAlwaysText={
+                            currentApprovalContext?.approveAlwaysText
+                          }
+                          allowPersistence={
+                            currentApprovalContext?.allowPersistence ?? true
+                          }
+                        />
+                      ) : isEnterPlanModeApproval ? (
+                        <InlineEnterPlanModeApproval
+                          onApprove={handleEnterPlanModeApprove}
+                          onReject={handleEnterPlanModeReject}
+                          isFocused={true}
+                        />
+                      ) : isAskUserQuestionApproval ? (
+                        <InlineQuestionApproval
+                          questions={getQuestionsFromApproval(currentApproval)}
+                          onSubmit={handleQuestionSubmit}
+                          onCancel={handleCancelApprovals}
+                          isFocused={true}
+                        />
+                      ) : isTaskToolApproval && taskInfo ? (
+                        <InlineTaskApproval
+                          taskInfo={taskInfo}
+                          onApprove={() => handleApproveCurrent()}
+                          onApproveAlways={(scope) =>
+                            handleApproveAlways(scope)
+                          }
+                          onDeny={(reason) => handleDenyCurrent(reason)}
+                          onCancel={handleCancelApprovals}
+                          isFocused={true}
+                          approveAlwaysText={
+                            currentApprovalContext?.approveAlwaysText
+                          }
+                          allowPersistence={
+                            currentApprovalContext?.allowPersistence ?? true
+                          }
+                        />
+                      ) : ln.kind === "tool_call" &&
+                        currentApproval &&
+                        ln.toolCallId === currentApproval.toolCallId ? (
+                        // Generic fallback for any other tool needing approval
+                        <InlineGenericApproval
+                          toolName={currentApproval.toolName}
+                          toolArgs={currentApproval.toolArgs}
+                          onApprove={() => handleApproveCurrent()}
+                          onApproveAlways={(scope) =>
+                            handleApproveAlways(scope)
+                          }
+                          onDeny={(reason) => handleDenyCurrent(reason)}
+                          onCancel={handleCancelApprovals}
+                          isFocused={true}
+                          approveAlwaysText={
+                            currentApprovalContext?.approveAlwaysText
+                          }
+                          allowPersistence={
+                            currentApprovalContext?.allowPersistence ?? true
+                          }
+                        />
+                      ) : ln.kind === "user" ? (
+                        <UserMessage line={ln} />
+                      ) : ln.kind === "reasoning" ? (
+                        <ReasoningMessage line={ln} />
+                      ) : ln.kind === "assistant" ? (
+                        <AssistantMessage line={ln} />
+                      ) : ln.kind === "tool_call" &&
+                        ln.toolCallId &&
+                        queuedIds.has(ln.toolCallId) ? (
+                        // Render stub for queued (decided but not executed) approval
+                        <PendingApprovalStub
+                          toolName={
+                            approvalMap.get(ln.toolCallId)?.toolName ||
+                            ln.name ||
+                            "Unknown"
+                          }
+                          description={stubDescriptions.get(ln.toolCallId)}
+                          decision={queuedDecisions.get(ln.toolCallId)}
+                        />
+                      ) : ln.kind === "tool_call" &&
+                        ln.toolCallId &&
+                        pendingIds.has(ln.toolCallId) ? (
+                        // Render stub for pending (undecided) approval
+                        <PendingApprovalStub
+                          toolName={
+                            approvalMap.get(ln.toolCallId)?.toolName ||
+                            ln.name ||
+                            "Unknown"
+                          }
+                          description={stubDescriptions.get(ln.toolCallId)}
+                        />
+                      ) : ln.kind === "tool_call" ? (
+                        <ToolCallMessage
+                          line={ln}
+                          precomputedDiffs={precomputedDiffsRef.current}
+                          lastPlanFilePath={lastPlanFilePathRef.current}
+                        />
+                      ) : ln.kind === "error" ? (
+                        <ErrorMessage line={ln} />
+                      ) : ln.kind === "status" ? (
+                        <StatusMessage line={ln} />
+                      ) : ln.kind === "command" ? (
+                        <CommandMessage line={ln} />
+                      ) : ln.kind === "bash_command" ? (
+                        <BashCommandMessage line={ln} />
+                      ) : null}
+                    </Box>
+                  );
+                })}
               </Box>
             )}
 
@@ -5534,7 +6867,7 @@ Plan file path: ${planFilePath}`;
             )}
 
             {/* Input row - always mounted to preserve state */}
-            <Box marginTop={liveItems.length > 0 ? 0 : 1}>
+            <Box marginTop={1}>
               <Input
                 visible={
                   !showExitStats &&
@@ -5562,6 +6895,10 @@ Plan file path: ${planFilePath}`;
                 onEscapeCancel={
                   profileConfirmPending ? handleProfileEscapeCancel : undefined
                 }
+                ralphActive={uiRalphActive}
+                ralphPending={pendingRalphConfig !== null}
+                ralphPendingYolo={pendingRalphConfig?.isYolo ?? false}
+                onRalphExit={handleRalphExit}
               />
             </Box>
 
@@ -5779,57 +7116,12 @@ Plan file path: ${planFilePath}`;
               />
             )}
 
-            {/* Plan Mode Dialog - for ExitPlanMode tool */}
-            {currentApproval?.toolName === "ExitPlanMode" && (
-              <PlanModeDialog
-                plan={readPlanFile()}
-                onApprove={() => handlePlanApprove(false)}
-                onApproveAndAcceptEdits={() => handlePlanApprove(true)}
-                onKeepPlanning={handlePlanKeepPlanning}
-              />
-            )}
+            {/* Plan Mode Dialog - NOW RENDERED INLINE with tool call (see liveItems above) */}
+            {/* ExitPlanMode approval is handled by InlinePlanApproval component */}
 
-            {/* Question Dialog - for AskUserQuestion tool */}
-            {currentApproval?.toolName === "AskUserQuestion" && (
-              <QuestionDialog
-                questions={getQuestionsFromApproval(currentApproval)}
-                onSubmit={handleQuestionSubmit}
-              />
-            )}
-
-            {/* Enter Plan Mode Dialog - for EnterPlanMode tool */}
-            {currentApproval?.toolName === "EnterPlanMode" && (
-              <EnterPlanModeDialog
-                onApprove={handleEnterPlanModeApprove}
-                onReject={handleEnterPlanModeReject}
-              />
-            )}
-
-            {/* Approval Dialog - for standard tools (not fancy UI tools) */}
-            {currentApproval && !isFancyUITool(currentApproval.toolName) && (
-              <ApprovalDialog
-                approvals={[currentApproval]}
-                approvalContexts={
-                  approvalContexts[approvalResults.length]
-                    ? [
-                        approvalContexts[
-                          approvalResults.length
-                        ] as ApprovalContext,
-                      ]
-                    : []
-                }
-                progress={{
-                  current: approvalResults.length + 1,
-                  total: pendingApprovals.length,
-                }}
-                totalTools={autoHandledResults.length + pendingApprovals.length}
-                isExecuting={isExecutingTool}
-                onApproveAll={handleApproveCurrent}
-                onApproveAlways={handleApproveAlways}
-                onDenyAll={handleDenyCurrent}
-                onCancel={handleCancelApprovals}
-              />
-            )}
+            {/* AskUserQuestion now rendered inline via InlineQuestionApproval */}
+            {/* EnterPlanMode now rendered inline in liveItems above */}
+            {/* ApprovalDialog removed - all approvals now render inline via InlineGenericApproval fallback */}
           </>
         )}
       </Box>

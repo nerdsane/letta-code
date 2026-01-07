@@ -14,6 +14,7 @@ import {
 import type { PermissionMode } from "../../permissions/mode";
 import { permissionMode } from "../../permissions/mode";
 import { ANTHROPIC_PROVIDER_NAME } from "../../providers/anthropic-provider";
+import { ralphMode } from "../../ralph/mode";
 import { settingsManager } from "../../settings-manager";
 import { charsToTokens, formatCompact } from "../helpers/format";
 import { useTerminalWidth } from "../hooks/useTerminalWidth";
@@ -56,6 +57,10 @@ export function Input({
   messageQueue,
   onEnterQueueEditMode,
   onEscapeCancel,
+  ralphActive = false,
+  ralphPending = false,
+  ralphPendingYolo = false,
+  onRalphExit,
 }: {
   visible?: boolean;
   streaming: boolean;
@@ -75,6 +80,10 @@ export function Input({
   messageQueue?: string[];
   onEnterQueueEditMode?: () => void;
   onEscapeCancel?: () => void;
+  ralphActive?: boolean;
+  ralphPending?: boolean;
+  ralphPendingYolo?: boolean;
+  onRalphExit?: () => void;
 }) {
   const [value, setValue] = useState("");
   const [escapePressed, setEscapePressed] = useState(false);
@@ -173,6 +182,13 @@ export function Input({
   // Handle escape key for interrupt (when streaming) or double-escape-to-clear (when not)
   useInput((_input, key) => {
     if (!visible) return;
+    // Debug logging for escape key detection
+    if (process.env.LETTA_DEBUG_KEYS === "1" && key.escape) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[debug:InputRich:escape] escape=${key.escape} visible=${visible} onEscapeCancel=${!!onEscapeCancel} streaming=${streaming}`,
+      );
+    }
     // Skip if onEscapeCancel is provided - handled by the confirmation handler above
     if (onEscapeCancel) return;
 
@@ -229,10 +245,23 @@ export function Input({
   // Note: bash mode entry/exit is implemented inside PasteAwareTextInput so we can
   // consume the keystroke before it renders (no flicker).
 
-  // Handle Shift+Tab for permission mode cycling
+  // Handle Shift+Tab for permission mode cycling (or ralph mode exit)
   useInput((_input, key) => {
     if (!visible) return;
+    // Debug logging for shift+tab detection
+    if (process.env.LETTA_DEBUG_KEYS === "1" && (key.shift || key.tab)) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[debug:InputRich] shift=${key.shift} tab=${key.tab} visible=${visible}`,
+      );
+    }
     if (key.shift && key.tab) {
+      // If ralph mode is active, exit it first (goes to default mode)
+      if (ralphActive && onRalphExit) {
+        onRalphExit();
+        return;
+      }
+
       // Cycle through permission modes
       const modes: PermissionMode[] = [
         "default",
@@ -476,7 +505,7 @@ export function Input({
       setTemporaryInput("");
 
       setValue(""); // Clear immediately for responsiveness
-      // Stay in bash mode after submitting (don't exit)
+      setIsBashMode(false); // Exit bash mode after submitting
       if (onBashSubmit) {
         await onBashSubmit(previousValue);
       }
@@ -556,8 +585,43 @@ export function Input({
     setCursorPos(selectedCommand.length);
   };
 
-  // Get display name and color for permission mode
+  // Get display name and color for permission mode (ralph modes take precedence)
   const getModeInfo = () => {
+    // Check ralph pending first (waiting for task input)
+    if (ralphPending) {
+      if (ralphPendingYolo) {
+        return {
+          name: "yolo-ralph (waiting)",
+          color: "#FF8C00", // dark orange
+        };
+      }
+      return {
+        name: "ralph (waiting)",
+        color: "#FEE19C", // yellow (brandColors.statusWarning)
+      };
+    }
+
+    // Check ralph mode active (using prop for reactivity)
+    if (ralphActive) {
+      const ralph = ralphMode.getState();
+      const iterDisplay =
+        ralph.maxIterations > 0
+          ? `${ralph.currentIteration}/${ralph.maxIterations}`
+          : `${ralph.currentIteration}`;
+
+      if (ralph.isYolo) {
+        return {
+          name: `yolo-ralph (iter ${iterDisplay})`,
+          color: "#FF8C00", // dark orange
+        };
+      }
+      return {
+        name: `ralph (iter ${iterDisplay})`,
+        color: "#FEE19C", // yellow (brandColors.statusWarning)
+      };
+    }
+
+    // Fall through to permission modes
     switch (currentMode) {
       case "acceptEdits":
         return { name: "accept edits", color: colors.status.processing };
@@ -583,6 +647,7 @@ export function Input({
   const elapsedMinutes = Math.floor(elapsedMs / 60000);
 
   // Build the status hint text (esc to interrupt · 2m · 1.2k ↑)
+  // In ralph mode, also show "shift+tab to exit"
   const statusHintText = (() => {
     const hintColor = chalk.hex(colors.subagent.hint);
     const hintBold = hintColor.bold;
@@ -702,7 +767,7 @@ export function Input({
               <Text color={modeInfo.color}>⏵⏵ {modeInfo.name}</Text>
               <Text color={modeInfo.color} dimColor>
                 {" "}
-                (shift+tab to cycle)
+                (shift+tab to {ralphActive || ralphPending ? "exit" : "cycle"})
               </Text>
             </Text>
           ) : (

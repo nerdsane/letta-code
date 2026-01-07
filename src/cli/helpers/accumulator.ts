@@ -82,6 +82,8 @@ export type Buffers = {
   lastOtid: string | null; // Track the last otid to detect transitions
   pendingRefresh?: boolean; // Track throttled refresh state
   interrupted?: boolean; // Track if stream was interrupted by user (skip stale refreshes)
+  commitGeneration?: number; // Incremented when resuming from error to invalidate pending refreshes
+  abortGeneration?: number; // Incremented on each interrupt to detect cancellation across async boundaries
   usage: {
     promptTokens: number;
     completionTokens: number;
@@ -107,6 +109,8 @@ export function createBuffers(): Buffers {
     pendingToolByRun: new Map(),
     toolCallIdToLineId: new Map(),
     lastOtid: null,
+    commitGeneration: 0,
+    abortGeneration: 0,
     usage: {
       promptTokens: 0,
       completionTokens: 0,
@@ -193,11 +197,21 @@ export function markCurrentLineAsFinished(b: Buffers) {
 /**
  * Mark any incomplete tool calls as cancelled when stream is interrupted.
  * This prevents blinking tool calls from staying in progress state.
+ * @param b - The buffers object
+ * @param setInterruptedFlag - Whether to set the interrupted flag (default true).
+ *   Pass false when clearing stale tool calls at stream startup to avoid race conditions
+ *   with concurrent processConversation calls reading the flag.
  * @returns true if any tool calls were marked as cancelled
  */
-export function markIncompleteToolsAsCancelled(b: Buffers): boolean {
+export function markIncompleteToolsAsCancelled(
+  b: Buffers,
+  setInterruptedFlag = true,
+): boolean {
   // Mark buffer as interrupted to skip stale throttled refreshes
-  b.interrupted = true;
+  // (only when actually interrupting, not when clearing stale state at startup)
+  if (setInterruptedFlag) {
+    b.interrupted = true;
+  }
 
   let anyToolsCancelled = false;
   for (const [id, line] of b.byId.entries()) {
@@ -242,6 +256,13 @@ function extractTextPart(v: unknown): string {
 
 // Feed one SDK chunk; mutate buffers in place.
 export function onChunk(b: Buffers, chunk: LettaStreamingResponseWithCosts) {
+  // Skip processing if stream was interrupted mid-turn. handleInterrupt already
+  // rendered the cancellation state, so we should ignore any buffered chunks
+  // that arrive before drainStream exits.
+  if (b.interrupted) {
+    return;
+  }
+
   // TODO remove once SDK v1 has proper typing for in-stream errors
   // Check for streaming error objects (not typed in SDK but emitted by backend)
   // Note: Error handling moved to catch blocks in App.tsx and headless.ts
@@ -411,6 +432,8 @@ export function onChunk(b: Buffers, chunk: LettaStreamingResponseWithCosts) {
           argsText: (line.argsText || "") + argsText,
         };
         b.byId.set(id, updatedLine);
+        // Count tool call arguments as LLM output tokens
+        b.tokenCount += argsText.length;
       }
       break;
     }
@@ -436,12 +459,19 @@ export function onChunk(b: Buffers, chunk: LettaStreamingResponseWithCosts) {
       for (const toolReturn of toolReturns) {
         const toolCallId = toolReturn.tool_call_id;
         // Handle both func_response (streaming) and tool_return (SDK) properties
-        const resultText =
+        const rawResult =
           ("func_response" in toolReturn
             ? toolReturn.func_response
             : undefined) ||
-          ("tool_return" in toolReturn ? toolReturn.tool_return : undefined) ||
-          "";
+          ("tool_return" in toolReturn ? toolReturn.tool_return : undefined);
+
+        // Ensure resultText is always a string (guard against SDK returning objects)
+        const resultText =
+          typeof rawResult === "string"
+            ? rawResult
+            : rawResult != null
+              ? JSON.stringify(rawResult)
+              : "";
         const status = toolReturn.status;
 
         // Look up the line by toolCallId
