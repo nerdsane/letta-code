@@ -34553,10 +34553,15 @@ const interactions = get_canvas_interactions()
 if (interactions[0]?.interactionType === "story_read_request") {
   const { story } = interactions[0].data;
 
-  // Generate a cover image for the story
-  const coverImage = await image_generator({ prompt: "..." });
+  // Generate a cover image for the story (save_as_asset: true)
+  const imageResult = await image_generator({
+    prompt: "...",
+    save_as_asset: true,
+    story_id: story.id
+  });
+  // imageResult.asset.path will be like "story-123/img_1234.png"
 
-  // Compose fullscreen experience
+  // Compose fullscreen experience - use /api/assets/ prefix for image URLs
   canvas_ui({
     mode: "fullscreen",
     target: "story-experience",
@@ -34566,7 +34571,7 @@ if (interactions[0]?.interactionType === "story_read_request") {
         { type: "ProgressBar", props: { position: "top" } },
         { type: "Hero", props: {
           title: story.metadata.title,
-          backgroundImage: coverImage,
+          backgroundImage: \`/api/assets/\${imageResult.asset.path}\`,  // IMPORTANT: /api/assets/ prefix
           badge: "Chapter 1"
         }},
         // Story segments with scroll animations
@@ -34637,7 +34642,7 @@ Full-viewport introduction with parallax background.
   props: {
     title: "The Resonance",
     subtitle: "In a world where emotions became visible...",
-    backgroundImage: "/assets/worlds/resonance/cover.png",
+    backgroundImage: "/api/assets/worlds/resonance/cover.png",
     badge: "Affective Resonance",
     meta: ["Chapter 3", "12 min read"],
     height: "full",  // "full", "large", "medium"
@@ -34770,8 +34775,11 @@ canvas_ui({
 
 ### Image
 \`\`\`typescript
-{ type: "Image", props: { src: "...", alt: "...", caption: "...", size: "full", lightbox: true } }
+// Use /api/assets/ prefix for saved asset paths
+{ type: "Image", props: { src: \`/api/assets/\${asset.path}\`, alt: "Scene description", caption: "The observation deck", size: "full", lightbox: true } }
 \`\`\`
+
+**IMPORTANT: Image URLs must use \`/api/assets/\` prefix.** When you generate an image with \`save_as_asset: true\`, the result includes \`asset.path\` (e.g., \`story-123/img_456.png\`). Construct the full URL as \`/api/assets/\${asset.path}\`.
 
 ### Gallery
 \`\`\`typescript
@@ -82084,4 +82092,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=F1CE3B9EEF63695264756E2164756E21
+//# debugId=17A2C660A37D086764756E2164756E21
