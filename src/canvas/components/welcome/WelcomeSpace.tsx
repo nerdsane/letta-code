@@ -66,18 +66,12 @@ export function WelcomeSpace({
     ? `You have ${activeStories.length} stor${activeStories.length === 1 ? 'y' : 'ies'} in progress`
     : 'Ready to explore new worlds?';
 
-  // Build actions
+  // Build actions (removed "explore-worlds" - world grid visible below)
   const actions = [
     ...(recentStories.length > 0 ? [{
       id: 'continue-recent',
       label: `Continue "${recentStories[0].metadata.title}"`,
       variant: 'primary' as const,
-    }] : []),
-    ...(worlds.length > 0 ? [{
-      id: 'explore-worlds',
-      label: 'Explore worlds',
-      description: `${worlds.length} world${worlds.length === 1 ? '' : 's'} available`,
-      variant: 'branch' as const,
     }] : []),
     ...(onStartNewWorld ? [{
       id: 'new-world',
@@ -88,7 +82,7 @@ export function WelcomeSpace({
 
   return (
     <div className="welcome-space">
-      {/* Hero Section */}
+      {/* Hero Section - Compact for content-first design */}
       <Hero
         title={greeting}
         subtitle={subtitle}
@@ -97,9 +91,8 @@ export function WelcomeSpace({
           `${worlds.length} worlds`,
           `${stories.length} stories`,
         ]}
-        height="large"
+        height="compact"
         overlay="gradient"
-        showScrollIndicator={recentStories.length > 0 || worlds.length > 0}
       />
 
       {/* Continue Reading Section */}
@@ -203,8 +196,6 @@ export function WelcomeSpace({
           onAction={(actionId) => {
             if (actionId === 'continue-recent' && recentStories[0]) {
               onSelectStory(recentStories[0]);
-            } else if (actionId === 'explore-worlds' && worlds[0]) {
-              onSelectWorld(worlds[0]);
             } else if (actionId === 'new-world') {
               onStartNewWorld?.();
             }

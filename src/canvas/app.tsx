@@ -59,6 +59,7 @@ interface AppState {
   agentThinking: boolean; // Agent is processing
   agentAction?: string; // What agent is currently doing
   useImmersiveWorld: boolean; // Use immersive WorldSpace view
+  pendingExperience: { storyId: string; spec: any } | null; // Experience ready but not shown
 }
 
 // ============================================================================
@@ -110,6 +111,7 @@ function App() {
     showImmersiveDemo: false,
     agentThinking: false,
     useImmersiveWorld: true, // Default to immersive experience
+    pendingExperience: null, // Immersive experience ready for user to activate
   });
 
   const agentBusRef = useRef<AgentBusClient | null>(null);
@@ -199,7 +201,20 @@ function App() {
   }
 
   function selectStory(story: Story) {
-    // Send interaction to agent requesting immersive story experience
+    // Guard: Don't re-request if already generating for this story
+    if (state.agentThinking && state.selectedStory?.id === story.id) {
+      return;
+    }
+
+    // 1. IMMEDIATELY show static story view (never blocked)
+    setState((s) => ({
+      ...s,
+      view: "story",
+      selectedStory: story,
+      agentThinking: true, // Show subtle indicator that enhancement is coming
+    }));
+
+    // 2. Request immersive experience in BACKGROUND (if connected)
     if (agentBusRef.current && agentBusRef.current.isConnected()) {
       agentBusRef.current.sendInteraction(
         'canvas-story-request',
@@ -208,25 +223,13 @@ function App() {
           storyId: story.id,
           title: story.metadata.title,
           segmentCount: story.segments.length,
-          // Include story data for agent to compose experience
           story: story,
         },
         'story-experience'
       );
-      // Show thinking state while agent composes experience
-      setState((s) => ({
-        ...s,
-        agentThinking: true,
-        selectedStory: story,
-      }));
     } else {
-      // Fallback to static view if agent bus not connected
-      console.warn('[Canvas] Agent Bus not connected, using static story view');
-      setState((s) => ({
-        ...s,
-        view: "story",
-        selectedStory: story,
-      }));
+      // No agent bus, just clear thinking state
+      setState((s) => ({ ...s, agentThinking: false }));
     }
   }
 
@@ -337,13 +340,17 @@ function App() {
     const agentBus = new AgentBusClient({
       onCanvasUI: (componentId, target, action, spec, mode = 'overlay') => {
         setState((s) => {
-          // Handle fullscreen mode - takes over main content
+          // Handle fullscreen mode - store as pending experience (don't auto-switch)
           if (mode === 'fullscreen') {
             if (action === 'remove') {
-              return { ...s, fullscreenUI: null };
-            } else if (spec) {
-              // Clear thinking state when fullscreen experience arrives
-              return { ...s, fullscreenUI: { componentId, spec, mode }, agentThinking: false };
+              return { ...s, fullscreenUI: null, pendingExperience: null };
+            } else if (spec && s.selectedStory) {
+              // Store as pending experience, let user choose to view it
+              return {
+                ...s,
+                pendingExperience: { storyId: s.selectedStory.id, spec },
+                agentThinking: false,
+              };
             }
             return s;
           }
@@ -584,12 +591,31 @@ function App() {
         )}
 
         {state.view === "story" && state.selectedStory && (
-          <StoryView
-            story={state.selectedStory}
-            agentUI={state.agentUI}
-            onInteraction={handleDynamicUIInteraction}
-            onElementAction={handleElementAction}
-          />
+          <>
+            <StoryView
+              story={state.selectedStory}
+              agentUI={state.agentUI}
+              onInteraction={handleDynamicUIInteraction}
+              onElementAction={handleElementAction}
+            />
+            {/* Enhance button - shows when immersive experience is ready */}
+            {state.pendingExperience?.storyId === state.selectedStory.id && (
+              <button
+                className="enhance-experience-btn"
+                onClick={() => setState(s => ({
+                  ...s,
+                  fullscreenUI: {
+                    componentId: 'story-experience',
+                    spec: s.pendingExperience!.spec,
+                    mode: 'fullscreen',
+                  },
+                  pendingExperience: null,
+                }))}
+              >
+                ✨ View Immersive Experience
+              </button>
+            )}
+          </>
         )}
       </main>
 
@@ -1078,7 +1104,7 @@ function MarkdownContent({
         parts.push(
           <img
             key={`${assetId}-${match.index}`}
-            src={`/assets/${asset.path}`}
+            src={`/api/assets/${asset.path}`}
             alt={altText || asset.description || "Story image"}
             className="inline-image"
             style={{ maxWidth: "100%", height: "auto", margin: "1rem 0" }}
@@ -1282,7 +1308,7 @@ function StoryView({
                     <div key={asset.id} className="asset-item">
                       {asset.type === "image" && (
                         <img
-                          src={`/assets/${asset.path}`}
+                          src={`/api/assets/${asset.path}`}
                           alt={asset.description || "Story asset"}
                           className="asset-image"
                         />

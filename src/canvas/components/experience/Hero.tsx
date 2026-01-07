@@ -8,7 +8,7 @@ export interface HeroProps {
   badge?: string;
   meta?: string[];
   showScrollIndicator?: boolean;
-  height?: 'full' | 'large' | 'medium';
+  height?: 'full' | 'large' | 'medium' | 'compact';
   overlay?: 'dark' | 'gradient' | 'none';
   onBadgeClick?: () => void;
   onScrollClick?: () => void;
@@ -50,6 +50,7 @@ export function Hero({
     full: 'exp-hero--full',
     large: 'exp-hero--large',
     medium: 'exp-hero--medium',
+    compact: 'exp-hero--compact',
   }[height];
 
   const handleScrollClick = () => {

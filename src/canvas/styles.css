@@ -2644,3 +2644,40 @@ a:focus-visible {
   background: rgba(0, 255, 204, 0.1);
   border-color: var(--neon-cyan);
 }
+
+/* ============================================================================
+   Enhance Experience Button - Floating CTA for immersive mode
+   ============================================================================ */
+
+.enhance-experience-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(0, 255, 204, 0.2), rgba(0, 255, 255, 0.1));
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.enhance-experience-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 255, 204, 0.3), rgba(0, 255, 255, 0.2));
+  box-shadow: 0 0 30px rgba(0, 255, 204, 0.4);
+  transform: translateY(-2px);
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 255, 204, 0.4);
+  }
+}

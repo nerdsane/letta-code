@@ -20,6 +20,21 @@
 .exp-hero--full { min-height: 100vh; }
 .exp-hero--large { min-height: 80vh; }
 .exp-hero--medium { min-height: 60vh; }
+.exp-hero--compact {
+  min-height: auto;
+  padding: 2rem 0;
+}
+.exp-hero--compact .exp-hero__content {
+  padding: 1rem 2rem;
+}
+.exp-hero--compact .exp-hero__title {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.exp-hero--compact .exp-hero__subtitle {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
 
 .exp-hero__bg {
   position: absolute;
