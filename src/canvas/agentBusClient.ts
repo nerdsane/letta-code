@@ -4,7 +4,7 @@
  * Connects to Agent Bus and handles bidirectional communication
  */
 
-import type { AgentBusMessage, CanvasUIMessage, InteractionMessage, StateChangeMessage } from '../agent-bus/types';
+import type { AgentBusMessage, CanvasUIMessage, InteractionMessage, StateChangeMessage, SuggestionMessage } from '../agent-bus/types';
 import type { ComponentSpec } from './components/types';
 
 export interface AgentUIComponent {
@@ -18,6 +18,7 @@ export interface AgentBusClientOptions {
   url?: string;
   onCanvasUI?: (componentId: string, target: string, action: 'create' | 'update' | 'remove', spec?: ComponentSpec, mode?: 'overlay' | 'fullscreen' | 'inline') => void;
   onStateChange?: (event: StateChangeMessage['event'], data: StateChangeMessage['data']) => void;
+  onSuggestion?: (suggestion: SuggestionMessage['payload']) => void;
   onConnect?: (clientId: string) => void;
   onDisconnect?: () => void;
   onError?: (error: string) => void;
@@ -105,6 +106,10 @@ export class AgentBusClient {
         this.handleStateChange(message);
         break;
 
+      case 'suggestion':
+        this.handleSuggestion(message);
+        break;
+
       case 'error':
         console.error('[Agent Bus Client] Error:', message.error, message.details);
         this.options.onError?.(message.error);
@@ -122,6 +127,12 @@ export class AgentBusClient {
     const { event, data } = message;
     console.log(`[Agent Bus Client] state_change: ${event}`, data);
     this.options.onStateChange?.(event, data);
+  }
+
+  private handleSuggestion(message: SuggestionMessage) {
+    const { payload } = message;
+    console.log(`[Agent Bus Client] suggestion: ${payload.title}`, payload);
+    this.options.onSuggestion?.(payload);
   }
 
   /**

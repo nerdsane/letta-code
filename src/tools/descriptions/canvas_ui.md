@@ -386,3 +386,56 @@ When user clicks, the interaction flows back to you via Agent Bus.
 - No purple, no bright white
 - Monospace fonts for headers
 - Subtle glows and animations
+
+## RawJsx - Wildcard Component
+
+For maximum flexibility, use `RawJsx` to render **any React component**. You write the JSX code directly.
+
+```typescript
+{
+  "type": "RawJsx",
+  "props": {
+    "jsx": "() => { const [count, setCount] = useState(0); return <div style={{ color: colors.teal, padding: '2rem' }}><button style={styles.button} onClick={() => setCount(c => c + 1)}>Clicked {count} times</button></div>; }"
+  }
+}
+```
+
+### Available in Scope
+
+- **React hooks**: `useState`, `useEffect`, `useCallback`, `useRef`, `useMemo`, `memo`
+- **DSF utilities**:
+  - `colors`: `{ teal, cyan, bg, bgSecondary, textPrimary, textSecondary, textTertiary, borderSubtle, borderMedium }`
+  - `styles`: `{ card, heading, text, button, glow(color) }`
+  - `DSF`: Full DSF object with colors and styles
+
+### Example: Custom Interactive Chart
+
+```typescript
+{
+  "type": "RawJsx",
+  "props": {
+    "jsx": "() => { const [active, setActive] = useState(0); const data = [34, 67, 23, 89, 45]; return <div style={{ padding: '2rem', background: colors.bgSecondary }}><div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100px' }}>{data.map((v, i) => <div key={i} onClick={() => setActive(i)} style={{ width: '40px', height: v + '%', background: i === active ? colors.teal : colors.borderMedium, cursor: 'pointer', transition: 'all 0.2s' }} />)}</div><p style={styles.text}>Value: {data[active]}</p></div>; }"
+  }
+}
+```
+
+### Example: Custom Story Reveal Animation
+
+```typescript
+{
+  "type": "RawJsx",
+  "props": {
+    "jsx": "() => { const [revealed, setRevealed] = useState(false); return <div style={{ padding: '3rem', textAlign: 'center' }}><h2 style={{ ...styles.heading, opacity: revealed ? 1 : 0, transform: revealed ? 'none' : 'translateY(20px)', transition: 'all 0.8s ease' }}>The Truth Was Hidden</h2><button style={styles.button} onClick={() => setRevealed(true)}>{revealed ? 'Continue...' : 'Reveal'}</button></div>; }"
+  }
+}
+```
+
+### When to Use RawJsx
+
+Use `RawJsx` when you need:
+- Custom interactive visualizations
+- Animations not covered by built-in components
+- Novel UI patterns for storytelling
+- Experimental layouts
+
+**Prefer typed components** (Hero, ScrollSection, etc.) for standard patterns - they're more reliable and consistent. Use RawJsx for the unique, creative moments that need custom behavior.

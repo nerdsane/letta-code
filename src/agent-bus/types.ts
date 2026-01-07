@@ -68,6 +68,22 @@ export interface ErrorMessage {
 }
 
 /**
+ * Agent → Canvas: Proactive suggestion
+ */
+export interface SuggestionMessage {
+  type: 'suggestion';
+  payload: {
+    id: string;
+    priority: 'high' | 'medium' | 'low';
+    title: string;
+    description: string; // Full text, never truncated
+    actionId: string;
+    actionLabel?: string;
+    actionData?: any;
+  };
+}
+
+/**
  * Union of all message types
  */
 export type AgentBusMessage =
@@ -75,7 +91,8 @@ export type AgentBusMessage =
   | InteractionMessage
   | StateChangeMessage
   | ConnectionMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | SuggestionMessage;
 
 // ============================================================================
 // Client Connection Info

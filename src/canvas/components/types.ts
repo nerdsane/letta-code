@@ -229,6 +229,17 @@ export interface ActionBarSpec extends BaseComponentSpec {
   };
 }
 
+// ============================================================================
+// Wildcard Component - Full JSX execution
+// ============================================================================
+
+export interface RawJsxSpec extends BaseComponentSpec {
+  type: 'RawJsx';
+  props: {
+    jsx: string; // JSX code to render (function component)
+  };
+}
+
 export type ComponentSpec =
   | DialogSpec
   | ButtonSpec
@@ -246,7 +257,8 @@ export type ComponentSpec =
   | HeroSpec
   | ScrollSectionSpec
   | ProgressBarSpec
-  | ActionBarSpec;
+  | ActionBarSpec
+  | RawJsxSpec;
 
 export interface CanvasState {
   rootComponent: ComponentSpec | null;

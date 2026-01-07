@@ -3257,6 +3257,7 @@ var init_package = __esm(() => {
       access: "public"
     },
     dependencies: {
+      "@babel/standalone": "^7.28.5",
       "@google/generative-ai": "^0.24.1",
       "@letta-ai/letta-client": "1.6.1",
       "@radix-ui/react-dialog": "^1.1.15",
@@ -34837,6 +34838,59 @@ When user clicks, the interaction flows back to you via Agent Bus.
 - No purple, no bright white
 - Monospace fonts for headers
 - Subtle glows and animations
+
+## RawJsx - Wildcard Component
+
+For maximum flexibility, use \`RawJsx\` to render **any React component**. You write the JSX code directly.
+
+\`\`\`typescript
+{
+  "type": "RawJsx",
+  "props": {
+    "jsx": "() => { const [count, setCount] = useState(0); return <div style={{ color: colors.teal, padding: '2rem' }}><button style={styles.button} onClick={() => setCount(c => c + 1)}>Clicked {count} times</button></div>; }"
+  }
+}
+\`\`\`
+
+### Available in Scope
+
+- **React hooks**: \`useState\`, \`useEffect\`, \`useCallback\`, \`useRef\`, \`useMemo\`, \`memo\`
+- **DSF utilities**:
+  - \`colors\`: \`{ teal, cyan, bg, bgSecondary, textPrimary, textSecondary, textTertiary, borderSubtle, borderMedium }\`
+  - \`styles\`: \`{ card, heading, text, button, glow(color) }\`
+  - \`DSF\`: Full DSF object with colors and styles
+
+### Example: Custom Interactive Chart
+
+\`\`\`typescript
+{
+  "type": "RawJsx",
+  "props": {
+    "jsx": "() => { const [active, setActive] = useState(0); const data = [34, 67, 23, 89, 45]; return <div style={{ padding: '2rem', background: colors.bgSecondary }}><div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100px' }}>{data.map((v, i) => <div key={i} onClick={() => setActive(i)} style={{ width: '40px', height: v + '%', background: i === active ? colors.teal : colors.borderMedium, cursor: 'pointer', transition: 'all 0.2s' }} />)}</div><p style={styles.text}>Value: {data[active]}</p></div>; }"
+  }
+}
+\`\`\`
+
+### Example: Custom Story Reveal Animation
+
+\`\`\`typescript
+{
+  "type": "RawJsx",
+  "props": {
+    "jsx": "() => { const [revealed, setRevealed] = useState(false); return <div style={{ padding: '3rem', textAlign: 'center' }}><h2 style={{ ...styles.heading, opacity: revealed ? 1 : 0, transform: revealed ? 'none' : 'translateY(20px)', transition: 'all 0.8s ease' }}>The Truth Was Hidden</h2><button style={styles.button} onClick={() => setRevealed(true)}>{revealed ? 'Continue...' : 'Reveal'}</button></div>; }"
+  }
+}
+\`\`\`
+
+### When to Use RawJsx
+
+Use \`RawJsx\` when you need:
+- Custom interactive visualizations
+- Animations not covered by built-in components
+- Novel UI patterns for storytelling
+- Experimental layouts
+
+**Prefer typed components** (Hero, ScrollSection, etc.) for standard patterns - they're more reliable and consistent. Use RawJsx for the unique, creative moments that need custom behavior.
 `;
 var init_canvas_ui = () => {};
 
@@ -34906,6 +34960,65 @@ if (interactions.length > 0) {
 - Reading clears the queue unless \`peek: true\`
 `;
 var init_get_canvas_interactions = () => {};
+
+// src/tools/descriptions/send_suggestion.md
+var send_suggestion_default = `Send a proactive suggestion to the canvas UI. Use this to offer contextual suggestions to the user.
+
+## When to Use
+
+Send suggestions when you notice opportunities:
+- After generating content: suggest related follow-up actions
+- When detecting unused elements: suggest incorporating them
+- Based on current context: suggest next steps
+- When you have ideas that might help the user
+
+## Examples
+
+### Suggest exploring an unused world rule
+\`\`\`json
+{
+  "title": "Unexplored Rule",
+  "description": "The rule 'Quantum mechanics allows consciousness transfer between bodies' hasn't been tested in any story yet. This could create interesting dramatic tension - what happens when someone's consciousness is transferred against their will?",
+  "priority": "medium",
+  "action_id": "test_rule_in_story",
+  "action_label": "Test in story",
+  "action_data": { "rule_id": "qm-consciousness-001" }
+}
+\`\`\`
+
+### Suggest continuing a story
+\`\`\`json
+{
+  "title": "Story Continuation",
+  "description": "The last segment ended with Maya discovering the hidden laboratory. Several story threads are open: the mysterious signal, Dr. Chen's warning, and the locked door. Continuing now would maintain narrative momentum.",
+  "priority": "high",
+  "action_id": "continue_story",
+  "action_label": "Continue writing",
+  "action_data": { "story_id": "story-123", "segment_id": "seg-456" }
+}
+\`\`\`
+
+### Suggest developing a character
+\`\`\`json
+{
+  "title": "Character Development",
+  "description": "Dr. Elara Chen has appeared in 3 segments but her motivations remain unclear. Developing her backstory could add depth - why did she leave the corporation? What does she know about the signal?",
+  "priority": "low",
+  "action_id": "develop_character",
+  "action_label": "Develop character",
+  "action_data": { "character_id": "char-elara" }
+}
+\`\`\`
+
+## Guidelines
+
+1. **Be specific**: Include enough context for the user to understand the value
+2. **Don't spam**: Send 1-3 suggestions at a time, not a flood
+3. **Be actionable**: Each suggestion should lead to a clear next step
+4. **Priority matters**: Use high sparingly (only for time-sensitive or critical suggestions)
+5. **Full descriptions**: Never truncate - users need full context to decide
+`;
+var init_send_suggestion = () => {};
 
 // src/tools/descriptions/WriteFileGemini.md
 var WriteFileGemini_default = `Writes content to a specified file in the local filesystem.
@@ -47866,6 +47979,85 @@ var init_get_canvas_interactions2 = __esm(() => {
   init_canvas_ui2();
 });
 
+// src/tools/impl/send_suggestion.ts
+function ensureAgentBusConnection2() {
+  return new Promise((resolve11, reject) => {
+    if (agentBusWs2 && agentBusWs2.readyState === WebSocket.OPEN) {
+      resolve11(agentBusWs2);
+      return;
+    }
+    if (isConnecting2) {
+      pendingCallbacks2.push({ resolve: resolve11, reject });
+      return;
+    }
+    isConnecting2 = true;
+    const ws = new WebSocket(AGENT_BUS_URL2);
+    ws.onopen = () => {
+      console.log("[send_suggestion] Connected to Agent Bus");
+      isConnecting2 = false;
+      agentBusWs2 = ws;
+      resolve11(ws);
+      for (const cb of pendingCallbacks2) {
+        cb.resolve(ws);
+      }
+      pendingCallbacks2 = [];
+    };
+    ws.onerror = (event) => {
+      console.error("[send_suggestion] Agent Bus connection error:", event);
+      isConnecting2 = false;
+      const err = new Error("Failed to connect to Agent Bus");
+      reject(err);
+      for (const cb of pendingCallbacks2) {
+        cb.reject(err);
+      }
+      pendingCallbacks2 = [];
+    };
+    ws.onclose = () => {
+      console.log("[send_suggestion] Agent Bus connection closed");
+      agentBusWs2 = null;
+      isConnecting2 = false;
+    };
+    ws.onmessage = () => {};
+  });
+}
+async function send_suggestion(args) {
+  const { title, description, priority, action_id, action_label, action_data } = args;
+  try {
+    const ws = await ensureAgentBusConnection2();
+    const suggestionId = `sug-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const message = {
+      type: "suggestion",
+      payload: {
+        id: suggestionId,
+        priority,
+        title,
+        description,
+        actionId: action_id,
+        actionLabel: action_label,
+        actionData: action_data
+      }
+    };
+    ws.send(JSON.stringify(message));
+    console.log(`[send_suggestion] Sent suggestion: ${title} (${priority})`);
+    return {
+      toolReturn: `Suggestion "${title}" sent to canvas`,
+      status: "success"
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("[send_suggestion] Error:", errorMsg);
+    return {
+      toolReturn: `Failed to send suggestion: ${errorMsg}`,
+      status: "error"
+    };
+  }
+}
+var AGENT_BUS_URL2, agentBusWs2 = null, isConnecting2 = false, pendingCallbacks2;
+var init_send_suggestion2 = __esm(() => {
+  AGENT_BUS_URL2 = process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
+  pendingCallbacks2 = [];
+});
+
 // src/tools/schemas/ApplyPatch.json
 var ApplyPatch_default2;
 var init_ApplyPatch3 = __esm(() => {
@@ -49246,6 +49438,42 @@ var init_get_canvas_interactions3 = __esm(() => {
   };
 });
 
+// src/tools/schemas/send_suggestion.json
+var send_suggestion_default2;
+var init_send_suggestion3 = __esm(() => {
+  send_suggestion_default2 = {
+    type: "object",
+    properties: {
+      title: {
+        type: "string",
+        description: "Short title for the suggestion (3-5 words)"
+      },
+      description: {
+        type: "string",
+        description: "Full explanation of the suggestion. Never truncate - include all relevant context"
+      },
+      priority: {
+        type: "string",
+        enum: ["high", "medium", "low"],
+        description: "Priority level: high (urgent), medium (helpful), low (optional)"
+      },
+      action_id: {
+        type: "string",
+        description: "Unique identifier for the action (e.g., 'develop_rule', 'continue_story', 'explore_branch')"
+      },
+      action_label: {
+        type: "string",
+        description: "Button text shown to user (e.g., 'Test in story', 'Explore this path')"
+      },
+      action_data: {
+        type: "object",
+        description: "Additional data to pass when user accepts the suggestion"
+      }
+    },
+    required: ["title", "description", "priority", "action_id"]
+  };
+});
+
 // src/tools/toolDefinitions.ts
 var toolDefinitions, TOOL_DEFINITIONS;
 var init_toolDefinitions = __esm(async () => {
@@ -49285,6 +49513,7 @@ var init_toolDefinitions = __esm(async () => {
   init_image_generator();
   init_canvas_ui();
   init_get_canvas_interactions();
+  init_send_suggestion();
   init_WriteFileGemini();
   init_WriteTodosGemini();
   init_ApplyPatch2();
@@ -49320,6 +49549,7 @@ var init_toolDefinitions = __esm(async () => {
   init_image_generator2();
   init_canvas_ui2();
   init_get_canvas_interactions2();
+  init_send_suggestion2();
   init_ApplyPatch3();
   init_AskUserQuestion3();
   init_Bash3();
@@ -49358,6 +49588,7 @@ var init_toolDefinitions = __esm(async () => {
   init_image_generator3();
   init_canvas_ui3();
   init_get_canvas_interactions3();
+  init_send_suggestion3();
   await __promiseAll([
     init_Skill2(),
     init_Task2()
@@ -49472,6 +49703,11 @@ var init_toolDefinitions = __esm(async () => {
       schema: get_canvas_interactions_default2,
       description: get_canvas_interactions_default.trim(),
       impl: get_canvas_interactions
+    },
+    send_suggestion: {
+      schema: send_suggestion_default2,
+      description: send_suggestion_default.trim(),
+      impl: send_suggestion
     },
     shell_command: {
       schema: ShellCommand_default2,
@@ -56975,6 +57211,90 @@ var init_settings = __esm(() => {
   };
 });
 
+// src/agent-bus/cli-client.ts
+function setInteractionHandler(handler) {
+  interactionHandler = handler;
+}
+function connectToAgentBus() {
+  return new Promise((resolve16, reject) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      resolve16();
+      return;
+    }
+    console.log("[CLI Agent Bus] Connecting to Agent Bus...");
+    try {
+      ws = new WebSocket(AGENT_BUS_URL3);
+      ws.onopen = () => {
+        console.log("[CLI Agent Bus] Connected to Agent Bus");
+        reconnectAttempts = 0;
+        resolve16();
+      };
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data.toString());
+          handleMessage(message);
+        } catch (err) {
+          console.error("[CLI Agent Bus] Failed to parse message:", err);
+        }
+      };
+      ws.onclose = () => {
+        console.log("[CLI Agent Bus] Disconnected from Agent Bus");
+        ws = null;
+        scheduleReconnect();
+      };
+      ws.onerror = (error) => {
+        console.error("[CLI Agent Bus] Connection error:", error);
+      };
+    } catch (err) {
+      console.error("[CLI Agent Bus] Failed to create WebSocket:", err);
+      reject(err);
+    }
+  });
+}
+function scheduleReconnect() {
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.log("[CLI Agent Bus] Max reconnection attempts reached");
+    return;
+  }
+  reconnectAttempts++;
+  console.log(`[CLI Agent Bus] Reconnecting in ${RECONNECT_DELAY}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+  setTimeout(() => {
+    connectToAgentBus().catch(() => {});
+  }, RECONNECT_DELAY);
+}
+function handleMessage(message) {
+  if (message.type === "connect") {
+    console.log(`[CLI Agent Bus] Registered as ${message.clientType}:${message.clientId}`);
+    return;
+  }
+  if (message.type === "interaction") {
+    const interaction = message;
+    console.log("[CLI Agent Bus] Received interaction:", {
+      componentId: interaction.componentId,
+      interactionType: interaction.interactionType
+    });
+    if (interactionHandler) {
+      interactionHandler({
+        componentId: interaction.componentId,
+        interactionType: interaction.interactionType,
+        data: interaction.data,
+        target: interaction.target
+      }).catch((err) => {
+        console.error("[CLI Agent Bus] Error handling interaction:", err);
+      });
+    } else {
+      console.warn("[CLI Agent Bus] No interaction handler registered");
+    }
+  }
+}
+function disconnectFromAgentBus() {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+}
+var AGENT_BUS_URL3 = "ws://localhost:8284/ws?type=agent", ws = null, reconnectAttempts = 0, MAX_RECONNECT_ATTEMPTS = 10, RECONNECT_DELAY = 3000, interactionHandler = null;
+
 // src/cli/commands/mcp.ts
 function uid(prefix) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -57935,12 +58255,12 @@ function dedupeWhitespaceInChangeObjects(startKeep, deletion, insertion, endKeep
     }
   } else if (insertion) {
     if (startKeep) {
-      const ws = leadingWs(insertion.value);
-      insertion.value = insertion.value.substring(ws.length);
+      const ws2 = leadingWs(insertion.value);
+      insertion.value = insertion.value.substring(ws2.length);
     }
     if (endKeep) {
-      const ws = leadingWs(endKeep.value);
-      endKeep.value = endKeep.value.substring(ws.length);
+      const ws2 = leadingWs(endKeep.value);
+      endKeep.value = endKeep.value.substring(ws2.length);
     }
   } else if (startKeep && endKeep) {
     const newWsFull = leadingWs(endKeep.value), delWsStart = leadingWs(deletion.value), delWsEnd = trailingWs(deletion.value);
@@ -74552,6 +74872,61 @@ function App2({
       setCurrentAgentId(agentId);
     }
   }, [agentId]);
+  const [messageQueue, setMessageQueue] = import_react69.useState([]);
+  import_react69.useEffect(() => {
+    if (!agentId || agentId === "loading" || loadingState !== "ready") {
+      return;
+    }
+    connectToAgentBus().then(() => {
+      console.log("[CLI] Connected to Agent Bus");
+    }).catch((err) => {
+      console.error("[CLI] Failed to connect to Agent Bus:", err);
+    });
+    setInteractionHandler(async (interaction) => {
+      const { componentId, interactionType, data, target } = interaction;
+      let message;
+      if (interactionType === "context_menu_action" || interactionType === "action") {
+        const action = data?.action || target || interactionType;
+        const elementType = data?.elementType || "element";
+        const elementId = data?.elementId || componentId;
+        const elementName = data?.elementName || data?.title || "";
+        switch (action) {
+          case "develop_world":
+            message = elementName ? `Develop the world "${elementName}" further. Add depth to its rules, characters, and locations.` : `Develop the current world further.`;
+            break;
+          case "continue_story":
+            message = elementName ? `Continue the story "${elementName}" from where it left off.` : `Continue the current story.`;
+            break;
+          case "create_branch":
+            message = `Create a new branch in the story at this point, exploring an alternative path.`;
+            break;
+          case "revise_segment":
+            message = `Revise this segment to improve it.`;
+            break;
+          case "generate_illustration":
+            message = `Generate an illustration for this scene.`;
+            break;
+          case "explore":
+            message = elementName ? `Tell me more about "${elementName}".` : `Explore this ${elementType} in more detail.`;
+            break;
+          default:
+            message = `Handle action "${action}" for ${elementType}${elementName ? ` "${elementName}"` : ""}.`;
+        }
+      } else if (interactionType === "story_read_request") {
+        const storyTitle = data?.title || "the story";
+        message = `The user wants to read ${storyTitle}. Compose an immersive reading experience using canvas_ui with fullscreen mode.`;
+      } else if (interactionType === "suggestion_accept") {
+        message = data?.action || "Proceed with the suggestion.";
+      } else {
+        message = `Canvas interaction: ${interactionType} on ${componentId}${data ? ` with data: ${JSON.stringify(data)}` : ""}`;
+      }
+      console.log(`[CLI] Canvas interaction -> Agent: ${message}`);
+      setMessageQueue((prev) => [...prev, message]);
+    });
+    return () => {
+      disconnectFromAgentBus();
+    };
+  }, [agentId, loadingState]);
   const [streaming, setStreaming, streamingRef] = useSyncedState(false);
   const processingConversationRef = import_react69.useRef(0);
   const [interruptRequested, setInterruptRequested] = import_react69.useState(false);
@@ -74608,7 +74983,6 @@ function App2({
   const abortControllerRef = import_react69.useRef(null);
   const userCancelledRef = import_react69.useRef(false);
   const llmApiErrorRetriesRef = import_react69.useRef(0);
-  const [messageQueue, setMessageQueue] = import_react69.useState([]);
   const waitingForQueueCancelRef = import_react69.useRef(false);
   const queueSnapshotRef = import_react69.useRef([]);
   const [restoreQueueOnCancel, setRestoreQueueOnCancel] = import_react69.useState(false);
@@ -81681,4 +82055,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=A23EB860690FA72D64756E2164756E21
+//# debugId=108AA6A861C6E70F64756E2164756E21

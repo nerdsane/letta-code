@@ -66,27 +66,12 @@ export function WelcomeSpace({
     ? `You have ${activeStories.length} stor${activeStories.length === 1 ? 'y' : 'ies'} in progress`
     : 'Ready to explore new worlds?';
 
-  // Build actions (removed "explore-worlds" - world grid visible below)
-  const actions = [
-    ...(recentStories.length > 0 ? [{
-      id: 'continue-recent',
-      label: `Continue "${recentStories[0].metadata.title}"`,
-      variant: 'primary' as const,
-    }] : []),
-    ...(onStartNewWorld ? [{
-      id: 'new-world',
-      label: 'Create new world',
-      variant: 'branch' as const,
-    }] : []),
-  ];
-
   return (
     <div className="welcome-space">
       {/* Hero Section - Compact for content-first design */}
       <Hero
         title={greeting}
         subtitle={subtitle}
-        badge="Deep Sci-Fi"
         meta={[
           `${worlds.length} worlds`,
           `${stories.length} stories`,
@@ -181,26 +166,18 @@ export function WelcomeSpace({
               <span className="welcome-space__empty-icon">◇</span>
               <h3 className="welcome-space__empty-title">Begin Your Journey</h3>
               <p className="welcome-space__empty-text">
-                Create your first world to start crafting stories in the Deep Sci-Fi universe.
+                Create your first world to start crafting stories.
               </p>
             </div>
           </ScrollSection>
+          {onStartNewWorld && (
+            <ActionBar
+              title="Get started"
+              actions={[{ id: 'new-world', label: 'Create new world', variant: 'primary' }]}
+              onAction={() => onStartNewWorld()}
+            />
+          )}
         </section>
-      )}
-
-      {/* Actions */}
-      {actions.length > 0 && (
-        <ActionBar
-          title="What would you like to do?"
-          actions={actions}
-          onAction={(actionId) => {
-            if (actionId === 'continue-recent' && recentStories[0]) {
-              onSelectStory(recentStories[0]);
-            } else if (actionId === 'new-world') {
-              onStartNewWorld?.();
-            }
-          }}
-        />
       )}
     </div>
   );

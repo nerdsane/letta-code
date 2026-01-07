@@ -14,6 +14,7 @@ import { Divider } from './primitives/Divider';
 import { Stack } from './layout/Stack';
 import { Grid } from './layout/Grid';
 import { Hero, ScrollSection, ProgressBar, ActionBar } from './experience';
+import { RawJsx } from './RawJsx';
 
 interface RendererProps {
   spec: ComponentSpec;
@@ -318,6 +319,11 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
             }}
           />
         );
+      }
+
+      case 'RawJsx': {
+        const { props } = spec as any;
+        return <RawJsx jsx={props.jsx} />;
       }
 
       default:

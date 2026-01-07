@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short title for the suggestion (3-5 words)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Full explanation of the suggestion. Never truncate - include all relevant context"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Priority level: high (urgent), medium (helpful), low (optional)"
+    },
+    "action_id": {
+      "type": "string",
+      "description": "Unique identifier for the action (e.g., 'develop_rule', 'continue_story', 'explore_branch')"
+    },
+    "action_label": {
+      "type": "string",
+      "description": "Button text shown to user (e.g., 'Test in story', 'Explore this path')"
+    },
+    "action_data": {
+      "type": "object",
+      "description": "Additional data to pass when user accepts the suggestion"
+    }
+  },
+  "required": ["title", "description", "priority", "action_id"]
+}

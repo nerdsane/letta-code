@@ -1,29 +1,39 @@
 /**
  * AgentSuggestions - Proactive suggestions from the agent
  *
- * Shows contextual suggestions based on:
- * - Unused world rules
- * - Pending story branches
- * - Characters that haven't appeared recently
- * - Story continuation opportunities
+ * Shows suggestions sent by the agent via send_suggestion tool.
+ * Falls back to pattern-based suggestions if no agent suggestions exist.
  */
 import React, { useState, useEffect } from 'react';
 import type { World, Story, Rule, Element } from '../../../types/dsf';
 
 export interface Suggestion {
   id: string;
-  type: 'rule' | 'branch' | 'character' | 'continuation' | 'world';
+  type?: 'rule' | 'branch' | 'character' | 'continuation' | 'world' | 'custom';
   title: string;
-  description: string;
+  description: string; // Full text, never truncated
   action: string;
   priority: 'high' | 'medium' | 'low';
   data?: any;
+}
+
+// Agent suggestion from Agent Bus
+export interface AgentSuggestion {
+  id: string;
+  priority: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  actionId: string;
+  actionLabel?: string;
+  actionData?: any;
 }
 
 export interface AgentSuggestionsProps {
   world?: World | null;
   story?: Story | null;
   stories?: Story[];
+  /** Suggestions from agent (via Agent Bus) - these take priority */
+  agentSuggestions?: AgentSuggestion[];
   onAccept: (suggestion: Suggestion) => void;
   onDismiss: (suggestionId: string) => void;
   maxSuggestions?: number;
@@ -34,17 +44,43 @@ export function AgentSuggestions({
   world,
   story,
   stories = [],
+  agentSuggestions = [],
   onAccept,
   onDismiss,
-  maxSuggestions = 3,
+  maxSuggestions = 5,
   position = 'floating',
 }: AgentSuggestionsProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
-  // Generate suggestions based on current context
+  // Generate suggestions: prefer agent suggestions, fall back to patterns
   useEffect(() => {
+    // Convert agent suggestions to Suggestion format
+    const fromAgent: Suggestion[] = agentSuggestions.map((s) => ({
+      id: s.id,
+      type: 'custom' as const,
+      title: s.title,
+      description: s.description, // Full text, never truncated
+      action: s.actionLabel || 'Accept',
+      priority: s.priority,
+      data: { actionId: s.actionId, ...s.actionData },
+    }));
+
+    // If we have agent suggestions, use those primarily
+    if (fromAgent.length > 0) {
+      const filtered = fromAgent
+        .filter((s) => !dismissedIds.has(s.id))
+        .sort((a, b) => {
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        })
+        .slice(0, maxSuggestions);
+      setSuggestions(filtered);
+      return;
+    }
+
+    // Fall back to pattern-based suggestions
     const newSuggestions: Suggestion[] = [];
 
     // Analyze world rules for unused ones
@@ -58,7 +94,7 @@ export function AgentSuggestions({
           id: `rule-${rule.id}`,
           type: 'rule',
           title: 'Unexplored Rule',
-          description: `"${rule.statement.slice(0, 60)}${rule.statement.length > 60 ? '...' : ''}"`,
+          description: rule.statement, // Full text, no truncation
           action: 'Test in story',
           priority: rule.certainty === 'tentative' ? 'high' : 'medium',
           data: rule,
@@ -146,7 +182,7 @@ export function AgentSuggestions({
       .slice(0, maxSuggestions);
 
     setSuggestions(filtered);
-  }, [world, story, stories, dismissedIds, maxSuggestions]);
+  }, [world, story, stories, agentSuggestions, dismissedIds, maxSuggestions]);
 
   const handleDismiss = (id: string) => {
     setDismissedIds((prev) => new Set([...prev, id]));
@@ -184,6 +220,7 @@ export function AgentSuggestions({
                   {suggestion.type === 'character' && '○'}
                   {suggestion.type === 'continuation' && '→'}
                   {suggestion.type === 'world' && '✦'}
+                  {suggestion.type === 'custom' && '◆'}
                 </span>
                 <span className="dsf-agent-suggestions__item-title">
                   {suggestion.title}

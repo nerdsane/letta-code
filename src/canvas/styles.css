@@ -2197,6 +2197,8 @@ a:focus-visible {
   background: rgba(10, 10, 10, 0.98);
   border: 1px solid var(--border-medium);
   min-width: 200px;
+  max-height: 80vh;
+  overflow-y: auto;
   padding: var(--space-1) 0;
   animation: contextMenuShow 0.15s ease;
   backdrop-filter: blur(12px);

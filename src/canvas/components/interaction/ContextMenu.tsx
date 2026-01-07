@@ -1,7 +1,7 @@
 /**
  * ContextMenu - Right-click contextual actions for elements
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 
 export interface ContextMenuItem {
   id: string;
@@ -22,6 +22,7 @@ export interface ContextMenuProps {
 
 export function ContextMenu({ items, position, onSelect, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [adjustedPosition, setAdjustedPosition] = useState(position);
 
   // Close on click outside
   useEffect(() => {
@@ -46,33 +47,34 @@ export function ContextMenu({ items, position, onSelect, onClose }: ContextMenuP
     };
   }, [onClose]);
 
-  // Adjust position to stay within viewport
-  useEffect(() => {
-    if (menuRef.current) {
-      const rect = menuRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
+  // Adjust position to stay within viewport - use useLayoutEffect to avoid flash
+  useLayoutEffect(() => {
+    if (!menuRef.current) return;
 
-      let adjustedX = position.x;
-      let adjustedY = position.y;
+    const rect = menuRef.current.getBoundingClientRect();
+    let x = position.x;
+    let y = position.y;
 
-      if (position.x + rect.width > viewportWidth) {
-        adjustedX = viewportWidth - rect.width - 10;
-      }
-      if (position.y + rect.height > viewportHeight) {
-        adjustedY = viewportHeight - rect.height - 10;
-      }
-
-      menuRef.current.style.left = `${adjustedX}px`;
-      menuRef.current.style.top = `${adjustedY}px`;
+    // Only adjust if menu would be cut off
+    if (x + rect.width > window.innerWidth - 8) {
+      x = window.innerWidth - rect.width - 8;
     }
+    if (y + rect.height > window.innerHeight - 8) {
+      y = window.innerHeight - rect.height - 8;
+    }
+
+    // Ensure not negative
+    x = Math.max(8, x);
+    y = Math.max(8, y);
+
+    setAdjustedPosition({ x, y });
   }, [position]);
 
   return (
     <div
       ref={menuRef}
       className="dsf-context-menu"
-      style={{ left: position.x, top: position.y }}
+      style={{ left: adjustedPosition.x, top: adjustedPosition.y }}
     >
       {items.map((item, index) => {
         if (item.separator) {

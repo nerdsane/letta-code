@@ -60,6 +60,15 @@ interface AppState {
   agentAction?: string; // What agent is currently doing
   useImmersiveWorld: boolean; // Use immersive WorldSpace view
   pendingExperience: { storyId: string; spec: any } | null; // Experience ready but not shown
+  agentSuggestions: Array<{
+    id: string;
+    priority: 'high' | 'medium' | 'low';
+    title: string;
+    description: string;
+    actionId: string;
+    actionLabel?: string;
+    actionData?: any;
+  }>; // Suggestions from agent
 }
 
 // ============================================================================
@@ -112,6 +121,7 @@ function App() {
     agentThinking: false,
     useImmersiveWorld: true, // Default to immersive experience
     pendingExperience: null, // Immersive experience ready for user to activate
+    agentSuggestions: [], // Suggestions from agent via Agent Bus
   });
 
   const agentBusRef = useRef<AgentBusClient | null>(null);
@@ -445,6 +455,15 @@ function App() {
       onError: (error) => {
         console.error('[Canvas] Agent Bus error:', error);
       },
+      onSuggestion: (suggestion) => {
+        console.log('[Canvas] Received suggestion:', suggestion);
+        setState((s) => {
+          // Add to suggestions, keep max 10, remove oldest if needed
+          const existing = s.agentSuggestions.filter(sug => sug.id !== suggestion.id);
+          const updated = [...existing, suggestion].slice(-10);
+          return { ...s, agentSuggestions: updated };
+        });
+      },
     });
 
     agentBus.connect();
@@ -624,6 +643,7 @@ function App() {
         world={state.selectedWorld}
         story={state.selectedStory}
         stories={state.stories}
+        agentSuggestions={state.agentSuggestions}
         onAccept={handleSuggestionAccept}
         onDismiss={handleSuggestionDismiss}
         position="floating"
