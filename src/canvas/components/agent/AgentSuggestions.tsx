@@ -2,10 +2,10 @@
  * AgentSuggestions - Proactive suggestions from the agent
  *
  * Shows suggestions sent by the agent via send_suggestion tool.
- * Falls back to pattern-based suggestions if no agent suggestions exist.
+ * Only displays real agent suggestions - no static fallback patterns.
  */
 import React, { useState, useEffect } from 'react';
-import type { World, Story, Rule, Element } from '../../../types/dsf';
+import type { World, Story } from '../../../types/dsf';
 
 export interface Suggestion {
   id: string;
@@ -54,126 +54,21 @@ export function AgentSuggestions({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
-  // Generate suggestions: prefer agent suggestions, fall back to patterns
+  // Only show real agent suggestions - no static fallback patterns
   useEffect(() => {
     // Convert agent suggestions to Suggestion format
     const fromAgent: Suggestion[] = agentSuggestions.map((s) => ({
       id: s.id,
       type: 'custom' as const,
       title: s.title,
-      description: s.description, // Full text, never truncated
+      description: s.description,
       action: s.actionLabel || 'Accept',
       priority: s.priority,
       data: { actionId: s.actionId, ...s.actionData },
     }));
 
-    // If we have agent suggestions, use those primarily
-    if (fromAgent.length > 0) {
-      const filtered = fromAgent
-        .filter((s) => !dismissedIds.has(s.id))
-        .sort((a, b) => {
-          const priorityOrder = { high: 0, medium: 1, low: 2 };
-          return priorityOrder[a.priority] - priorityOrder[b.priority];
-        })
-        .slice(0, maxSuggestions);
-      setSuggestions(filtered);
-      return;
-    }
-
-    // Fall back to pattern-based suggestions
-    const newSuggestions: Suggestion[] = [];
-
-    // Analyze world rules for unused ones
-    if (world?.foundation?.rules) {
-      const untestedRules = world.foundation.rules.filter(
-        (rule) => !rule.tested_in_story || rule.tested_in_story.length === 0
-      );
-      if (untestedRules.length > 0) {
-        const rule = untestedRules[0];
-        newSuggestions.push({
-          id: `rule-${rule.id}`,
-          type: 'rule',
-          title: 'Unexplored Rule',
-          description: rule.statement, // Full text, no truncation
-          action: 'Test in story',
-          priority: rule.certainty === 'tentative' ? 'high' : 'medium',
-          data: rule,
-        });
-      }
-    }
-
-    // Check for pending branches in current story
-    if (story?.segments) {
-      for (const segment of story.segments) {
-        if (segment.branches) {
-          const pendingBranches = segment.branches.filter((b) => b.status === 'pending');
-          for (const branch of pendingBranches.slice(0, 1)) {
-            newSuggestions.push({
-              id: `branch-${branch.id}`,
-              type: 'branch',
-              title: 'Unexplored Branch',
-              description: branch.prompt,
-              action: 'Explore this path',
-              priority: 'high',
-              data: { segment, branch },
-            });
-          }
-        }
-      }
-    }
-
-    // Find characters that haven't appeared recently
-    if (world?.surface?.visible_elements && story?.segments) {
-      const characters = world.surface.visible_elements.filter((e) => e.type === 'character');
-      const recentSegments = story.segments.slice(-3);
-      const recentContent = recentSegments.map((s) => s.content).join(' ');
-
-      for (const char of characters.slice(0, 2)) {
-        if (char.name && !recentContent.includes(char.name)) {
-          newSuggestions.push({
-            id: `char-${char.id}`,
-            type: 'character',
-            title: 'Character Opportunity',
-            description: `${char.name} hasn't appeared recently`,
-            action: 'Bring into story',
-            priority: 'low',
-            data: char,
-          });
-        }
-      }
-    }
-
-    // Suggest story continuation if story is active
-    if (story?.metadata?.status === 'active' && story.segments.length > 0) {
-      const lastSegment = story.segments[story.segments.length - 1];
-      if (lastSegment.world_evolution?.new_questions?.length) {
-        newSuggestions.push({
-          id: `continue-${story.id}`,
-          type: 'continuation',
-          title: 'Continue Story',
-          description: lastSegment.world_evolution.new_questions[0],
-          action: 'Write next segment',
-          priority: 'medium',
-          data: { story, question: lastSegment.world_evolution.new_questions[0] },
-        });
-      }
-    }
-
-    // Suggest world development if world is in sketch/draft state
-    if (world?.development?.state === 'sketch') {
-      newSuggestions.push({
-        id: `develop-world`,
-        type: 'world',
-        title: 'Develop World',
-        description: 'World is still in sketch state',
-        action: 'Add more depth',
-        priority: 'medium',
-        data: world,
-      });
-    }
-
-    // Filter out dismissed suggestions and limit
-    const filtered = newSuggestions
+    // Filter, sort, and limit
+    const filtered = fromAgent
       .filter((s) => !dismissedIds.has(s.id))
       .sort((a, b) => {
         const priorityOrder = { high: 0, medium: 1, low: 2 };
@@ -182,7 +77,7 @@ export function AgentSuggestions({
       .slice(0, maxSuggestions);
 
     setSuggestions(filtered);
-  }, [world, story, stories, agentSuggestions, dismissedIds, maxSuggestions]);
+  }, [agentSuggestions, dismissedIds, maxSuggestions]);
 
   const handleDismiss = (id: string) => {
     setDismissedIds((prev) => new Set([...prev, id]));

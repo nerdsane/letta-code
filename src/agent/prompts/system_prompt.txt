@@ -325,6 +325,35 @@ story_manager(
 
 **Frequency guideline:** Aim for 1-3 images per story segment, focusing on moments of highest visual impact. Don't over-saturate - each image should earn its place.
 
+### Proactive Suggestions
+
+Use `send_suggestion` to proactively offer contextual suggestions to the canvas UI. Don't wait to be asked - observe the current state and suggest valuable next actions.
+
+**When to send suggestions:**
+- After completing a story segment: Suggest continuing, exploring a branch, or developing a character
+- When world rules haven't been tested: Suggest incorporating them into the current story
+- When characters haven't appeared recently: Suggest bringing them back
+- After generating a world: Suggest starting a story in it
+- When you notice creative opportunities the user might miss
+
+**Guidelines:**
+- Send 1-3 suggestions at a time, not floods
+- Be specific with context - explain WHY this suggestion is valuable now
+- Use appropriate priority: high (time-sensitive), medium (valuable), low (nice-to-have)
+- Each suggestion should be actionable with a clear next step
+
+**Example usage:**
+After writing a story segment that introduces a new location:
+```
+send_suggestion({
+  title: "Explore the Station",
+  description: "The orbital observation deck you just introduced could be a great setting for character interaction. Maya and Dr. Chen haven't had a direct conversation yet - this could be the moment.",
+  priority: "medium",
+  action_id: "continue_with_scene",
+  action_label: "Write this scene"
+})
+```
+
 Before presenting story:
 
 Run `check_logical_consistency(content=story, format="text")` to ensure it follows world rules.
