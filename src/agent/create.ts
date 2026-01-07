@@ -125,10 +125,16 @@ export async function createAgent(
 
   const client = await getClient();
 
-  // Only attach server-side tools to the agent.
-  // Client-side tools (Read, Write, Bash, etc.) are passed via client_tools at runtime,
-  // NOT attached to the agent. This is the new pattern - no more stub tool registration.
-  const { isOpenAIModel } = await import("../tools/manager");
+  // Get loaded tool names (tools are already registered with Letta)
+  // Map internal names to server names so the agent sees the correct tool names
+  const { getServerToolName, getToolNames, isOpenAIModel } = await import(
+    "../tools/manager"
+  );
+  const internalToolNames = getToolNames();
+  const serverToolNames = internalToolNames.map((name) =>
+    getServerToolName(name),
+  );
+
   const baseMemoryTool = isOpenAIModel(modelHandle)
     ? "memory_apply_patch"
     : "memory";
@@ -144,11 +150,17 @@ export async function createAgent(
     "analyze_information_gain",
     // Continual learning
     "search_trajectories",
-    // Canvas UI
-    "canvas_ui",
   ];
 
-  let toolNames = [...defaultBaseTools];
+  let toolNames = [...serverToolNames, ...defaultBaseTools];
+
+  // Filter out tools that don't exist on the server
+  // Get all available tools from server in one call and filter locally
+  const allServerTools = await client.tools.list({ limit: 1000 });
+  const serverToolSet = new Set(
+    allServerTools.items.map((t) => t.name).filter((n): n is string => !!n),
+  );
+  toolNames = toolNames.filter((name) => serverToolSet.has(name));
 
   // Fallback: if server doesn't have memory_apply_patch, use legacy memory tool
   if (toolNames.includes("memory_apply_patch")) {

@@ -150,12 +150,22 @@ export async function updateAgentLLMConfig(
 function getToolNames(): string[] {
   // These are the DSF-specific tool names to link
   return [
+    // Evaluation tools
     "assess_output_quality",
     "check_logical_consistency",
     "compare_versions",
     "analyze_information_gain",
+    // Continual learning
     "search_trajectories",
+    // DSF worldbuilding tools
+    "world_manager",
+    "story_manager",
+    "asset_manager",
+    "image_generator",
+    // Canvas UI tools
     "canvas_ui",
+    "get_canvas_interactions",
+    "send_suggestion",
   ];
 }
 
