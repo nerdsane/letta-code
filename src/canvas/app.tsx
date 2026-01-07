@@ -1096,9 +1096,14 @@ function MarkdownContent({
   content,
   assets,
 }: {
-  content: string;
+  content?: string;
   assets?: StoryAsset[];
 }) {
+  // Guard against undefined content
+  if (!content) {
+    return null;
+  }
+
   // Simple markdown parser for images: ![description](asset_id)
   const renderMarkdown = (text: string) => {
     const parts: (string | React.ReactElement)[] = [];
@@ -1182,11 +1187,12 @@ function StoryView({
   onInteraction: (componentId: string, interactionType: string, data: any, target?: string) => void;
   onElementAction?: (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => void;
 }) {
-  const [activeSegmentIndex, setActiveSegmentIndex] = useState(story.segments.length - 1);
+  const segments = story.segments || [];
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState(Math.max(0, segments.length - 1));
   const [continuingStory, setContinuingStory] = useState(false);
   const [continueMessage, setContinueMessage] = useState<string | null>(null);
 
-  const segment = story.segments[activeSegmentIndex];
+  const segment = segments[activeSegmentIndex];
 
   // Helper to get components for a specific target
   const getComponentsForTarget = (target: string) => {
@@ -1200,7 +1206,7 @@ function StoryView({
   };
 
   async function handleContinue() {
-    const initialSegmentCount = story.segments.length;
+    const initialSegmentCount = segments.length;
 
     try {
       setContinuingStory(true);
@@ -1279,7 +1285,7 @@ function StoryView({
       <div className="story-header">
         <div className="story-meta">
           <span className="story-status">{story.metadata.status}</span>
-          <span className="story-segments">{story.segments.length} segments</span>
+          <span className="story-segments">{segments.length} segments</span>
           <span className="story-world">
             World: {story.world_checkpoint} (v{story.world_version})
           </span>
@@ -1293,12 +1299,12 @@ function StoryView({
         onInteraction={onInteraction}
       />
 
-      {story.segments.length === 0 ? (
+      {segments.length === 0 ? (
         <EmptyState message="No segments yet" />
       ) : (
         <>
           <div className="segment-nav">
-            {story.segments.map((seg, index) => (
+            {segments.map((seg, index) => (
               <button
                 key={seg.id}
                 className={`segment-nav-button ${index === activeSegmentIndex ? "active" : ""}`}
@@ -1397,7 +1403,7 @@ function StoryView({
                 </div>
               )}
 
-              {activeSegmentIndex === story.segments.length - 1 && (
+              {activeSegmentIndex === segments.length - 1 && (
                 <div className="story-actions">
                   <button
                     className="continue-button"
@@ -1465,7 +1471,8 @@ function WorldCard({ world, onClick }: { world: World; onClick: () => void }) {
 }
 
 function StoryCard({ story, onClick }: { story: Story; onClick: () => void }) {
-  const totalWords = story.segments.reduce((sum, seg) => sum + seg.word_count, 0);
+  const segments = story.segments || [];
+  const totalWords = segments.reduce((sum, seg) => sum + seg.word_count, 0);
 
   return (
     <div className="story-card" onClick={onClick}>
@@ -1475,7 +1482,7 @@ function StoryCard({ story, onClick }: { story: Story; onClick: () => void }) {
       </div>
       <div className="story-card-meta">
         <span>World: {story.world_checkpoint}</span>
-        <span>{story.segments.length} segments</span>
+        <span>{segments.length} segments</span>
         <span>{totalWords} words</span>
       </div>
       {story.metadata.tags && story.metadata.tags.length > 0 && (
