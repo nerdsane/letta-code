@@ -216,8 +216,6 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
 
 /**
  * Broadcast state change to all connected clients (Canvas + CLI)
- *
- * This is a best-effort notification - silently fails if Agent Bus isn't running
  */
 export async function broadcastStateChange(
   event: StateChangeMessage['event'],
@@ -234,9 +232,9 @@ export async function broadcastStateChange(
 
     ws.send(JSON.stringify(message));
     console.log(`[canvas_ui] Broadcast state change: ${event}`);
-  } catch {
-    // Silently fail - Agent Bus may not be running (e.g., CLI-only mode)
-    // This is expected behavior, not an error
+  } catch (error) {
+    console.error('[canvas_ui] Failed to broadcast state change:', error);
+    throw error; // Re-throw so callers know about the failure
   }
 }
 
