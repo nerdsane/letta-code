@@ -1563,8 +1563,12 @@ function getWorldTitle(world: World): string {
 }
 
 function getWorldCheckpointName(world: World): string {
-  // Try to derive checkpoint name from world data
-  // This is a heuristic - ideally the world would store its own checkpoint name
+  // Use server-provided checkpoint name if available
+  if ((world as any).checkpoint_name) {
+    return (world as any).checkpoint_name;
+  }
+
+  // Fallback: derive checkpoint name from world data (legacy support)
   const premise = world.foundation?.core_premise || "";
   return premise
     .toLowerCase()

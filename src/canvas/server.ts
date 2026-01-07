@@ -49,7 +49,26 @@ async function loadAllWorlds(): Promise<World[]> {
   for (const file of files) {
     if (file.endsWith(".json")) {
       const content = await readFile(join(WORLDS_DIR, file), "utf-8");
-      worlds.push(JSON.parse(content) as World);
+      const world = JSON.parse(content) as World;
+      const checkpoint = file.replace(".json", "");
+
+      // Add checkpoint name to world data for frontend use
+      (world as any).checkpoint_name = checkpoint;
+
+      // Auto-discover cover image if not explicitly set
+      if (!world.asset) {
+        const coverPath = join(ASSETS_DIR, "worlds", checkpoint, "cover.png");
+        if (existsSync(coverPath)) {
+          world.asset = {
+            id: `cover_${checkpoint}`,
+            type: "image",
+            path: `worlds/${checkpoint}/cover.png`,
+            description: "World cover image",
+          };
+        }
+      }
+
+      worlds.push(world);
     }
   }
 
@@ -67,7 +86,25 @@ async function loadWorld(checkpoint: string): Promise<World | null> {
   }
 
   const content = await readFile(filePath, "utf-8");
-  return JSON.parse(content) as World;
+  const world = JSON.parse(content) as World;
+
+  // Add checkpoint name to world data for frontend use
+  (world as any).checkpoint_name = checkpoint;
+
+  // Auto-discover cover image if not explicitly set
+  if (!world.asset) {
+    const coverPath = join(ASSETS_DIR, "worlds", checkpoint, "cover.png");
+    if (existsSync(coverPath)) {
+      world.asset = {
+        id: `cover_${checkpoint}`,
+        type: "image",
+        path: `worlds/${checkpoint}/cover.png`,
+        description: "World cover image",
+      };
+    }
+  }
+
+  return world;
 }
 
 async function loadAllStories(): Promise<Story[]> {

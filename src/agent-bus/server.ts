@@ -77,6 +77,20 @@ function routeMessage(message: AgentBusMessage, senderId: string) {
       }
     }
   }
+
+  // Route suggestion messages to canvas clients
+  if (message.type === 'suggestion') {
+    for (const [id, client] of clients.entries()) {
+      if (client.type === 'canvas' && id !== senderId) {
+        try {
+          client.ws.send(JSON.stringify(message));
+          console.log(`[Agent Bus] → canvas:${id} (suggestion: ${(message as any).payload?.title})`);
+        } catch (err) {
+          console.error(`[Agent Bus] Failed to send to canvas:${id}`, err);
+        }
+      }
+    }
+  }
 }
 
 // ============================================================================
