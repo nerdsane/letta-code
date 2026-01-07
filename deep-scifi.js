@@ -45556,9 +45556,7 @@ async function broadcastStateChange(event, data) {
     };
     ws.send(JSON.stringify(message));
     console.log(`[canvas_ui] Broadcast state change: ${event}`);
-  } catch (error) {
-    console.error("[canvas_ui] Failed to broadcast state change:", error);
-  }
+  } catch {}
 }
 async function canvas_ui(args) {
   const { target, spec, action = "create", mode = "overlay" } = args;
@@ -81680,4 +81678,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=22AFC6F20D76D7D064756E2164756E21
+//# debugId=46B86E03ED51D40E64756E2164756E21
