@@ -56,8 +56,16 @@ export const SYSTEM_PROMPTS: SystemPromptOption[] = [
   {
     id: "default",
     label: "Default",
-    description: "Alias for letta-claude (Deep Sci-Fi)",
-    content: lettaAnthropicPrompt,
+    description: "Deep Sci-Fi worldbuilding and storytelling agent",
+    content: systemPrompt,
+    isFeatured: true,
+    isDefault: true,
+  },
+  {
+    id: "dsf",
+    label: "Deep Sci-Fi",
+    description: "Sci-fi worldbuilding with world_manager, story_manager, image generation",
+    content: systemPrompt,
     isFeatured: true,
   },
   {
