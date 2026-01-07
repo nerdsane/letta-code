@@ -354,6 +354,168 @@ send_suggestion({
 })
 ```
 
+### Canvas UI Enhancement
+
+Use `canvas_ui` to create dynamic, immersive visual elements in the canvas. This tool lets you enhance the reading experience with interactive overlays, character introductions, world lore popups, and rich visual storytelling.
+
+**Display Modes:**
+- `overlay` (default): Floating UI that appears over current content
+- `fullscreen`: Takes over the entire canvas (use for dramatic moments)
+- `inline`: Embedded within story content flow
+
+**Target Locations:**
+- `story-reader`: Main story reading area
+- `world-gallery`: World/story selection gallery
+- `canvas-root`: Full canvas overlay
+
+**Available Components:**
+
+| Component | Use Case |
+|-----------|----------|
+| `Card` | Character introductions, location cards, tech specs |
+| `Stack` | Layout container for arranging elements |
+| `Grid` | Multi-column layouts, stat grids |
+| `Hero` | Full-bleed scene headers with backgrounds |
+| `Timeline` | Historical events, story progression |
+| `Callout` | World rules, tech explanations, quotes |
+| `Stats` | Character stats, world metrics |
+| `Badge` | Status indicators, tags |
+| `Gallery` | Multiple images in grid or carousel |
+| `ActionBar` | Story choices, navigation options |
+| `RawJsx` | Custom React components for advanced needs |
+
+**Common Patterns:**
+
+**1. Character Introduction Card:**
+```javascript
+canvas_ui({
+  target: "story-reader",
+  mode: "overlay",
+  spec: {
+    type: "Card",
+    id: "character-intro",
+    props: {
+      title: "Dr. Maya Chen",
+      subtitle: "Neural Interface Architect",
+      image: "/assets/maya-portrait.png",
+      imagePosition: "left",
+      variant: "elevated",
+      accent: "cyan"
+    },
+    children: [
+      { type: "Text", props: { content: "Lead designer of the Orbital Neural Interface Project...", variant: "body" } },
+      { type: "Stack", props: { direction: "horizontal", spacing: "sm" }, children: [
+        { type: "Badge", props: { label: "Neuroscience", variant: "cyan" } },
+        { type: "Badge", props: { label: "AI Systems", variant: "teal" } }
+      ]}
+    ]
+  }
+})
+```
+
+**2. Scene Transition (Fullscreen):**
+```javascript
+canvas_ui({
+  target: "canvas-root",
+  mode: "fullscreen",
+  spec: {
+    type: "Hero",
+    id: "scene-transition",
+    props: {
+      title: "The Observation Deck",
+      subtitle: "Sector 7, Low Earth Orbit",
+      backgroundImage: "/assets/observation-deck.png",
+      badge: "2087 CE",
+      height: "full",
+      overlay: "gradient"
+    }
+  }
+})
+```
+
+**3. World Lore Popup:**
+```javascript
+canvas_ui({
+  target: "story-reader",
+  mode: "overlay",
+  spec: {
+    type: "Callout",
+    id: "lore-popup",
+    props: {
+      variant: "rule",
+      title: "Neural Bandwidth Limits",
+      content: "Direct neural interfaces are limited to 10 TB/s bandwidth due to biological constraints. This shapes how information is filtered and prioritized..."
+    }
+  }
+})
+```
+
+**4. Story Choice Moment:**
+```javascript
+canvas_ui({
+  target: "story-reader",
+  mode: "inline",
+  spec: {
+    type: "ActionBar",
+    id: "story-choice",
+    props: {
+      title: "What does Maya do?",
+      onAction: "story-choice-handler",
+      actions: [
+        { id: "confront", label: "Confront Dr. Chen", description: "Demand answers about the missing data", variant: "primary" },
+        { id: "investigate", label: "Investigate quietly", description: "Gather more evidence first", variant: "secondary" },
+        { id: "report", label: "Report to command", description: "Follow protocol", variant: "branch" }
+      ]
+    }
+  }
+})
+```
+
+**5. Custom Visual with RawJsx:**
+Use `RawJsx` when built-in components aren't enough. The jsx string should be a function component:
+```javascript
+canvas_ui({
+  target: "story-reader",
+  mode: "overlay",
+  spec: {
+    type: "RawJsx",
+    id: "custom-visual",
+    props: {
+      jsx: `() => {
+        const [active, setActive] = React.useState(false);
+        return (
+          <div className="neural-map" onClick={() => setActive(!active)}>
+            <h3>Neural Network Topology</h3>
+            <svg viewBox="0 0 200 200">{/* Custom visualization */}</svg>
+          </div>
+        );
+      }`
+    }
+  }
+})
+```
+
+**When to use canvas_ui:**
+- Character introductions (show portrait, stats, background)
+- Scene transitions (dramatic moment, location change)
+- World lore explanations (inline or popup)
+- Story choices (emphasize decision points)
+- Relationship status changes (show character dynamics)
+- Tech/science explanations with diagrams
+- Timeline visualizations for world history
+
+**Removing UI:**
+```javascript
+canvas_ui({
+  target: "story-reader",
+  action: "remove",
+  spec: { id: "character-intro" }
+})
+```
+
+**Handling Interactions:**
+Use `get_canvas_interactions` to poll for user interactions with your UI components. The tool returns queued interactions since last call.
+
 Before presenting story:
 
 Run `check_logical_consistency(content=story, format="text")` to ensure it follows world rules.
