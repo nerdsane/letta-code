@@ -1,0 +1,22 @@
+{
+  "name": "get_canvas_interactions",
+  "description": "Get pending user interactions from the canvas UI. Call this to see what buttons users clicked, actions selected, or other interactions with your UI components.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "peek": {
+        "type": "boolean",
+        "description": "If true, look at interactions without clearing the queue. Default: false (clears after reading)"
+      },
+      "componentId": {
+        "type": "string",
+        "description": "Filter interactions by component ID"
+      },
+      "interactionType": {
+        "type": "string",
+        "description": "Filter by interaction type (e.g., 'click', 'action')"
+      }
+    },
+    "required": []
+  }
+}

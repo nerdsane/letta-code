@@ -34,6 +34,8 @@ import StoryManagerDescription from "./descriptions/story_manager.md";
 import AssetManagerDescription from "./descriptions/asset_manager.md";
 import ImageGeneratorDescription from "./descriptions/image_generator.md";
 import CanvasUIDescription from "./descriptions/canvas_ui.md";
+import GetCanvasInteractionsDescription from "./descriptions/get_canvas_interactions.md";
+import SendSuggestionDescription from "./descriptions/send_suggestion.md";
 import WriteFileGeminiDescription from "./descriptions/WriteFileGemini.md";
 import WriteTodosGeminiDescription from "./descriptions/WriteTodosGemini.md";
 import { apply_patch } from "./impl/ApplyPatch";
@@ -74,6 +76,8 @@ import { story_manager } from "./impl/story_manager";
 import { asset_manager } from "./impl/asset_manager";
 import { image_generator } from "./impl/image_generator";
 import { canvas_ui } from "./impl/canvas_ui";
+import { get_canvas_interactions } from "./impl/get_canvas_interactions";
+import { send_suggestion } from "./impl/send_suggestion";
 import ApplyPatchSchema from "./schemas/ApplyPatch.json";
 import AskUserQuestionSchema from "./schemas/AskUserQuestion.json";
 import BashSchema from "./schemas/Bash.json";
@@ -112,6 +116,8 @@ import StoryManagerSchema from "./schemas/story_manager.json";
 import AssetManagerSchema from "./schemas/asset_manager.json";
 import ImageGeneratorSchema from "./schemas/image_generator.json";
 import CanvasUISchema from "./schemas/canvas_ui.json";
+import GetCanvasInteractionsSchema from "./schemas/get_canvas_interactions.json";
+import SendSuggestionSchema from "./schemas/send_suggestion.json";
 
 type ToolImplementation = (args: Record<string, unknown>) => Promise<unknown>;
 
@@ -226,6 +232,16 @@ const toolDefinitions = {
     schema: CanvasUISchema,
     description: CanvasUIDescription.trim(),
     impl: canvas_ui as unknown as ToolImplementation,
+  },
+  get_canvas_interactions: {
+    schema: GetCanvasInteractionsSchema,
+    description: GetCanvasInteractionsDescription.trim(),
+    impl: get_canvas_interactions as unknown as ToolImplementation,
+  },
+  send_suggestion: {
+    schema: SendSuggestionSchema,
+    description: SendSuggestionDescription.trim(),
+    impl: send_suggestion as unknown as ToolImplementation,
   },
   shell_command: {
     schema: ShellCommandSchema,

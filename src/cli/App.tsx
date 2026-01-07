@@ -52,6 +52,12 @@ import {
   type ToolExecutionResult,
 } from "../tools/manager";
 import {
+  connectToAgentBus,
+  setInteractionHandler,
+  isConnectedToAgentBus,
+  disconnectFromAgentBus,
+} from "../agent-bus/cli-client";
+import {
   handleMcpAdd,
   handleMcpUsage,
   type McpCommandContext,
@@ -574,6 +580,96 @@ export default function App({
     }
   }, [agentId]);
 
+  // Message queue state for queueing messages during streaming
+  // Declared early so Agent Bus interaction handler can use it
+  const [messageQueue, setMessageQueue] = useState<string[]>([]);
+
+  // Connect to Agent Bus for canvas interactions
+  // This enables bidirectional communication between canvas UI and CLI
+  useEffect(() => {
+    if (!agentId || agentId === "loading" || loadingState !== "ready") {
+      return;
+    }
+
+    // Connect to Agent Bus
+    connectToAgentBus()
+      .then(() => {
+        console.log("[CLI] Connected to Agent Bus");
+      })
+      .catch((err) => {
+        // Log but don't fail - canvas features won't work but CLI should still function
+        console.error("[CLI] Failed to connect to Agent Bus:", err);
+      });
+
+    // Set up interaction handler to convert canvas interactions to agent messages
+    setInteractionHandler(async (interaction) => {
+      const { componentId, interactionType, data, target } = interaction;
+
+      // Convert interaction to natural language message for the agent
+      let message: string;
+
+      // Handle different interaction types from canvas
+      if (interactionType === "context_menu_action" || interactionType === "action") {
+        const action = data?.action || target || interactionType;
+        const elementType = data?.elementType || "element";
+        const elementId = data?.elementId || componentId;
+        const elementName = data?.elementName || data?.title || "";
+
+        // Map actions to natural messages
+        switch (action) {
+          case "develop_world":
+            message = elementName
+              ? `Develop the world "${elementName}" further. Add depth to its rules, characters, and locations.`
+              : `Develop the current world further.`;
+            break;
+          case "continue_story":
+            message = elementName
+              ? `Continue the story "${elementName}" from where it left off.`
+              : `Continue the current story.`;
+            break;
+          case "create_branch":
+            message = `Create a new branch in the story at this point, exploring an alternative path.`;
+            break;
+          case "revise_segment":
+            message = `Revise this segment to improve it.`;
+            break;
+          case "generate_illustration":
+            message = `Generate an illustration for this scene.`;
+            break;
+          case "explore":
+            message = elementName
+              ? `Tell me more about "${elementName}".`
+              : `Explore this ${elementType} in more detail.`;
+            break;
+          default:
+            message = `Handle action "${action}" for ${elementType}${elementName ? ` "${elementName}"` : ""}.`;
+        }
+      } else if (interactionType === "story_read_request") {
+        // User wants to read a story - agent should compose immersive experience
+        const storyTitle = data?.title || "the story";
+        message = `The user wants to read ${storyTitle}. Compose an immersive reading experience using canvas_ui with fullscreen mode.`;
+      } else if (interactionType === "suggestion_accept") {
+        // User accepted a proactive suggestion
+        message = data?.action || "Proceed with the suggestion.";
+      } else {
+        // Generic interaction
+        message = `Canvas interaction: ${interactionType} on ${componentId}${data ? ` with data: ${JSON.stringify(data)}` : ""}`;
+      }
+
+      console.log(`[CLI] Canvas interaction -> Agent: ${message}`);
+
+      // Queue the message for processing
+      setMessageQueue((prev) => [...prev, message]);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      disconnectFromAgentBus();
+    };
+  // Note: setMessageQueue accessed via closure; stable React setState doesn't need to be in deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentId, loadingState]);
+
   // Whether a stream is in flight (disables input)
   // Uses synced state to keep ref in sync for reliable async checks
   const [streaming, setStreaming, streamingRef] = useSyncedState(false);
@@ -868,9 +964,6 @@ export default function App({
 
   // Retry counter for transient LLM API errors (ref for synchronous access in loop)
   const llmApiErrorRetriesRef = useRef(0);
-
-  // Message queue state for queueing messages during streaming
-  const [messageQueue, setMessageQueue] = useState<string[]>([]);
 
   // Queue cancellation: when any message is queued, we send cancel and wait for stream to end
   const waitingForQueueCancelRef = useRef(false);

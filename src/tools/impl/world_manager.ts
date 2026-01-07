@@ -20,6 +20,7 @@ import type {
   Constraint,
   ChangelogEntry,
 } from "../../types/dsf";
+import { broadcastStateChange } from "./canvas_ui";
 
 // ============================================================================
 // Tool Interface
@@ -159,6 +160,12 @@ async function saveWorld(args: WorldManagerArgs): Promise<WorldManagerResult> {
 
   const filePath = join(WORLDS_DIR, `${args.checkpoint_name}.json`);
   await writeFile(filePath, JSON.stringify(worldToSave, null, 2), "utf-8");
+
+  // Broadcast state change for reactive UI
+  await broadcastStateChange('world_entered', {
+    worldId: args.checkpoint_name,
+    version: worldToSave.development.version,
+  });
 
   return {
     toolReturn: `World saved to ${filePath}\nVersion: ${worldToSave.development.version}\nState: ${worldToSave.development.state}`,

@@ -100,7 +100,7 @@ export interface CardSpec extends BaseComponentSpec {
     image?: string;
     imagePosition?: 'top' | 'left' | 'right';
     variant?: 'default' | 'elevated' | 'outlined' | 'ghost';
-    accent?: 'cyan' | 'purple' | 'none';
+    accent?: 'cyan' | 'teal' | 'none';
     onClick?: string;
   };
   children?: ComponentSpec | ComponentSpec[];
@@ -114,7 +114,7 @@ export interface TimelineEvent {
   description?: string;
   icon?: string;
   status?: 'completed' | 'current' | 'upcoming';
-  accent?: 'cyan' | 'purple' | 'default';
+  accent?: 'cyan' | 'teal' | 'default';
 }
 
 export interface TimelineSpec extends BaseComponentSpec {
@@ -141,7 +141,7 @@ export interface StatItem {
   value: string | number;
   label: string;
   trend?: 'up' | 'down' | 'neutral';
-  accent?: 'cyan' | 'purple' | 'default';
+  accent?: 'cyan' | 'teal' | 'default';
 }
 
 export interface StatsSpec extends BaseComponentSpec {
@@ -157,7 +157,7 @@ export interface BadgeSpec extends BaseComponentSpec {
   type: 'Badge';
   props: {
     label: string;
-    variant?: 'default' | 'cyan' | 'purple' | 'success' | 'warning' | 'error';
+    variant?: 'default' | 'cyan' | 'teal' | 'success' | 'warning' | 'error';
     size?: 'sm' | 'md' | 'lg';
     icon?: string;
   };
@@ -169,6 +169,74 @@ export interface DividerSpec extends BaseComponentSpec {
     variant?: 'default' | 'accent' | 'dashed';
     spacing?: 'sm' | 'md' | 'lg';
     label?: string;
+  };
+}
+
+// ============================================================================
+// Experience Components - Scroll-driven, immersive primitives
+// ============================================================================
+
+export interface HeroSpec extends BaseComponentSpec {
+  type: 'Hero';
+  props: {
+    title: string;
+    subtitle?: string;
+    backgroundImage?: string;
+    badge?: string;
+    meta?: string[];
+    showScrollIndicator?: boolean;
+    height?: 'full' | 'large' | 'medium';
+    overlay?: 'dark' | 'gradient' | 'none';
+    onBadgeClick?: string;
+    onScrollClick?: string;
+  };
+}
+
+export interface ScrollSectionSpec extends BaseComponentSpec {
+  type: 'ScrollSection';
+  props: {
+    animation?: 'fade-up' | 'fade-in' | 'slide-left' | 'slide-right' | 'scale' | 'none';
+    delay?: number;
+    threshold?: number;
+  };
+  children?: ComponentSpec | ComponentSpec[];
+}
+
+export interface ProgressBarSpec extends BaseComponentSpec {
+  type: 'ProgressBar';
+  props: {
+    containerId?: string;
+    position?: 'top' | 'bottom';
+    height?: number;
+    showLabel?: boolean;
+  };
+}
+
+export interface ActionItemSpec {
+  id: string;
+  label: string;
+  description?: string;
+  icon?: string;
+  variant?: 'primary' | 'secondary' | 'branch';
+}
+
+export interface ActionBarSpec extends BaseComponentSpec {
+  type: 'ActionBar';
+  props: {
+    actions: ActionItemSpec[];
+    title?: string;
+    onAction?: string;
+  };
+}
+
+// ============================================================================
+// Wildcard Component - Full JSX execution
+// ============================================================================
+
+export interface RawJsxSpec extends BaseComponentSpec {
+  type: 'RawJsx';
+  props: {
+    jsx: string; // JSX code to render (function component)
   };
 }
 
@@ -185,7 +253,12 @@ export type ComponentSpec =
   | CalloutSpec
   | StatsSpec
   | BadgeSpec
-  | DividerSpec;
+  | DividerSpec
+  | HeroSpec
+  | ScrollSectionSpec
+  | ProgressBarSpec
+  | ActionBarSpec
+  | RawJsxSpec;
 
 export interface CanvasState {
   rootComponent: ComponentSpec | null;

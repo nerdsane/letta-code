@@ -26,6 +26,7 @@ import type {
   WorldContributions,
 } from "../../types/dsf";
 import { world_manager } from "./world_manager";
+import { broadcastStateChange } from "./canvas_ui";
 
 // ============================================================================
 // Constants
@@ -156,6 +157,12 @@ async function createStory(args: StoryManagerArgs): Promise<StoryManagerResult> 
   const filePath = join(worldDir, `${storyId}.json`);
   await writeFile(filePath, JSON.stringify(story, null, 2), "utf-8");
 
+  // Broadcast state change for reactive UI
+  await broadcastStateChange('story_started', {
+    storyId: storyId,
+    worldId: args.world_checkpoint,
+  });
+
   return {
     toolReturn: `Story created: ${args.title}\nID: ${storyId}\nWorld: ${args.world_checkpoint} (v${world.development.version})\nPath: ${filePath}`,
     status: "success",
@@ -213,6 +220,13 @@ async function saveSegment(args: StoryManagerArgs): Promise<StoryManagerResult> 
   const worldDir = join(STORIES_DIR, story.world_checkpoint);
   const filePath = join(worldDir, `${story.id}.json`);
   await writeFile(filePath, JSON.stringify(story, null, 2), "utf-8");
+
+  // Broadcast state change for reactive UI
+  await broadcastStateChange('story_continued', {
+    storyId: story.id,
+    segmentId: segmentId,
+    worldId: story.world_checkpoint,
+  });
 
   return {
     toolReturn: `Segment saved to story "${story.metadata.title}"\nSegment ID: ${segmentId}\nWord count: ${segment.word_count}\nTotal segments: ${story.segments.length}`,
@@ -428,14 +442,14 @@ async function getContinuationContext(args: StoryManagerArgs): Promise<StoryMana
   // Gather rules that have been applied
   const appliedRuleIds = new Set<string>();
   for (const segment of story.segments) {
-    segment.world_evolution.rules_applied?.forEach(id => appliedRuleIds.add(id));
+    segment.world_evolution?.rules_applied?.forEach(id => appliedRuleIds.add(id));
   }
   const rulesInPlay = world.foundation.rules.filter(r => appliedRuleIds.has(r.id));
 
   // Gather elements that have been introduced
   const introducedElementIds = new Set<string>();
   for (const segment of story.segments) {
-    segment.world_evolution.elements_introduced?.forEach(id => introducedElementIds.add(id));
+    segment.world_evolution?.elements_introduced?.forEach(id => introducedElementIds.add(id));
   }
   const elementsInPlay = world.surface.visible_elements.filter(e => introducedElementIds.has(e.id));
 
@@ -581,8 +595,8 @@ function updateEndpoints(story: Story, newSegment: StorySegment): void {
 function updateWorldContributions(story: Story, segment: StorySegment): void {
   const contrib = story.world_contributions;
 
-  // Add new elements
-  if (segment.world_evolution.elements_introduced) {
+  // Add new elements (guard against missing world_evolution)
+  if (segment.world_evolution?.elements_introduced) {
     for (const elemId of segment.world_evolution.elements_introduced) {
       if (!contrib.characters_developed.includes(elemId) && !contrib.locations_explored.includes(elemId)) {
         // Assume character for now (could be smarter)
@@ -591,8 +605,8 @@ function updateWorldContributions(story: Story, segment: StorySegment): void {
     }
   }
 
-  // Add applied rules
-  if (segment.world_evolution.rules_applied) {
+  // Add applied rules (guard against missing world_evolution)
+  if (segment.world_evolution?.rules_applied) {
     for (const ruleId of segment.world_evolution.rules_applied) {
       if (!contrib.rules_tested.includes(ruleId)) {
         contrib.rules_tested.push(ruleId);

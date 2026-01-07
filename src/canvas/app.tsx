@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import type { World, Story, StorySegment } from "../types/dsf";
 import type { ComponentSpec } from "./components/types";
@@ -6,6 +6,14 @@ import "./styles.css";
 import { DynamicRenderer } from "./components/DynamicRenderer";
 import { MountPoint } from "./components/MountPoint";
 import { AgentBusClient } from "./agentBusClient";
+import { ImmersiveStoryReader } from "./components/story";
+import { mockStory } from "./components/story/mockStory";
+import { WorldSpace } from "./components/world";
+import { WelcomeSpace } from "./components/welcome";
+import { FeedbackProvider, useFeedbackSafe } from "./context/FeedbackContext";
+import { ToastContainer, AgentStatus } from "./components/feedback";
+import { FloatingInput, useFloatingInput, InteractiveElement, type ElementType } from "./components/interaction";
+import { AgentSuggestions, type Suggestion } from "./components/agent";
 
 // ============================================================================
 // ASCII Art Logo
@@ -30,6 +38,12 @@ const ASCII_LOGO = `██████╗ ███████╗████�
 
 type View = "canvas" | "world" | "story";
 
+interface AgentUIEntry {
+  componentId: string;
+  spec: ComponentSpec;
+  mode: 'overlay' | 'fullscreen' | 'inline';
+}
+
 interface AppState {
   view: View;
   worlds: World[];
@@ -38,9 +52,23 @@ interface AppState {
   selectedStory: Story | null;
   loading: boolean;
   error: string | null;
-  dynamicUI: ComponentSpec | null; // Temporary test UI (will be removed)
-  agentUI: Map<string, { componentId: string; spec: ComponentSpec }>; // Agent-created UI by target
+  agentUI: Map<string, AgentUIEntry>; // Agent-created UI by target
+  fullscreenUI: AgentUIEntry | null; // Fullscreen UI takes over main content
   agentBusConnected: boolean;
+  showImmersiveDemo: boolean; // Toggle for immersive reader demo (mock data)
+  agentThinking: boolean; // Agent is processing
+  agentAction?: string; // What agent is currently doing
+  useImmersiveWorld: boolean; // Use immersive WorldSpace view
+  pendingExperience: { storyId: string; spec: any } | null; // Experience ready but not shown
+  agentSuggestions: Array<{
+    id: string;
+    priority: 'high' | 'medium' | 'low';
+    title: string;
+    description: string;
+    actionId: string;
+    actionLabel?: string;
+    actionData?: any;
+  }>; // Suggestions from agent
 }
 
 // ============================================================================
@@ -86,12 +114,19 @@ function App() {
     selectedStory: null,
     loading: true,
     error: null,
-    dynamicUI: null,
     agentUI: new Map(),
+    fullscreenUI: null,
     agentBusConnected: false,
+    showImmersiveDemo: false,
+    agentThinking: false,
+    useImmersiveWorld: true, // Default to immersive experience
+    pendingExperience: null, // Immersive experience ready for user to activate
+    agentSuggestions: [], // Suggestions from agent via Agent Bus
   });
 
   const agentBusRef = useRef<AgentBusClient | null>(null);
+  const pendingStoryRequests = useRef<Set<string>>(new Set()); // Track pending requests to prevent duplicates
+  const feedback = useFeedbackSafe();
 
   // WebSocket connection for live updates
   useEffect(() => {
@@ -119,6 +154,22 @@ function App() {
 
     return () => ws.close();
   }, []);
+
+  // ESC key handler for fullscreen and immersive modes
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (state.fullscreenUI) {
+          setState(s => ({ ...s, fullscreenUI: null }));
+        } else if (state.showImmersiveDemo) {
+          setState(s => ({ ...s, showImmersiveDemo: false }));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.fullscreenUI, state.showImmersiveDemo]);
 
   // Load initial data
   useEffect(() => {
@@ -161,28 +212,76 @@ function App() {
   }
 
   function selectStory(story: Story) {
+    // Guard: Don't re-request if already pending or fullscreen exists for this story
+    if (pendingStoryRequests.current.has(story.id)) {
+      console.log('[Canvas] Story request already pending:', story.id);
+      return;
+    }
+
+    // Guard: Don't request if fullscreen UI already exists for this story
+    if (state.fullscreenUI?.target?.includes(story.id.replace(/_/g, '-'))) {
+      console.log('[Canvas] Fullscreen already exists for story:', story.id);
+      return;
+    }
+
+    // 1. IMMEDIATELY show static story view (never blocked)
     setState((s) => ({
       ...s,
       view: "story",
       selectedStory: story,
+      agentThinking: true, // Show subtle indicator that enhancement is coming
     }));
+
+    // 2. Request immersive experience in BACKGROUND (if connected)
+    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      // Mark as pending BEFORE sending to prevent race conditions
+      pendingStoryRequests.current.add(story.id);
+
+      agentBusRef.current.sendInteraction(
+        'canvas-story-request',
+        'story_read_request',
+        {
+          storyId: story.id,
+          title: story.metadata.title,
+          segmentCount: (story.segments || []).length,
+          story: story,
+        },
+        'story-experience'
+      );
+    } else {
+      // No agent bus, just clear thinking state
+      setState((s) => ({ ...s, agentThinking: false }));
+    }
   }
 
   function goBack() {
     if (state.view === "story") {
-      setState((s) => ({ ...s, view: "world" }));
+      // Clear any pending request for this story
+      if (state.selectedStory) {
+        pendingStoryRequests.current.delete(state.selectedStory.id);
+      }
+      setState((s) => ({ ...s, view: "world", pendingExperience: null, agentThinking: false }));
     } else if (state.view === "world") {
       setState((s) => ({ ...s, view: "canvas", selectedWorld: null }));
     }
   }
 
   function goHome() {
+    // Clear all pending requests when going home
+    pendingStoryRequests.current.clear();
     setState((s) => ({
       ...s,
       view: "canvas",
       selectedWorld: null,
       selectedStory: null,
+      showImmersiveDemo: false,
+      pendingExperience: null,
+      agentThinking: false,
     }));
+  }
+
+  function toggleImmersiveDemo() {
+    setState((s) => ({ ...s, showImmersiveDemo: !s.showImmersiveDemo }));
   }
 
   function handleDynamicUIInteraction(
@@ -206,21 +305,165 @@ function App() {
     }
   }
 
+  // Handle element context menu actions
+  function handleElementAction(actionId: string, elementId: string, elementType: ElementType, elementData?: any) {
+    console.log('[Canvas] Element action:', { actionId, elementId, elementType });
+
+    // Send to agent via Agent Bus
+    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      agentBusRef.current.sendInteraction(
+        `element-${elementType}-${elementId}`,
+        `element_action`,
+        {
+          action: actionId,
+          elementId,
+          elementType,
+          elementData,
+          context: {
+            view: state.view,
+            worldId: state.selectedWorld ? getWorldCheckpointName(state.selectedWorld) : undefined,
+            storyId: state.selectedStory?.id,
+          },
+        },
+        'agent'
+      );
+
+      // Show feedback
+      feedback?.showToast(`Action: ${actionId}`, 'agent');
+      setState(s => ({ ...s, agentThinking: true, agentAction: `Processing ${actionId}...` }));
+    } else {
+      feedback?.showToast('Agent not connected', 'warning');
+    }
+  }
+
+  // Handle suggestion acceptance
+  function handleSuggestionAccept(suggestion: Suggestion) {
+    console.log('[Canvas] Suggestion accepted:', suggestion);
+
+    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      agentBusRef.current.sendInteraction(
+        `suggestion-${suggestion.id}`,
+        'suggestion_accepted',
+        {
+          suggestion,
+          context: {
+            view: state.view,
+            worldId: state.selectedWorld ? getWorldCheckpointName(state.selectedWorld) : undefined,
+            storyId: state.selectedStory?.id,
+          },
+        },
+        'agent'
+      );
+
+      feedback?.showToast(`Working on: ${suggestion.title}`, 'agent');
+      setState(s => ({ ...s, agentThinking: true, agentAction: suggestion.action }));
+    }
+  }
+
+  function handleSuggestionDismiss(suggestionId: string) {
+    console.log('[Canvas] Suggestion dismissed:', suggestionId);
+  }
+
   // Initialize Agent Bus connection
   useEffect(() => {
     const agentBus = new AgentBusClient({
-      onCanvasUI: (componentId, target, action, spec) => {
+      onCanvasUI: (componentId, target, action, spec, mode = 'overlay') => {
         setState((s) => {
+          // Handle fullscreen mode - store as pending experience (don't auto-switch)
+          if (mode === 'fullscreen') {
+            if (action === 'remove') {
+              return { ...s, fullscreenUI: null, pendingExperience: null };
+            } else if (spec && s.selectedStory) {
+              // Clear pending request since experience is ready
+              pendingStoryRequests.current.delete(s.selectedStory.id);
+              // Store as pending experience, let user choose to view it
+              return {
+                ...s,
+                pendingExperience: { storyId: s.selectedStory.id, spec },
+                agentThinking: false,
+              };
+            }
+            return s;
+          }
+
+          // Handle overlay/inline modes - stored by target
           const newAgentUI = new Map(s.agentUI);
 
           if (action === 'remove') {
             newAgentUI.delete(target);
           } else if (spec) {
-            newAgentUI.set(target, { componentId, spec });
+            newAgentUI.set(target, { componentId, spec, mode });
           }
 
           return { ...s, agentUI: newAgentUI };
         });
+      },
+      onStateChange: (event, data) => {
+        console.log('[Canvas] State change:', event, data);
+
+        // Handle state changes with soft refresh (no full page reload)
+        switch (event) {
+          case 'agent_thinking':
+            setState(s => ({ ...s, agentThinking: true, agentAction: data.action }));
+            feedback?.setAgentThinking(true, data.action);
+            break;
+          case 'agent_done':
+            setState(s => ({ ...s, agentThinking: false, agentAction: undefined }));
+            feedback?.setAgentThinking(false);
+            break;
+          case 'story_started':
+            // Show toast and refresh data
+            feedback?.showToast('New story created!', 'success');
+            Promise.all([
+              fetch('/api/stories').then(res => res.json()) as Promise<Story[]>,
+              fetch('/api/worlds').then(res => res.json()) as Promise<World[]>,
+            ]).then(([stories, worlds]) => {
+              setState(prev => ({
+                ...prev,
+                stories,
+                worlds,
+                agentThinking: false,
+              }));
+            });
+            break;
+          case 'story_continued':
+            // Show toast and refresh data
+            feedback?.showToast('Story continued', 'agent');
+            Promise.all([
+              fetch('/api/stories').then(res => res.json()) as Promise<Story[]>,
+              fetch('/api/worlds').then(res => res.json()) as Promise<World[]>,
+            ]).then(([stories, worlds]) => {
+              setState(prev => ({
+                ...prev,
+                stories,
+                worlds,
+                agentThinking: false,
+              }));
+            });
+            break;
+          case 'world_entered':
+            // Show toast and refresh worlds data
+            feedback?.showToast('World updated', 'agent');
+            (fetch('/api/worlds').then(res => res.json()) as Promise<World[]>).then(worlds => {
+              setState(prev => ({ ...prev, worlds, agentThinking: false }));
+            });
+            break;
+          case 'image_generated':
+            // Show toast and refresh to show new images
+            feedback?.showToast('Image generated', 'success');
+            Promise.all([
+              fetch('/api/stories').then(res => res.json()) as Promise<Story[]>,
+              fetch('/api/worlds').then(res => res.json()) as Promise<World[]>,
+            ]).then(([stories, worlds]) => {
+              setState(prev => ({
+                ...prev,
+                stories,
+                worlds,
+                agentThinking: false,
+              }));
+            });
+            break;
+        }
       },
       onConnect: (clientId) => {
         console.log('[Canvas] Connected to Agent Bus:', clientId);
@@ -233,6 +476,15 @@ function App() {
       onError: (error) => {
         console.error('[Canvas] Agent Bus error:', error);
       },
+      onSuggestion: (suggestion) => {
+        console.log('[Canvas] Received suggestion:', suggestion);
+        setState((s) => {
+          // Add to suggestions, keep max 10, remove oldest if needed
+          const existing = s.agentSuggestions.filter(sug => sug.id !== suggestion.id);
+          const updated = [...existing, suggestion].slice(-10);
+          return { ...s, agentSuggestions: updated };
+        });
+      },
     });
 
     agentBus.connect();
@@ -241,75 +493,7 @@ function App() {
     return () => {
       agentBus.disconnect();
     };
-  }, []);
-
-  // Test: Load a sample dynamic UI on mount (temporary)
-  useEffect(() => {
-    const testUI: ComponentSpec = {
-      type: 'Dialog',
-      id: 'test-dialog',
-      props: {
-        title: 'Agent-Controlled Dialog',
-        description: 'This dialog was created by specifying JSON!',
-        trigger: {
-          type: 'Button',
-          id: 'trigger-btn',
-          props: {
-            label: '🤖 Agent UI Test',
-            variant: 'primary'
-          }
-        }
-      },
-      children: {
-        type: 'Stack',
-        props: { spacing: 16 },
-        children: [
-          {
-            type: 'Text',
-            props: {
-              content: 'This entire UI was created from a JSON specification:',
-              size: 'md',
-              color: 'var(--text-primary)'
-            }
-          },
-          {
-            type: 'Text',
-            props: {
-              content: '• Dialog with neon styling ✨',
-              size: 'sm',
-              color: 'var(--text-secondary)'
-            }
-          },
-          {
-            type: 'Text',
-            props: {
-              content: '• Stack layout with spacing',
-              size: 'sm',
-              color: 'var(--text-secondary)'
-            }
-          },
-          {
-            type: 'Text',
-            props: {
-              content: '• Multiple text components',
-              size: 'sm',
-              color: 'var(--text-secondary)'
-            }
-          },
-          {
-            type: 'Text',
-            props: {
-              content: 'Next: Agent Bus → canvas_ui tool → Agent control! 🚀',
-              size: 'md',
-              color: 'var(--neon-cyan)'
-            }
-          }
-        ]
-      }
-    };
-
-    setState(s => ({ ...s, dynamicUI: testUI }));
-  }, []);
+  }, [feedback]);
 
   if (state.loading) {
     return <LoadingScreen />;
@@ -317,6 +501,20 @@ function App() {
 
   if (state.error) {
     return <ErrorScreen error={state.error} onRetry={loadData} />;
+  }
+
+  // Show immersive demo mode (full-screen experience)
+  if (state.showImmersiveDemo) {
+    return (
+      <ImmersiveStoryReader
+        story={mockStory}
+        onContinue={() => console.log('Continue story')}
+        onBranch={(branchId) => console.log('Branch selected:', branchId)}
+        onWorldExplore={() => {
+          toggleImmersiveDemo();
+        }}
+      />
+    );
   }
 
   return (
@@ -329,17 +527,7 @@ function App() {
         onHome={goHome}
       />
 
-      {/* Test dynamic UI (temporary) */}
-      {state.dynamicUI && (
-        <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 2000 }}>
-          <DynamicRenderer
-            spec={state.dynamicUI}
-            onInteraction={handleDynamicUIInteraction}
-          />
-        </div>
-      )}
-
-      {/* Agent Bus UI components */}
+      {/* Agent Bus UI components (overlay mode) */}
       {Array.from(state.agentUI.entries()).map(([target, { componentId, spec }]) => {
         // For now, render all components as floating (TODO: add proper mount points)
         return (
@@ -356,37 +544,187 @@ function App() {
         );
       })}
 
+      {/* Fullscreen UI - takes over entire viewport */}
+      {state.fullscreenUI && (
+        <div
+          className="fullscreen-ui"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 3000,
+            background: 'var(--bg-primary)',
+            overflow: 'auto',
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setState(s => ({ ...s, fullscreenUI: null }))}
+            style={{
+              position: 'fixed',
+              top: '20px',
+              right: '20px',
+              zIndex: 3001,
+              padding: '8px 12px',
+              background: 'rgba(10, 10, 10, 0.9)',
+              border: '1px solid rgba(0, 255, 204, 0.3)',
+              color: 'rgba(0, 255, 204, 0.8)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              letterSpacing: '0.1em',
+              cursor: 'pointer',
+            }}
+          >
+            ESC
+          </button>
+          <DynamicRenderer
+            spec={state.fullscreenUI.spec}
+            onInteraction={handleDynamicUIInteraction}
+          />
+        </div>
+      )}
+
+      {/* Agent status indicator */}
+      <AgentStatus
+        isThinking={state.agentThinking}
+        action={state.agentAction}
+      />
+
       <main className="main-content">
         {state.view === "canvas" && (
-          <CanvasView
+          <WelcomeSpace
             worlds={state.worlds}
             stories={state.stories}
             onSelectWorld={selectWorld}
             onSelectStory={selectStory}
+            onElementAction={handleElementAction}
           />
         )}
 
         {state.view === "world" && state.selectedWorld && (
-          <WorldView
-            world={state.selectedWorld}
-            stories={state.stories.filter(
-              (s) => s.world_checkpoint === getWorldCheckpointName(state.selectedWorld!)
-            )}
-            onSelectStory={selectStory}
-            agentUI={state.agentUI}
-            onInteraction={handleDynamicUIInteraction}
-          />
+          state.useImmersiveWorld ? (
+            <WorldSpace
+              world={state.selectedWorld}
+              stories={state.stories.filter(
+                (s) => s.world_checkpoint === getWorldCheckpointName(state.selectedWorld!)
+              )}
+              onSelectStory={selectStory}
+              onStartNewStory={() => {
+                // Trigger new story creation
+                const checkpoint = getWorldCheckpointName(state.selectedWorld!);
+                fetch(`/api/world/${checkpoint}/new-story`, { method: 'POST' })
+                  .then(() => window.location.reload())
+                  .catch(console.error);
+              }}
+              onElementAction={handleElementAction}
+            />
+          ) : (
+            <WorldView
+              world={state.selectedWorld}
+              stories={state.stories.filter(
+                (s) => s.world_checkpoint === getWorldCheckpointName(state.selectedWorld!)
+              )}
+              onSelectStory={selectStory}
+              agentUI={state.agentUI}
+              onInteraction={handleDynamicUIInteraction}
+            />
+          )
         )}
 
         {state.view === "story" && state.selectedStory && (
-          <StoryView
-            story={state.selectedStory}
-            agentUI={state.agentUI}
-            onInteraction={handleDynamicUIInteraction}
-          />
+          <>
+            <StoryView
+              story={state.selectedStory}
+              agentUI={state.agentUI}
+              onInteraction={handleDynamicUIInteraction}
+              onElementAction={handleElementAction}
+            />
+            {/* Enhance button - shows when immersive experience is ready */}
+            {state.pendingExperience?.storyId === state.selectedStory.id && (
+              <button
+                className="enhance-experience-btn"
+                onClick={() => setState(s => ({
+                  ...s,
+                  fullscreenUI: {
+                    componentId: 'story-experience',
+                    spec: s.pendingExperience!.spec,
+                    mode: 'fullscreen',
+                  },
+                  pendingExperience: null,
+                }))}
+              >
+                ✨ View Immersive Experience
+              </button>
+            )}
+          </>
         )}
       </main>
+
+      {/* Agent Suggestions */}
+      <AgentSuggestions
+        world={state.selectedWorld}
+        story={state.selectedStory}
+        stories={state.stories}
+        agentSuggestions={state.agentSuggestions}
+        onAccept={handleSuggestionAccept}
+        onDismiss={handleSuggestionDismiss}
+        position="floating"
+      />
+
+      {/* Global toast notifications */}
+      <ToastContainer />
+
+      {/* Global floating input (Cmd/Ctrl+K) */}
+      <FloatingInputWrapper agentBusRef={agentBusRef} currentView={state.view} />
     </div>
+  );
+}
+
+// Floating input wrapper - needs to be separate to use hooks properly
+function FloatingInputWrapper({
+  agentBusRef,
+  currentView,
+}: {
+  agentBusRef: React.MutableRefObject<AgentBusClient | null>;
+  currentView: string;
+}) {
+  const floatingInput = useFloatingInput();
+
+  const handleSendMessage = useCallback((message: string, context: any) => {
+    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      agentBusRef.current.sendInteraction(
+        'floating-input',
+        'user_message',
+        {
+          message,
+          context: {
+            ...context,
+            view: currentView,
+          },
+        },
+        'agent'
+      );
+    } else {
+      console.warn('[Canvas] Agent Bus not connected, message not sent');
+    }
+  }, [agentBusRef, currentView]);
+
+  return (
+    <FloatingInput
+      isVisible={floatingInput.isVisible}
+      onSend={handleSendMessage}
+      onClose={floatingInput.close}
+      context={floatingInput.context}
+      placeholder="Ask the agent anything... (Ctrl+K)"
+    />
+  );
+}
+
+// Wrapper to provide FeedbackContext
+function AppWithFeedback() {
+  return (
+    <FeedbackProvider>
+      <App />
+    </FeedbackProvider>
   );
 }
 
@@ -779,9 +1117,14 @@ function MarkdownContent({
   content,
   assets,
 }: {
-  content: string;
+  content?: string;
   assets?: StoryAsset[];
 }) {
+  // Guard against undefined content
+  if (!content) {
+    return null;
+  }
+
   // Simple markdown parser for images: ![description](asset_id)
   const renderMarkdown = (text: string) => {
     const parts: (string | React.ReactElement)[] = [];
@@ -807,7 +1150,7 @@ function MarkdownContent({
         parts.push(
           <img
             key={`${assetId}-${match.index}`}
-            src={`/assets/${asset.path}`}
+            src={`/api/assets/${asset.path}`}
             alt={altText || asset.description || "Story image"}
             className="inline-image"
             style={{ maxWidth: "100%", height: "auto", margin: "1rem 0" }}
@@ -858,16 +1201,19 @@ function StoryView({
   story,
   agentUI,
   onInteraction,
+  onElementAction,
 }: {
   story: Story;
   agentUI: Map<string, { componentId: string; spec: ComponentSpec }>;
   onInteraction: (componentId: string, interactionType: string, data: any, target?: string) => void;
+  onElementAction?: (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => void;
 }) {
-  const [activeSegmentIndex, setActiveSegmentIndex] = useState(story.segments.length - 1);
+  const segments = story.segments || [];
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState(Math.max(0, segments.length - 1));
   const [continuingStory, setContinuingStory] = useState(false);
   const [continueMessage, setContinueMessage] = useState<string | null>(null);
 
-  const segment = story.segments[activeSegmentIndex];
+  const segment = segments[activeSegmentIndex];
 
   // Helper to get components for a specific target
   const getComponentsForTarget = (target: string) => {
@@ -881,7 +1227,7 @@ function StoryView({
   };
 
   async function handleContinue() {
-    const initialSegmentCount = story.segments.length;
+    const initialSegmentCount = segments.length;
 
     try {
       setContinuingStory(true);
@@ -960,7 +1306,7 @@ function StoryView({
       <div className="story-header">
         <div className="story-meta">
           <span className="story-status">{story.metadata.status}</span>
-          <span className="story-segments">{story.segments.length} segments</span>
+          <span className="story-segments">{segments.length} segments</span>
           <span className="story-world">
             World: {story.world_checkpoint} (v{story.world_version})
           </span>
@@ -974,12 +1320,12 @@ function StoryView({
         onInteraction={onInteraction}
       />
 
-      {story.segments.length === 0 ? (
+      {segments.length === 0 ? (
         <EmptyState message="No segments yet" />
       ) : (
         <>
           <div className="segment-nav">
-            {story.segments.map((seg, index) => (
+            {segments.map((seg, index) => (
               <button
                 key={seg.id}
                 className={`segment-nav-button ${index === activeSegmentIndex ? "active" : ""}`}
@@ -991,11 +1337,17 @@ function StoryView({
           </div>
 
           {segment && (
-            <div className="segment-content">
-              <div className="segment-header">
-                <h3 className="segment-id">{segment.id}</h3>
-                <span className="segment-word-count">{segment.word_count} words</span>
-              </div>
+            <InteractiveElement
+              elementType="story_segment"
+              elementId={segment.id}
+              elementData={segment}
+              onAction={onElementAction || (() => {})}
+            >
+              <div className="segment-content">
+                <div className="segment-header">
+                  <h3 className="segment-id">{segment.id}</h3>
+                  <span className="segment-word-count">{segment.word_count} words</span>
+                </div>
 
               {segment.assets && segment.assets.length > 0 && (
                 <div className="segment-assets">
@@ -1003,7 +1355,7 @@ function StoryView({
                     <div key={asset.id} className="asset-item">
                       {asset.type === "image" && (
                         <img
-                          src={`/assets/${asset.path}`}
+                          src={`/api/assets/${asset.path}`}
                           alt={asset.description || "Story asset"}
                           className="asset-image"
                         />
@@ -1072,7 +1424,7 @@ function StoryView({
                 </div>
               )}
 
-              {activeSegmentIndex === story.segments.length - 1 && (
+              {activeSegmentIndex === segments.length - 1 && (
                 <div className="story-actions">
                   <button
                     className="continue-button"
@@ -1088,7 +1440,8 @@ function StoryView({
                   )}
                 </div>
               )}
-            </div>
+              </div>
+            </InteractiveElement>
           )}
         </>
       )}
@@ -1139,7 +1492,8 @@ function WorldCard({ world, onClick }: { world: World; onClick: () => void }) {
 }
 
 function StoryCard({ story, onClick }: { story: Story; onClick: () => void }) {
-  const totalWords = story.segments.reduce((sum, seg) => sum + seg.word_count, 0);
+  const segments = story.segments || [];
+  const totalWords = segments.reduce((sum, seg) => sum + seg.word_count, 0);
 
   return (
     <div className="story-card" onClick={onClick}>
@@ -1149,7 +1503,7 @@ function StoryCard({ story, onClick }: { story: Story; onClick: () => void }) {
       </div>
       <div className="story-card-meta">
         <span>World: {story.world_checkpoint}</span>
-        <span>{story.segments.length} segments</span>
+        <span>{segments.length} segments</span>
         <span>{totalWords} words</span>
       </div>
       {story.metadata.tags && story.metadata.tags.length > 0 && (
@@ -1230,6 +1584,6 @@ if (typeof document !== "undefined") {
     rootElement.innerHTML = '';
 
     const root = createRoot(rootElement);
-    root.render(<App />);
+    root.render(<AppWithFeedback />);
   }
 }

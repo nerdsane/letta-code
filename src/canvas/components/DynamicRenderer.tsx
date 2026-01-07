@@ -13,6 +13,8 @@ import { Badge } from './primitives/Badge';
 import { Divider } from './primitives/Divider';
 import { Stack } from './layout/Stack';
 import { Grid } from './layout/Grid';
+import { Hero, ScrollSection, ProgressBar, ActionBar } from './experience';
+import { RawJsx } from './RawJsx';
 
 interface RendererProps {
   spec: ComponentSpec;
@@ -248,6 +250,80 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
             label={props?.label}
           />
         );
+      }
+
+      // Experience Components
+      case 'Hero': {
+        const { props } = spec as any;
+        return (
+          <Hero
+            title={props.title}
+            subtitle={props.subtitle}
+            backgroundImage={props.backgroundImage}
+            badge={props.badge}
+            meta={props.meta}
+            showScrollIndicator={props.showScrollIndicator}
+            height={props.height}
+            overlay={props.overlay}
+            onBadgeClick={props.onBadgeClick ? () => {
+              if (id) onInteraction(id, 'badge_click', {}, props.onBadgeClick);
+            } : undefined}
+            onScrollClick={props.onScrollClick ? () => {
+              if (id) onInteraction(id, 'scroll_click', {}, props.onScrollClick);
+            } : undefined}
+          />
+        );
+      }
+
+      case 'ScrollSection': {
+        const { props, children } = spec as any;
+        return (
+          <ScrollSection
+            animation={props?.animation}
+            delay={props?.delay}
+            threshold={props?.threshold}
+          >
+            {children ? (
+              Array.isArray(children) ? (
+                children.map((child: ComponentSpec, i: number) => (
+                  <DynamicRenderer key={i} spec={child} onInteraction={onInteraction} />
+                ))
+              ) : (
+                <DynamicRenderer spec={children} onInteraction={onInteraction} />
+              )
+            ) : null}
+          </ScrollSection>
+        );
+      }
+
+      case 'ProgressBar': {
+        const { props } = spec as any;
+        return (
+          <ProgressBar
+            containerId={props?.containerId}
+            position={props?.position}
+            height={props?.height}
+            showLabel={props?.showLabel}
+          />
+        );
+      }
+
+      case 'ActionBar': {
+        const { props } = spec as any;
+        return (
+          <ActionBar
+            actions={props.actions || []}
+            title={props.title}
+            onAction={(actionId) => {
+              if (id) onInteraction(id, 'action', { actionId }, props.onAction);
+            }}
+          />
+        );
+      }
+
+      case 'RawJsx': {
+        const { props } = spec as any;
+        return <RawJsx jsx={props.jsx} />;
       }
 
       default:
