@@ -820,6 +820,102 @@
 }
 
 /* ============================================================================
+   MODE TOGGLE & SCENE BACKGROUND
+   ============================================================================ */
+
+/* Mode toggle button - floating top-right */
+.immersive-mode-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 101;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--color-border-accent);
+  border-radius: 0;
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.immersive-mode-toggle:hover {
+  background: rgba(0, 255, 204, 0.1);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+  transform: translateY(-2px);
+}
+
+.immersive-mode-toggle .mode-icon {
+  font-size: 1rem;
+}
+
+.immersive-mode-toggle .mode-label {
+  opacity: 0.9;
+}
+
+/* Scene background layer - full-bleed behind all content */
+.immersive-scene-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.4;
+  transition: opacity 0.8s ease, background-image 1s ease;
+  will-change: opacity;
+}
+
+.immersive-scene-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.6) 50%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+/* Parallax effect on scroll */
+.immersive-reader--scroll-mode .immersive-scene-background {
+  transform: translateY(calc(var(--scroll-progress, 0) * -50px)) scale(1.1);
+}
+
+/* Reading mode variants */
+.immersive-reader--scroll-mode {
+  /* Default scroll mode - all existing styles apply */
+}
+
+.immersive-reader--vn-mode {
+  overflow: hidden; /* No scrolling in VN mode */
+}
+
+.immersive-reader--vn-mode .immersive-scene-background {
+  opacity: 0.6;
+}
+
+.immersive-reader--vn-mode .immersive-atmosphere {
+  display: none; /* VN mode uses its own backgrounds */
+}
+
+.immersive-reader--vn-mode .immersive-progress {
+  display: none; /* No scroll progress in VN mode */
+}
+
+/* ============================================================================
    RESPONSIVE
    ============================================================================ */
 
@@ -843,6 +939,22 @@
 
   .story-paragraph:first-child::first-letter {
     font-size: 3em;
+  }
+
+  /* Mode toggle - smaller on mobile */
+  .immersive-mode-toggle {
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.375rem 0.625rem;
+    font-size: 0.6rem;
+  }
+
+  .immersive-mode-toggle .mode-icon {
+    font-size: 0.875rem;
+  }
+
+  .immersive-mode-toggle .mode-label {
+    display: none; /* Hide label on mobile, just show icon */
   }
 }
 
@@ -869,5 +981,14 @@
 
   .divider-ornament {
     animation: none;
+  }
+
+  .immersive-scene-background {
+    transition: none;
+    transform: none !important;
+  }
+
+  .immersive-mode-toggle {
+    transition: none;
   }
 }
