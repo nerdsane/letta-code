@@ -173,7 +173,7 @@ async function generateWithOpenAI(
 
   // Map size to gpt-image-1 supported sizes
   // gpt-image-1 supports: "1024x1024", "1024x1536" (portrait), "1536x1024" (landscape), "auto"
-  let size = args.size || DEFAULT_SIZE;
+  let size: string = args.size || DEFAULT_SIZE;
   if (size === "1792x1024") {
     size = "1536x1024"; // Map to closest supported landscape
   } else if (size === "1024x1792") {
@@ -228,6 +228,9 @@ async function generateWithOpenAI(
   }
 
   const imageData = data.data[0];
+  if (!imageData) {
+    throw new Error("No image data returned from OpenAI");
+  }
 
   let imageUrl: string;
   if (imageData.b64_json) {
@@ -290,7 +293,7 @@ async function generateWithGoogle(
       // IMPORTANT: Must specify both TEXT and IMAGE for Nano Banana
       responseModalities: ["TEXT", "IMAGE"],
       maxOutputTokens: 8192,
-    },
+    } as any, // Type assertion needed for responseModalities which isn't in the SDK types yet
   });
 
   const response = result.response;
@@ -301,7 +304,7 @@ async function generateWithGoogle(
   }
 
   const candidate = response.candidates[0];
-  if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+  if (!candidate || !candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
     throw new Error("No image data in response");
   }
 

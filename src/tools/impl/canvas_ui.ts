@@ -5,8 +5,8 @@
  * multimedia enhancements for stories and worlds displayed in the canvas.
  */
 
-import type { CanvasUIMessage } from '../agent-bus/types';
-import type { ComponentSpec } from '../canvas/components/types';
+import type { CanvasUIMessage } from '../../agent-bus/types';
+import type { ComponentSpec } from '../../canvas/components/types';
 
 const AGENT_BUS_URL = process.env.AGENT_BUS_URL || 'ws://localhost:8284/ws?type=agent';
 
@@ -45,36 +45,48 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
 
     // Wait for existing connection attempt
     if (isConnecting && agentBusWs) {
-      agentBusWs.once('open', () => resolve(agentBusWs!));
-      agentBusWs.once('error', reject);
+      const existingWs = agentBusWs;
+      const onOpen = () => {
+        existingWs.removeEventListener('open', onOpen);
+        existingWs.removeEventListener('error', onError);
+        resolve(existingWs);
+      };
+      const onError = () => {
+        existingWs.removeEventListener('open', onOpen);
+        existingWs.removeEventListener('error', onError);
+        reject(new Error('Connection failed'));
+      };
+      existingWs.addEventListener('open', onOpen);
+      existingWs.addEventListener('error', onError);
       return;
     }
 
     // Create new connection
     isConnecting = true;
     agentBusWs = new WebSocket(AGENT_BUS_URL);
+    const ws = agentBusWs;
 
-    agentBusWs.on('open', () => {
+    ws.addEventListener('open', () => {
       console.log('[canvas_ui] Connected to Agent Bus');
       isConnecting = false;
-      resolve(agentBusWs!);
+      resolve(ws);
     });
 
-    agentBusWs.on('error', (error) => {
-      console.error('[canvas_ui] Agent Bus connection error:', error);
+    ws.addEventListener('error', () => {
+      console.error('[canvas_ui] Agent Bus connection error');
       isConnecting = false;
       reject(new Error('Failed to connect to Agent Bus'));
     });
 
-    agentBusWs.on('close', () => {
+    ws.addEventListener('close', () => {
       console.log('[canvas_ui] Agent Bus connection closed');
       agentBusWs = null;
       isConnecting = false;
     });
 
-    agentBusWs.on('message', (data) => {
+    ws.addEventListener('message', (event) => {
       try {
-        const message = JSON.parse(data.toString());
+        const message = JSON.parse(event.data);
         if (message.type === 'interaction') {
           console.log('[canvas_ui] User interaction:', message);
           // TODO: Route interaction back to agent context

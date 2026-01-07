@@ -189,6 +189,7 @@ const TOOL_PERMISSIONS: Record<ToolName, { requiresApproval: boolean }> = {
   story_manager: { requiresApproval: false },
   asset_manager: { requiresApproval: false },
   image_generator: { requiresApproval: false },
+  canvas_ui: { requiresApproval: false },
 };
 
 interface JsonSchema {

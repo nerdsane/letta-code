@@ -322,10 +322,12 @@ function computeDiff(world1: World, world2: World): WorldDiff {
   const w2Depths = world2.foundation.deep_focus_areas.depth_level;
 
   for (const area in w2Depths) {
-    if (w1Depths[area] && w1Depths[area] !== w2Depths[area]) {
+    const w1Depth = w1Depths[area];
+    const w2Depth = w2Depths[area];
+    if (w1Depth && w2Depth && w1Depth !== w2Depth) {
       depthChanges[area] = {
-        from: w1Depths[area],
-        to: w2Depths[area],
+        from: w1Depth,
+        to: w2Depth,
       };
     }
   }
@@ -488,6 +490,7 @@ async function updateWorld(args: WorldManagerArgs): Promise<WorldManagerResult> 
   const revisionNotes: string[] = [];
   for (let i = 0; i < args.updates.length; i++) {
     const update = args.updates[i];
+    if (!update) continue;
 
     // Validate update has required fields
     if (!update.path) {
@@ -527,14 +530,20 @@ function applyUpdate(world: World, update: UpdateOperation): World {
   }
 
   const path = update.path.split(".");
-  const newWorld = JSON.parse(JSON.stringify(world)); // Deep clone
+  const newWorld = JSON.parse(JSON.stringify(world)) as Record<string, any>; // Deep clone
 
-  let current: any = newWorld;
+  let current: Record<string, any> = newWorld;
   for (let i = 0; i < path.length - 1; i++) {
-    current = current[path[i]];
+    const key = path[i];
+    if (key) {
+      current = current[key] as Record<string, any>;
+    }
   }
 
   const lastKey = path[path.length - 1];
+  if (!lastKey) {
+    throw new Error("Invalid path: empty key");
+  }
 
   switch (update.operation) {
     case "add":
@@ -559,5 +568,5 @@ function applyUpdate(world: World, update: UpdateOperation): World {
       break;
   }
 
-  return newWorld;
+  return newWorld as unknown as World;
 }

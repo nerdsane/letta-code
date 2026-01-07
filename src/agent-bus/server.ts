@@ -69,10 +69,12 @@ function routeMessage(message: AgentBusMessage, senderId: string) {
 // WebSocket Server
 // ============================================================================
 
+type WebSocketData = { clientType: string; clientId: string };
+
 export function startAgentBus(port: number = 8284) {
   console.log(`[Agent Bus] Starting on port ${port}...`);
 
-  Bun.serve({
+  Bun.serve<WebSocketData>({
     port,
     fetch(req, server) {
       const url = new URL(req.url);
@@ -111,7 +113,7 @@ export function startAgentBus(port: number = 8284) {
     },
 
     websocket: {
-      open(ws: ServerWebSocket<{ clientType: string; clientId: string }>) {
+      open(ws: ServerWebSocket<WebSocketData>) {
         const { clientId, clientType } = ws.data;
         const type = clientType === 'agent' || clientType === 'canvas' ? clientType : 'agent';
 
@@ -133,7 +135,7 @@ export function startAgentBus(port: number = 8284) {
         }));
       },
 
-      message(ws: ServerWebSocket<{ clientType: string; clientId: string }>, message: string | Buffer) {
+      message(ws: ServerWebSocket<WebSocketData>, message: string | Buffer) {
         const { clientId } = ws.data;
 
         try {
@@ -149,13 +151,13 @@ export function startAgentBus(port: number = 8284) {
         }
       },
 
-      close(ws: ServerWebSocket<{ clientType: string; clientId: string }>) {
+      close(ws: ServerWebSocket<WebSocketData>) {
         const { clientId, clientType } = ws.data;
         clients.delete(clientId);
         console.log(`[Agent Bus] ${clientType}:${clientId} disconnected (${clients.size} remaining)`);
       },
 
-      error(ws: ServerWebSocket<{ clientType: string; clientId: string }>, error: Error) {
+      error(ws: ServerWebSocket<WebSocketData>, error: Error) {
         const { clientId } = ws.data;
         console.error(`[Agent Bus] WebSocket error for ${clientId}:`, error);
       },
