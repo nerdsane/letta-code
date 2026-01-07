@@ -125,6 +125,7 @@ function App() {
   });
 
   const agentBusRef = useRef<AgentBusClient | null>(null);
+  const pendingStoryRequests = useRef<Set<string>>(new Set()); // Track pending requests to prevent duplicates
   const feedback = useFeedbackSafe();
 
   // WebSocket connection for live updates
@@ -211,8 +212,15 @@ function App() {
   }
 
   function selectStory(story: Story) {
-    // Guard: Don't re-request if already generating for this story
-    if (state.agentThinking && state.selectedStory?.id === story.id) {
+    // Guard: Don't re-request if already pending or fullscreen exists for this story
+    if (pendingStoryRequests.current.has(story.id)) {
+      console.log('[Canvas] Story request already pending:', story.id);
+      return;
+    }
+
+    // Guard: Don't request if fullscreen UI already exists for this story
+    if (state.fullscreenUI?.target?.includes(story.id.replace(/_/g, '-'))) {
+      console.log('[Canvas] Fullscreen already exists for story:', story.id);
       return;
     }
 
@@ -226,13 +234,16 @@ function App() {
 
     // 2. Request immersive experience in BACKGROUND (if connected)
     if (agentBusRef.current && agentBusRef.current.isConnected()) {
+      // Mark as pending BEFORE sending to prevent race conditions
+      pendingStoryRequests.current.add(story.id);
+
       agentBusRef.current.sendInteraction(
         'canvas-story-request',
         'story_read_request',
         {
           storyId: story.id,
           title: story.metadata.title,
-          segmentCount: story.segments.length,
+          segmentCount: (story.segments || []).length,
           story: story,
         },
         'story-experience'
@@ -245,19 +256,27 @@ function App() {
 
   function goBack() {
     if (state.view === "story") {
-      setState((s) => ({ ...s, view: "world" }));
+      // Clear any pending request for this story
+      if (state.selectedStory) {
+        pendingStoryRequests.current.delete(state.selectedStory.id);
+      }
+      setState((s) => ({ ...s, view: "world", pendingExperience: null, agentThinking: false }));
     } else if (state.view === "world") {
       setState((s) => ({ ...s, view: "canvas", selectedWorld: null }));
     }
   }
 
   function goHome() {
+    // Clear all pending requests when going home
+    pendingStoryRequests.current.clear();
     setState((s) => ({
       ...s,
       view: "canvas",
       selectedWorld: null,
       selectedStory: null,
       showImmersiveDemo: false,
+      pendingExperience: null,
+      agentThinking: false,
     }));
   }
 
@@ -355,6 +374,8 @@ function App() {
             if (action === 'remove') {
               return { ...s, fullscreenUI: null, pendingExperience: null };
             } else if (spec && s.selectedStory) {
+              // Clear pending request since experience is ready
+              pendingStoryRequests.current.delete(s.selectedStory.id);
               // Store as pending experience, let user choose to view it
               return {
                 ...s,
