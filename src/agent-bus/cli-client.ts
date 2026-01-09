@@ -245,7 +245,7 @@ function handleMessage(
           : "none",
       );
       onConnect?.(clientId, sessionId, connectedClients);
-      connectResolve?.();
+      connectResolve?.(undefined);
       break;
 
     case "client_joined":

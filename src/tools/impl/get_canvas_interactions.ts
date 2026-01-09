@@ -57,7 +57,7 @@ export async function get_canvas_interactions(
     let resultMessage: string;
     if (count === 0) {
       resultMessage = "No pending interactions";
-    } else if (count === 1) {
+    } else if (count === 1 && interactions[0]) {
       const i = interactions[0];
       resultMessage = `1 interaction: ${i.interactionType} on ${i.componentId}${i.data?.actionId ? ` (action: ${i.data.actionId})` : ""}`;
     } else {
