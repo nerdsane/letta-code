@@ -1,14 +1,99 @@
 /**
  * Agent Bus - Message Protocol
  *
- * Bidirectional communication between Agent/CLI and Canvas UI
+ * Bidirectional communication between CLI, Browser, and Agent
+ * Unified WebSocket architecture
  */
 
 import type { ComponentSpec } from '../canvas/components/types';
 
 // ============================================================================
-// Message Types
+// Client Types
 // ============================================================================
+
+export type ClientType = 'browser' | 'cli';
+
+export interface ConnectedClient {
+  id: string;
+  type: ClientType;
+}
+
+// ============================================================================
+// Stream Chunk (from Letta orchestrator)
+// ============================================================================
+
+export interface StreamChunk {
+  type: 'reasoning' | 'reasoning_end' | 'tool_call' | 'tool_result' | 'assistant' | 'assistant_end' | 'error' | 'done' | 'usage';
+  id?: string;
+  content?: string;
+  toolCallId?: string;
+  toolName?: string;
+  toolArgs?: string;
+  toolResult?: string;
+  toolStatus?: 'pending' | 'running' | 'success' | 'error';
+  usage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  };
+  stopReason?: string;
+}
+
+// ============================================================================
+// Client → Server Messages
+// ============================================================================
+
+/**
+ * Chat message from CLI/Browser to agent
+ */
+export interface ChatMessage {
+  type: 'chat_message';
+  content: string;
+  context?: {
+    worldId?: string;
+    storyId?: string;
+  };
+}
+
+/**
+ * Canvas → Agent: User interaction events
+ */
+export interface InteractionMessage {
+  type: 'interaction';
+  componentId: string;
+  interactionType: string; // 'click', 'dialog_change', 'input_change', etc.
+  data: any;
+  target?: string; // Optional callback handler name from spec
+}
+
+/**
+ * Ping for keep-alive
+ */
+export interface PingMessage {
+  type: 'ping';
+}
+
+// ============================================================================
+// Server → Client Messages
+// ============================================================================
+
+/**
+ * Connection confirmation from server
+ */
+export interface ConnectMessage {
+  type: 'connect';
+  clientId: string;
+  sessionId: string;
+  connectedClients: ConnectedClient[];
+}
+
+/**
+ * Streaming chat response chunk
+ */
+export interface ChatChunkMessage {
+  type: 'chat_chunk';
+  chunk: StreamChunk;
+}
 
 /**
  * Agent → Canvas: Create or update UI components
@@ -34,37 +119,10 @@ export interface StateChangeMessage {
     segmentId?: string;
     branchId?: string;
     assetPath?: string;
+    message?: string;
+    error?: boolean;
     [key: string]: any;
   };
-}
-
-/**
- * Canvas → Agent: User interaction events
- */
-export interface InteractionMessage {
-  type: 'interaction';
-  componentId: string;
-  interactionType: string; // 'click', 'dialog_change', 'input_change', etc.
-  data: any;
-  target?: string; // Optional callback handler name from spec
-}
-
-/**
- * Connection lifecycle messages
- */
-export interface ConnectionMessage {
-  type: 'connect' | 'disconnect';
-  clientType: 'agent' | 'canvas';
-  clientId: string;
-}
-
-/**
- * Error messages
- */
-export interface ErrorMessage {
-  type: 'error';
-  error: string;
-  details?: any;
 }
 
 /**
@@ -84,23 +142,76 @@ export interface SuggestionMessage {
 }
 
 /**
- * Union of all message types
+ * Client join notification
  */
-export type AgentBusMessage =
-  | CanvasUIMessage
-  | InteractionMessage
-  | StateChangeMessage
-  | ConnectionMessage
-  | ErrorMessage
-  | SuggestionMessage;
+export interface ClientJoinedMessage {
+  type: 'client_joined';
+  client: ConnectedClient;
+}
+
+/**
+ * Client leave notification
+ */
+export interface ClientLeftMessage {
+  type: 'client_left';
+  clientId: string;
+  clientType: ClientType;
+}
+
+/**
+ * Error messages
+ */
+export interface ErrorMessage {
+  type: 'error';
+  error: string;
+  details?: any;
+}
+
+/**
+ * Pong response
+ */
+export interface PongMessage {
+  type: 'pong';
+}
 
 // ============================================================================
-// Client Connection Info
+// Union Types
+// ============================================================================
+
+/**
+ * Messages from client to server
+ */
+export type ClientToServerMessage =
+  | ChatMessage
+  | InteractionMessage
+  | PingMessage;
+
+/**
+ * Messages from server to client
+ */
+export type ServerToClientMessage =
+  | ConnectMessage
+  | ChatChunkMessage
+  | CanvasUIMessage
+  | StateChangeMessage
+  | SuggestionMessage
+  | ClientJoinedMessage
+  | ClientLeftMessage
+  | ErrorMessage
+  | PongMessage;
+
+/**
+ * All messages (backward compatible alias)
+ */
+export type AgentBusMessage = ClientToServerMessage | ServerToClientMessage;
+
+// ============================================================================
+// Client Connection Info (legacy, for server use)
 // ============================================================================
 
 export interface AgentBusClient {
   id: string;
-  type: 'agent' | 'canvas';
+  type: ClientType;
   ws: any; // WebSocket instance
   connectedAt: Date;
 }
