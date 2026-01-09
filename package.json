@@ -47,6 +47,8 @@
     "@types/bun": "latest",
     "@types/diff": "^8.0.0",
     "@types/picomatch": "^4.0.2",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
     "diff": "^8.0.2",
     "husky": "9.1.7",
     "ink": "^5.0.0",
