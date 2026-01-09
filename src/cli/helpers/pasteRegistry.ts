@@ -44,7 +44,6 @@ export function extractTextPlaceholderIds(text: string): number[] {
   if (!text) return ids;
   const re = /\[Pasted text #(\d+) \+(\d+) lines\]/g;
   let match: RegExpExecArray | null;
-  // biome-ignore lint/suspicious/noAssignInExpressions: Standard pattern for regex matching
   while ((match = re.exec(text)) !== null) {
     const id = Number(match[1]);
     if (!Number.isNaN(id)) ids.push(id);
@@ -81,7 +80,6 @@ export function extractImagePlaceholderIds(text: string): number[] {
   if (!text) return ids;
   const re = /\[Image #(\d+)\]/g;
   let match: RegExpExecArray | null;
-  // biome-ignore lint/suspicious/noAssignInExpressions: Standard pattern for regex matching
   while ((match = re.exec(text)) !== null) {
     const id = Number(match[1]);
     if (!Number.isNaN(id)) ids.push(id);
@@ -135,7 +133,6 @@ export function buildMessageContentFromDisplay(text: string): ContentPart[] {
     }
   };
 
-  // biome-ignore lint/suspicious/noAssignInExpressions: Standard pattern for regex matching
   while ((match = re.exec(text)) !== null) {
     const start = match.index;
     const end = start + match[0].length;

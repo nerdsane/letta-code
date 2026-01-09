@@ -64,7 +64,8 @@ export const SYSTEM_PROMPTS: SystemPromptOption[] = [
   {
     id: "dsf",
     label: "Deep Sci-Fi",
-    description: "Sci-fi worldbuilding with world_manager, story_manager, image generation",
+    description:
+      "Sci-fi worldbuilding with world_manager, story_manager, image generation",
     content: systemPrompt,
     isFeatured: true,
   },

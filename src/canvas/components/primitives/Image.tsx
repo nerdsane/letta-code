@@ -1,21 +1,21 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from "react";
 
 export interface ImageProps {
   src: string;
   alt?: string;
   caption?: string;
-  size?: 'small' | 'medium' | 'large' | 'full';
+  size?: "small" | "medium" | "large" | "full";
   lightbox?: boolean;
   onClick?: () => void;
 }
 
 export function Image({
   src,
-  alt = '',
+  alt = "",
   caption,
-  size = 'medium',
+  size = "medium",
   lightbox = true,
-  onClick
+  onClick,
 }: ImageProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -34,7 +34,7 @@ export function Image({
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       setIsOpen(false);
     }
   }, []);
@@ -58,14 +58,18 @@ export function Image({
           <img
             src={src}
             alt={alt}
-            className={`dsf-image ${isLoaded ? 'loaded' : 'loading'}`}
+            className={`dsf-image ${isLoaded ? "loaded" : "loading"}`}
             onClick={handleClick}
             onLoad={() => setIsLoaded(true)}
             onError={() => setHasError(true)}
-            style={{ cursor: lightbox ? 'zoom-in' : onClick ? 'pointer' : 'default' }}
+            style={{
+              cursor: lightbox ? "zoom-in" : onClick ? "pointer" : "default",
+            }}
           />
         </div>
-        {caption && <figcaption className="dsf-image-caption">{caption}</figcaption>}
+        {caption && (
+          <figcaption className="dsf-image-caption">{caption}</figcaption>
+        )}
       </figure>
 
       {/* Lightbox */}
@@ -74,11 +78,15 @@ export function Image({
           className="dsf-lightbox-overlay"
           onClick={handleClose}
           onKeyDown={handleKeyDown}
-          tabIndex={0}
           role="dialog"
           aria-modal="true"
         >
-          <button className="dsf-lightbox-close" onClick={handleClose} aria-label="Close">
+          <button
+            type="button"
+            className="dsf-lightbox-close"
+            onClick={handleClose}
+            aria-label="Close"
+          >
             ×
           </button>
           <img

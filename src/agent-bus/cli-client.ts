@@ -9,17 +9,16 @@
  */
 
 import type {
-  ServerToClientMessage,
-  ClientToServerMessage,
-  StreamChunk,
   CanvasUIMessage,
-  StateChangeMessage,
-  SuggestionMessage,
+  ClientToServerMessage,
   ConnectedClient,
   InteractionMessage,
-} from './types';
+  ServerToClientMessage,
+  StreamChunk,
+  SuggestionMessage,
+} from "./types";
 
-const WS_URL = 'ws://localhost:8284/ws';
+const WS_URL = "ws://localhost:8284/ws";
 
 let ws: WebSocket | null = null;
 let clientId: string | null = null;
@@ -39,7 +38,7 @@ const PING_INTERVAL = 30000;
 type ChatChunkHandler = (chunk: StreamChunk) => void;
 type CanvasUIHandler = (message: CanvasUIMessage) => void;
 type StateChangeHandler = (event: string, data: Record<string, any>) => void;
-type SuggestionHandler = (suggestion: SuggestionMessage['payload']) => void;
+type SuggestionHandler = (suggestion: SuggestionMessage["payload"]) => void;
 type InteractionHandler = (interaction: {
   componentId: string;
   interactionType: string;
@@ -48,7 +47,11 @@ type InteractionHandler = (interaction: {
 }) => Promise<void>;
 type ClientJoinedHandler = (client: ConnectedClient) => void;
 type ClientLeftHandler = (clientId: string, clientType: string) => void;
-type ConnectHandler = (clientId: string, sessionId: string, clients: ConnectedClient[]) => void;
+type ConnectHandler = (
+  clientId: string,
+  sessionId: string,
+  clients: ConnectedClient[],
+) => void;
 type DisconnectHandler = () => void;
 type ErrorHandler = (error: string) => void;
 
@@ -118,7 +121,10 @@ function generateSessionId(): string {
 /**
  * Connect to the unified WebSocket server
  */
-export function connectToAgentBus(options?: { sessionId?: string; userId?: string }): Promise<void> {
+export function connectToAgentBus(options?: {
+  sessionId?: string;
+  userId?: string;
+}): Promise<void> {
   return new Promise((resolve, reject) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       resolve();
@@ -126,16 +132,16 @@ export function connectToAgentBus(options?: { sessionId?: string; userId?: strin
     }
 
     const useSessionId = options?.sessionId || generateSessionId();
-    const userId = options?.userId || 'cli-user';
+    const userId = options?.userId || "cli-user";
     const fullUrl = `${WS_URL}?type=cli&sessionId=${useSessionId}&userId=${userId}`;
 
-    console.log('[CLI WS] Connecting to unified WebSocket server...');
+    console.log("[CLI WS] Connecting to unified WebSocket server...");
 
     try {
       ws = new WebSocket(fullUrl);
 
       ws.onopen = () => {
-        console.log('[CLI WS] Connected');
+        console.log("[CLI WS] Connected");
         reconnectAttempts = 0;
         startPing();
         // Don't resolve yet - wait for connect message
@@ -143,15 +149,17 @@ export function connectToAgentBus(options?: { sessionId?: string; userId?: strin
 
       ws.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data.toString()) as ServerToClientMessage;
+          const message = JSON.parse(
+            event.data.toString(),
+          ) as ServerToClientMessage;
           handleMessage(message, resolve);
         } catch (err) {
-          console.error('[CLI WS] Failed to parse message:', err);
+          console.error("[CLI WS] Failed to parse message:", err);
         }
       };
 
       ws.onclose = (event) => {
-        console.log('[CLI WS] Disconnected', event.code, event.reason);
+        console.log("[CLI WS] Disconnected", event.code, event.reason);
         stopPing();
         ws = null;
         clientId = null;
@@ -160,13 +168,13 @@ export function connectToAgentBus(options?: { sessionId?: string; userId?: strin
         scheduleReconnect();
       };
 
-      ws.onerror = (error) => {
-        console.error('[CLI WS] Connection error');
-        onError?.('WebSocket connection error');
+      ws.onerror = (_error) => {
+        console.error("[CLI WS] Connection error");
+        onError?.("WebSocket connection error");
         // Don't reject on error - onclose will be called
       };
     } catch (err) {
-      console.error('[CLI WS] Failed to create WebSocket:', err);
+      console.error("[CLI WS] Failed to create WebSocket:", err);
       reject(err);
     }
   });
@@ -177,14 +185,16 @@ export function connectToAgentBus(options?: { sessionId?: string; userId?: strin
  */
 function scheduleReconnect() {
   if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-    console.log('[CLI WS] Max reconnection attempts reached');
+    console.log("[CLI WS] Max reconnection attempts reached");
     return;
   }
 
   reconnectAttempts++;
-  const delay = RECONNECT_DELAY * Math.pow(1.5, reconnectAttempts - 1);
+  const delay = RECONNECT_DELAY * 1.5 ** (reconnectAttempts - 1);
 
-  console.log(`[CLI WS] Reconnecting in ${Math.round(delay)}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+  console.log(
+    `[CLI WS] Reconnecting in ${Math.round(delay)}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`,
+  );
 
   setTimeout(() => {
     connectToAgentBus({ sessionId: sessionId || undefined }).catch(() => {
@@ -199,7 +209,7 @@ function scheduleReconnect() {
 function startPing() {
   pingInterval = setInterval(() => {
     if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'ping' }));
+      ws.send(JSON.stringify({ type: "ping" }));
     }
   }, PING_INTERVAL);
 }
@@ -217,66 +227,82 @@ function stopPing() {
 /**
  * Handle incoming messages from server
  */
-function handleMessage(message: ServerToClientMessage, connectResolve?: (value: void) => void) {
+function handleMessage(
+  message: ServerToClientMessage,
+  connectResolve?: (value: undefined) => void,
+) {
   switch (message.type) {
-    case 'connect':
+    case "connect":
       clientId = message.clientId;
       sessionId = message.sessionId;
       connectedClients = message.connectedClients || [];
-      console.log('[CLI WS] Assigned ID:', clientId);
-      console.log('[CLI WS] Session:', sessionId);
-      console.log('[CLI WS] Other clients:', connectedClients.length > 0
-        ? connectedClients.map(c => `${c.type}:${c.id}`).join(', ')
-        : 'none');
+      console.log("[CLI WS] Assigned ID:", clientId);
+      console.log("[CLI WS] Session:", sessionId);
+      console.log(
+        "[CLI WS] Other clients:",
+        connectedClients.length > 0
+          ? connectedClients.map((c) => `${c.type}:${c.id}`).join(", ")
+          : "none",
+      );
       onConnect?.(clientId, sessionId, connectedClients);
       connectResolve?.();
       break;
 
-    case 'client_joined':
+    case "client_joined":
       connectedClients.push(message.client);
-      console.log(`[CLI WS] ${message.client.type} client joined:`, message.client.id);
+      console.log(
+        `[CLI WS] ${message.client.type} client joined:`,
+        message.client.id,
+      );
       onClientJoined?.(message.client);
       break;
 
-    case 'client_left':
-      connectedClients = connectedClients.filter(c => c.id !== message.clientId);
-      console.log(`[CLI WS] ${message.clientType} client left:`, message.clientId);
+    case "client_left":
+      connectedClients = connectedClients.filter(
+        (c) => c.id !== message.clientId,
+      );
+      console.log(
+        `[CLI WS] ${message.clientType} client left:`,
+        message.clientId,
+      );
       onClientLeft?.(message.clientId, message.clientType);
       break;
 
-    case 'chat_chunk':
+    case "chat_chunk":
       onChatChunk?.(message.chunk);
       break;
 
-    case 'canvas_ui':
-      console.log(`[CLI WS] Canvas UI: ${message.action} ${message.componentId}`);
+    case "canvas_ui":
+      console.log(
+        `[CLI WS] Canvas UI: ${message.action} ${message.componentId}`,
+      );
       onCanvasUI?.(message);
       break;
 
-    case 'state_change':
+    case "state_change":
       console.log(`[CLI WS] State change: ${message.event}`);
       onStateChange?.(message.event, message.data);
       break;
 
-    case 'suggestion':
+    case "suggestion":
       console.log(`[CLI WS] Suggestion: ${message.payload.title}`);
       onSuggestion?.(message.payload);
       break;
 
-    case 'error':
-      console.error('[CLI WS] Server error:', message.error, message.details);
+    case "error":
+      console.error("[CLI WS] Server error:", message.error, message.details);
       onError?.(message.error);
       break;
 
-    case 'pong':
+    case "pong":
       // Heartbeat response, ignore
       break;
 
     default:
       // Handle interaction messages (forwarded from browser)
-      if ((message as any).type === 'interaction') {
+      if ((message as any).type === "interaction") {
         const interaction = message as unknown as InteractionMessage;
-        console.log('[CLI WS] Received interaction:', {
+        console.log("[CLI WS] Received interaction:", {
           componentId: interaction.componentId,
           interactionType: interaction.interactionType,
         });
@@ -289,11 +315,11 @@ function handleMessage(message: ServerToClientMessage, connectResolve?: (value: 
             data: interaction.data,
             target: interaction.target,
           }).catch((err) => {
-            console.error('[CLI WS] Error handling interaction:', err);
+            console.error("[CLI WS] Error handling interaction:", err);
           });
         }
       } else {
-        console.warn('[CLI WS] Unknown message type:', (message as any).type);
+        console.warn("[CLI WS] Unknown message type:", (message as any).type);
       }
   }
 }
@@ -305,40 +331,53 @@ function handleMessage(message: ServerToClientMessage, connectResolve?: (value: 
 /**
  * Send a chat message to the agent
  */
-export function sendChatMessage(content: string, context?: { worldId?: string; storyId?: string }) {
+export function sendChatMessage(
+  content: string,
+  context?: { worldId?: string; storyId?: string },
+) {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
-    console.error('[CLI WS] Not connected');
+    console.error("[CLI WS] Not connected");
     return;
   }
 
   const message: ClientToServerMessage = {
-    type: 'chat_message',
+    type: "chat_message",
     content,
     context,
   };
 
-  console.log('[CLI WS] Sending chat message:', content.substring(0, 50));
+  console.log("[CLI WS] Sending chat message:", content.substring(0, 50));
   ws.send(JSON.stringify(message));
 }
 
 /**
  * Send an interaction (e.g., simulating button click)
  */
-export function sendInteraction(componentId: string, interactionType: string, data: any, target?: string) {
+export function sendInteraction(
+  componentId: string,
+  interactionType: string,
+  data: any,
+  target?: string,
+) {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
-    console.error('[CLI WS] Not connected');
+    console.error("[CLI WS] Not connected");
     return;
   }
 
   const message: ClientToServerMessage = {
-    type: 'interaction',
+    type: "interaction",
     componentId,
     interactionType,
     data,
     target,
   };
 
-  console.log('[CLI WS] Sending interaction:', interactionType, 'on', componentId);
+  console.log(
+    "[CLI WS] Sending interaction:",
+    interactionType,
+    "on",
+    componentId,
+  );
   ws.send(JSON.stringify(message));
 }
 
@@ -347,7 +386,7 @@ export function sendInteraction(componentId: string, interactionType: string, da
  */
 export function sendToAgentBus(message: ClientToServerMessage) {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
-    console.error('[CLI WS] Not connected');
+    console.error("[CLI WS] Not connected");
     return;
   }
 
@@ -390,7 +429,7 @@ export function getConnectedClients(): ConnectedClient[] {
  * Check if browser is connected
  */
 export function isBrowserConnected(): boolean {
-  return connectedClients.some(c => c.type === 'browser');
+  return connectedClients.some((c) => c.type === "browser");
 }
 
 /**
@@ -399,7 +438,7 @@ export function isBrowserConnected(): boolean {
 export function disconnectFromAgentBus() {
   stopPing();
   if (ws) {
-    ws.close(1000, 'Client disconnect');
+    ws.close(1000, "Client disconnect");
     ws = null;
   }
   clientId = null;

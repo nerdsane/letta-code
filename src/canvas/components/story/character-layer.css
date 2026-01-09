@@ -64,7 +64,9 @@
   max-height: 80vh;
   width: auto;
   object-fit: contain;
-  transition: transform 0.3s ease-out, filter 0.3s ease;
+  transition:
+    transform 0.3s ease-out,
+    filter 0.3s ease;
 }
 
 /* Speaking glow effect */
@@ -81,8 +83,13 @@
 }
 
 @keyframes character-glow {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* Entry animations */

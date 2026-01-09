@@ -7,50 +7,58 @@
  * Security: The scope is limited to React and DSF utilities.
  * The agent is trusted (same as having CLI access).
  */
-import React, { useMemo, useState, useEffect, useCallback, useRef, memo } from 'react';
-import * as Babel from '@babel/standalone';
+
+import * as Babel from "@babel/standalone";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // DSF brand colors and utilities available in scope
 const DSF = {
   colors: {
-    teal: '#00ffcc',
-    cyan: '#00ffff',
-    bg: '#000000',
-    bgSecondary: '#0a0a0a',
-    textPrimary: '#c8c8c8',
-    textSecondary: '#8a8a8a',
-    textTertiary: '#5a5a5a',
-    borderSubtle: 'rgba(255, 255, 255, 0.06)',
-    borderMedium: 'rgba(255, 255, 255, 0.1)',
+    teal: "#00ffcc",
+    cyan: "#00ffff",
+    bg: "#000000",
+    bgSecondary: "#0a0a0a",
+    textPrimary: "#c8c8c8",
+    textSecondary: "#8a8a8a",
+    textTertiary: "#5a5a5a",
+    borderSubtle: "rgba(255, 255, 255, 0.06)",
+    borderMedium: "rgba(255, 255, 255, 0.1)",
   },
   // Common styled components
   styles: {
     card: {
-      background: '#0a0a0a',
-      border: '1px solid rgba(255, 255, 255, 0.06)',
-      padding: '1.5rem',
+      background: "#0a0a0a",
+      border: "1px solid rgba(255, 255, 255, 0.06)",
+      padding: "1.5rem",
     },
     heading: {
-      fontFamily: 'var(--font-mono)',
-      color: '#c8c8c8',
-      letterSpacing: '0.02em',
+      fontFamily: "var(--font-mono)",
+      color: "#c8c8c8",
+      letterSpacing: "0.02em",
     },
     text: {
-      fontFamily: 'var(--font-sans)',
-      color: '#8a8a8a',
+      fontFamily: "var(--font-sans)",
+      color: "#8a8a8a",
       lineHeight: 1.7,
     },
     button: {
-      background: 'transparent',
-      border: '1px solid rgba(0, 255, 204, 0.3)',
-      color: '#00ffcc',
-      padding: '0.75rem 1.5rem',
-      cursor: 'pointer',
-      fontFamily: 'var(--font-mono)',
-      fontSize: '0.8rem',
-      letterSpacing: '0.1em',
+      background: "transparent",
+      border: "1px solid rgba(0, 255, 204, 0.3)",
+      color: "#00ffcc",
+      padding: "0.75rem 1.5rem",
+      cursor: "pointer",
+      fontFamily: "var(--font-mono)",
+      fontSize: "0.8rem",
+      letterSpacing: "0.1em",
     },
-    glow: (color = '#00ffcc') => ({
+    glow: (color = "#00ffcc") => ({
       boxShadow: `0 0 20px ${color}33, 0 0 40px ${color}1a`,
     }),
   },
@@ -82,12 +90,12 @@ export function RawJsx({ jsx }: RawJsxProps) {
     try {
       // Transform JSX to JS using Babel
       const transformed = Babel.transform(jsx, {
-        presets: ['react'],
-        filename: 'dynamic.jsx',
+        presets: ["react"],
+        filename: "dynamic.jsx",
       });
 
       if (!transformed.code) {
-        throw new Error('Babel transform returned no code');
+        throw new Error("Babel transform returned no code");
       }
 
       // Create function from transformed code
@@ -112,28 +120,40 @@ export function RawJsx({ jsx }: RawJsxProps) {
       const result = fn(...scopeValues);
 
       // If result is a function (component), use it; otherwise wrap in a component
-      if (typeof result === 'function') {
+      if (typeof result === "function") {
         return result;
       } else if (React.isValidElement(result)) {
         return () => result;
       } else {
-        throw new Error('JSX must return a function component or JSX element');
+        throw new Error("JSX must return a function component or JSX element");
       }
     } catch (err) {
       // Return error component
       return function ErrorFallback() {
         return (
-          <div className="raw-jsx-error" style={{
-            padding: '1rem',
-            background: '#1a0000',
-            border: '1px solid #ff4444',
-            color: '#ff4444',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.85rem',
-          }}>
-            <strong>JSX Error:</strong> {String(err instanceof Error ? err.message : err)}
-            <pre style={{ marginTop: '0.5rem', fontSize: '0.75rem', opacity: 0.7, whiteSpace: 'pre-wrap' }}>
-              {jsx.slice(0, 200)}{jsx.length > 200 ? '...' : ''}
+          <div
+            className="raw-jsx-error"
+            style={{
+              padding: "1rem",
+              background: "#1a0000",
+              border: "1px solid #ff4444",
+              color: "#ff4444",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.85rem",
+            }}
+          >
+            <strong>JSX Error:</strong>{" "}
+            {String(err instanceof Error ? err.message : err)}
+            <pre
+              style={{
+                marginTop: "0.5rem",
+                fontSize: "0.75rem",
+                opacity: 0.7,
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {jsx.slice(0, 200)}
+              {jsx.length > 200 ? "..." : ""}
             </pre>
           </div>
         );

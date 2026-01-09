@@ -1,8 +1,3 @@
-/**
- * AgentStatus - Enhanced agent activity indicator
- */
-import React from 'react';
-
 export interface AgentStatusProps {
   isThinking: boolean;
   action?: string;
@@ -10,7 +5,12 @@ export interface AgentStatusProps {
   onCancel?: () => void;
 }
 
-export function AgentStatus({ isThinking, action, progress, onCancel }: AgentStatusProps) {
+export function AgentStatus({
+  isThinking,
+  action,
+  progress,
+  onCancel,
+}: AgentStatusProps) {
   if (!isThinking) return null;
 
   return (
@@ -18,7 +18,7 @@ export function AgentStatus({ isThinking, action, progress, onCancel }: AgentSta
       <div className="dsf-agent-status__dot" />
       <div className="dsf-agent-status__content">
         <span className="dsf-agent-status__label">
-          {action || 'Agent thinking...'}
+          {action || "Agent thinking..."}
         </span>
         {progress !== undefined && progress >= 0 && (
           <div className="dsf-agent-status__progress">
@@ -30,7 +30,11 @@ export function AgentStatus({ isThinking, action, progress, onCancel }: AgentSta
         )}
       </div>
       {onCancel && (
-        <button className="dsf-agent-status__cancel" onClick={onCancel}>
+        <button
+          type="button"
+          className="dsf-agent-status__cancel"
+          onClick={onCancel}
+        >
           Cancel
         </button>
       )}

@@ -8,17 +8,17 @@
  * - update: Evolve the world incrementally
  */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
-  World,
-  WorldDiff,
-  UpdateOperation,
+  ChangelogEntry,
+  Constraint,
   Element,
   Rule,
-  Constraint,
-  ChangelogEntry,
+  UpdateOperation,
+  World,
+  WorldDiff,
 } from "../../types/dsf";
 import { broadcastStateChange } from "./canvas_ui";
 
@@ -52,9 +52,12 @@ export async function world_manager(
 ): Promise<WorldManagerResult> {
   try {
     // Debug logging
-    console.error("world_manager called with args:", JSON.stringify(args, null, 2));
+    console.error(
+      "world_manager called with args:",
+      JSON.stringify(args, null, 2),
+    );
 
-    if (!args || typeof args !== 'object') {
+    if (!args || typeof args !== "object") {
       return {
         toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
         status: "error",
@@ -112,7 +115,7 @@ async function saveWorld(args: WorldManagerArgs): Promise<WorldManagerResult> {
 
   // Parse world if it's a string
   let world: World;
-  if (typeof args.world === 'string') {
+  if (typeof args.world === "string") {
     try {
       world = JSON.parse(args.world);
     } catch (error) {
@@ -162,7 +165,7 @@ async function saveWorld(args: WorldManagerArgs): Promise<WorldManagerResult> {
   await writeFile(filePath, JSON.stringify(worldToSave, null, 2), "utf-8");
 
   // Broadcast state change for reactive UI
-  await broadcastStateChange('world_entered', {
+  await broadcastStateChange("world_entered", {
     worldId: args.checkpoint_name,
     version: worldToSave.development.version,
   });
@@ -212,7 +215,8 @@ async function loadWorld(args: WorldManagerArgs): Promise<WorldManagerResult> {
 async function diffWorlds(args: WorldManagerArgs): Promise<WorldManagerResult> {
   if (!args.checkpoint_name || !args.checkpoint_name_2) {
     return {
-      toolReturn: "Both checkpoint_name and checkpoint_name_2 are required for diff operation",
+      toolReturn:
+        "Both checkpoint_name and checkpoint_name_2 are required for diff operation",
       status: "error",
     };
   }
@@ -251,8 +255,12 @@ async function diffWorlds(args: WorldManagerArgs): Promise<WorldManagerResult> {
 
 function computeDiff(world1: World, world2: World): WorldDiff {
   // Elements diff
-  const w1Elements = new Map(world1.surface.visible_elements.map((e) => [e.id, e]));
-  const w2Elements = new Map(world2.surface.visible_elements.map((e) => [e.id, e]));
+  const w1Elements = new Map(
+    world1.surface.visible_elements.map((e) => [e.id, e]),
+  );
+  const w2Elements = new Map(
+    world2.surface.visible_elements.map((e) => [e.id, e]),
+  );
 
   const elementsAdded: Element[] = [];
   const elementsRemoved: string[] = [];
@@ -324,7 +332,10 @@ function computeDiff(world1: World, world2: World): WorldDiff {
   }
 
   // Depth changes
-  const depthChanges: Record<string, { from: "surface" | "medium" | "deep"; to: "surface" | "medium" | "deep" }> = {};
+  const depthChanges: Record<
+    string,
+    { from: "surface" | "medium" | "deep"; to: "surface" | "medium" | "deep" }
+  > = {};
   const w1Depths = world1.foundation.deep_focus_areas.depth_level;
   const w2Depths = world2.foundation.deep_focus_areas.depth_level;
 
@@ -350,7 +361,10 @@ function computeDiff(world1: World, world2: World): WorldDiff {
 
   return {
     version_diff: [world1.development.version, world2.development.version],
-    timestamp_diff: [world1.development.last_modified, world2.development.last_modified],
+    timestamp_diff: [
+      world1.development.last_modified,
+      world2.development.last_modified,
+    ],
     state_change: stateChange,
     elements_added: elementsAdded,
     elements_removed: elementsRemoved,
@@ -404,7 +418,9 @@ function detectRuleChanges(rule1: Rule, rule2: Rule): string[] {
 function formatDiffSummary(diff: WorldDiff): string {
   const lines: string[] = [];
 
-  lines.push(`=== World Diff: v${diff.version_diff[0]} → v${diff.version_diff[1]} ===\n`);
+  lines.push(
+    `=== World Diff: v${diff.version_diff[0]} → v${diff.version_diff[1]} ===\n`,
+  );
 
   if (diff.state_change) {
     lines.push(`State: ${diff.state_change[0]} → ${diff.state_change[1]}`);
@@ -466,7 +482,9 @@ function formatDiffSummary(diff: WorldDiff): string {
 // Operation: Update
 // ============================================================================
 
-async function updateWorld(args: WorldManagerArgs): Promise<WorldManagerResult> {
+async function updateWorld(
+  args: WorldManagerArgs,
+): Promise<WorldManagerResult> {
   if (!args.current_checkpoint) {
     return {
       toolReturn: "current_checkpoint is required for update operation",
@@ -507,7 +525,10 @@ async function updateWorld(args: WorldManagerArgs): Promise<WorldManagerResult> 
       };
     }
 
-    if (!update.operation || !["add", "update", "remove"].includes(update.operation)) {
+    if (
+      !update.operation ||
+      !["add", "update", "remove"].includes(update.operation)
+    ) {
       return {
         toolReturn: `Update at index ${i} has invalid 'operation' field. Must be one of: add, update, remove`,
         status: "error",
@@ -537,7 +558,7 @@ function applyUpdate(world: World, update: UpdateOperation): World {
   }
 
   const path = update.path.split(".");
-  const newWorld = JSON.parse(JSON.stringify(world)) as Record<string, any>; // Deep clone
+  const newWorld = JSON.parse(JSON.stringify(world)) as Record<string, any>;
 
   let current: Record<string, any> = newWorld;
   for (let i = 0; i < path.length - 1; i++) {
@@ -568,7 +589,9 @@ function applyUpdate(world: World, update: UpdateOperation): World {
     case "remove":
       if (Array.isArray(current[lastKey])) {
         // Assume value is the ID to remove
-        current[lastKey] = current[lastKey].filter((item: any) => item.id !== update.value);
+        current[lastKey] = current[lastKey].filter(
+          (item: any) => item.id !== update.value,
+        );
       } else {
         delete current[lastKey];
       }

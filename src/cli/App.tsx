@@ -32,6 +32,11 @@ import { type AgentProvenance, createAgent } from "../agent/create";
 import { sendMessageStream } from "../agent/message";
 import { getModelDisplayName, getModelInfo } from "../agent/model";
 import { SessionStats } from "../agent/stats";
+import {
+  connectToAgentBus,
+  disconnectFromAgentBus,
+  setInteractionHandler,
+} from "../agent-bus/cli-client";
 import type { ApprovalContext } from "../permissions/analyzer";
 import { type PermissionMode, permissionMode } from "../permissions/mode";
 import {
@@ -51,12 +56,6 @@ import {
   savePermissionRule,
   type ToolExecutionResult,
 } from "../tools/manager";
-import {
-  connectToAgentBus,
-  setInteractionHandler,
-  isConnectedToAgentBus,
-  disconnectFromAgentBus,
-} from "../agent-bus/cli-client";
 import {
   handleMcpAdd,
   handleMcpUsage,
@@ -609,10 +608,13 @@ export default function App({
       let message: string;
 
       // Handle different interaction types from canvas
-      if (interactionType === "context_menu_action" || interactionType === "action") {
+      if (
+        interactionType === "context_menu_action" ||
+        interactionType === "action"
+      ) {
         const action = data?.action || target || interactionType;
         const elementType = data?.elementType || "element";
-        const elementId = data?.elementId || componentId;
+        const _elementId = data?.elementId || componentId;
         const elementName = data?.elementName || data?.title || "";
 
         // Map actions to natural messages
@@ -666,8 +668,8 @@ export default function App({
     return () => {
       disconnectFromAgentBus();
     };
-  // Note: setMessageQueue accessed via closure; stable React setState doesn't need to be in deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Note: setMessageQueue accessed via closure; stable React setState doesn't need to be in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId, loadingState]);
 
   // Whether a stream is in flight (disables input)
@@ -976,7 +978,6 @@ export default function App({
 
   // Helper to check if agent is busy (streaming, executing tool, or running command)
   // Uses refs for synchronous access outside React's closure system
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs are stable objects, .current is read dynamically
   const isAgentBusy = useCallback(() => {
     return (
       streamingRef.current ||
@@ -3119,7 +3120,6 @@ export default function App({
     }
   }, [agentId, processConversation]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refs read .current dynamically, complex callback with intentional deps
   const onSubmit = useCallback(
     async (message?: string): Promise<{ submitted: boolean }> => {
       const msg = message?.trim() ?? "";

@@ -15,7 +15,7 @@ export function StoryActions({
   canContinue,
   branches,
   onContinue,
-  onBranch
+  onBranch,
 }: StoryActionsProps) {
   const hasBranches = branches && branches.length > 0;
 

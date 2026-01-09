@@ -1,2 +1,2 @@
-export { WelcomeSpace } from './WelcomeSpace';
-export type { WelcomeSpaceProps } from './WelcomeSpace';
+export type { WelcomeSpaceProps } from "./WelcomeSpace";
+export { WelcomeSpace } from "./WelcomeSpace";

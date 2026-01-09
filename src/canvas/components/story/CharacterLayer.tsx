@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
-import './character-layer.css';
+import { useMemo } from "react";
+import "./character-layer.css";
 
 export interface CharacterSprite {
   characterId: string;
   name?: string;
   imageUrl: string;
-  position: 'left' | 'center' | 'right';
+  position: "left" | "center" | "right";
   emotion?: string;
   scale?: number;
   offsetY?: number;
@@ -17,11 +17,16 @@ interface CharacterLayerProps {
   speakingCharacterId?: string;
 }
 
-export function CharacterLayer({ characters, speakingCharacterId }: CharacterLayerProps) {
+export function CharacterLayer({
+  characters,
+  speakingCharacterId,
+}: CharacterLayerProps) {
   // Sort characters by position for consistent layering
   const sortedCharacters = useMemo(() => {
     const positionOrder = { left: 0, center: 1, right: 2 };
-    return [...characters].sort((a, b) => positionOrder[a.position] - positionOrder[b.position]);
+    return [...characters].sort(
+      (a, b) => positionOrder[a.position] - positionOrder[b.position],
+    );
   }, [characters]);
 
   return (
@@ -35,8 +40,10 @@ export function CharacterLayer({ characters, speakingCharacterId }: CharacterLay
           <div
             key={char.characterId}
             className={`character-sprite character-sprite--${char.position} ${
-              isSpeaking ? 'character-sprite--speaking' : 'character-sprite--idle'
-            } ${char.flipped ? 'character-sprite--flipped' : ''}`}
+              isSpeaking
+                ? "character-sprite--speaking"
+                : "character-sprite--idle"
+            } ${char.flipped ? "character-sprite--flipped" : ""}`}
             style={{
               transform: `scale(${scale}) translateY(${offsetY}px)`,
             }}
@@ -61,7 +68,7 @@ export function CharacterLayer({ characters, speakingCharacterId }: CharacterLay
  */
 export function createCharacterSprite(
   characterId: string,
-  position: CharacterSprite['position'],
+  position: CharacterSprite["position"],
   imageUrl: string,
   options?: Partial<CharacterSprite>,
 ): CharacterSprite {

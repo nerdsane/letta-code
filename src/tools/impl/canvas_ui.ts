@@ -5,10 +5,15 @@
  * multimedia enhancements for stories and worlds displayed in the canvas.
  */
 
-import type { CanvasUIMessage, StateChangeMessage, InteractionMessage } from '../../agent-bus/types';
-import type { ComponentSpec } from '../../canvas/components/types';
+import type {
+  CanvasUIMessage,
+  InteractionMessage,
+  StateChangeMessage,
+} from "../../agent-bus/types";
+import type { ComponentSpec } from "../../canvas/components/types";
 
-const AGENT_BUS_URL = process.env.AGENT_BUS_URL || 'ws://localhost:8284/ws?type=agent';
+const AGENT_BUS_URL =
+  process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
 
 // ============================================================================
 // Interaction Queue - For agent to poll user interactions
@@ -34,7 +39,9 @@ const INTERACTION_TTL_MS = 5 * 60 * 1000; // 5 minutes
 export function getCanvasInteractions(): QueuedInteraction[] {
   // Remove expired interactions
   const now = Date.now();
-  const validInteractions = interactionQueue.filter(i => now - i.timestamp < INTERACTION_TTL_MS);
+  const validInteractions = interactionQueue.filter(
+    (i) => now - i.timestamp < INTERACTION_TTL_MS,
+  );
 
   // Clear the queue
   interactionQueue.length = 0;
@@ -47,7 +54,7 @@ export function getCanvasInteractions(): QueuedInteraction[] {
  */
 export function peekCanvasInteractions(): QueuedInteraction[] {
   const now = Date.now();
-  return interactionQueue.filter(i => now - i.timestamp < INTERACTION_TTL_MS);
+  return interactionQueue.filter((i) => now - i.timestamp < INTERACTION_TTL_MS);
 }
 
 /**
@@ -55,7 +62,8 @@ export function peekCanvasInteractions(): QueuedInteraction[] {
  */
 export function getInteractionCount(): number {
   const now = Date.now();
-  return interactionQueue.filter(i => now - i.timestamp < INTERACTION_TTL_MS).length;
+  return interactionQueue.filter((i) => now - i.timestamp < INTERACTION_TTL_MS)
+    .length;
 }
 
 // ============================================================================
@@ -98,21 +106,29 @@ function handleInteraction(message: InteractionMessage) {
     interactionQueue.shift();
   }
 
-  console.log(`[canvas_ui] Queued interaction: ${interactionType} on ${componentId} (queue size: ${interactionQueue.length})`);
+  console.log(
+    `[canvas_ui] Queued interaction: ${interactionType} on ${componentId} (queue size: ${interactionQueue.length})`,
+  );
 
   // Also try TypeScript callbacks for immediate handling
   if (target && interactionCallbacks.has(target)) {
     const callback = interactionCallbacks.get(target)!;
-    Promise.resolve(callback(data)).catch(err => {
-      console.error(`[canvas_ui] Interaction callback error for ${target}:`, err);
+    Promise.resolve(callback(data)).catch((err) => {
+      console.error(
+        `[canvas_ui] Interaction callback error for ${target}:`,
+        err,
+      );
     });
     return;
   }
 
   if (interactionCallbacks.has(componentId)) {
     const callback = interactionCallbacks.get(componentId)!;
-    Promise.resolve(callback({ ...data, interactionType })).catch(err => {
-      console.error(`[canvas_ui] Interaction callback error for ${componentId}:`, err);
+    Promise.resolve(callback({ ...data, interactionType })).catch((err) => {
+      console.error(
+        `[canvas_ui] Interaction callback error for ${componentId}:`,
+        err,
+      );
     });
   }
 }
@@ -124,13 +140,13 @@ function handleInteraction(message: InteractionMessage) {
 interface CanvasUIArgs {
   target: string;
   spec: ComponentSpec;
-  action?: 'create' | 'update' | 'remove';
-  mode?: 'overlay' | 'fullscreen' | 'inline';
+  action?: "create" | "update" | "remove";
+  mode?: "overlay" | "fullscreen" | "inline";
 }
 
 interface CanvasUIResult {
   toolReturn: string;
-  status: 'success' | 'error';
+  status: "success" | "error";
 }
 
 // ============================================================================
@@ -141,7 +157,10 @@ let agentBusWs: WebSocket | null = null;
 let isConnecting = false;
 
 // Pending connection callbacks for concurrent requests
-let pendingCallbacks: { resolve: (ws: WebSocket) => void; reject: (err: Error) => void }[] = [];
+let pendingCallbacks: {
+  resolve: (ws: WebSocket) => void;
+  reject: (err: Error) => void;
+}[] = [];
 
 /**
  * Ensure Agent Bus connection is established
@@ -166,7 +185,7 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
     const ws = new WebSocket(AGENT_BUS_URL);
 
     ws.onopen = () => {
-      console.log('[canvas_ui] Connected to Agent Bus');
+      console.log("[canvas_ui] Connected to Agent Bus");
       isConnecting = false;
       agentBusWs = ws;
       resolve(ws);
@@ -178,9 +197,9 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
     };
 
     ws.onerror = (event) => {
-      console.error('[canvas_ui] Agent Bus connection error:', event);
+      console.error("[canvas_ui] Agent Bus connection error:", event);
       isConnecting = false;
-      const err = new Error('Failed to connect to Agent Bus');
+      const err = new Error("Failed to connect to Agent Bus");
       reject(err);
       // Reject any pending callbacks
       for (const cb of pendingCallbacks) {
@@ -190,21 +209,22 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
     };
 
     ws.onclose = () => {
-      console.log('[canvas_ui] Agent Bus connection closed');
+      console.log("[canvas_ui] Agent Bus connection closed");
       agentBusWs = null;
       isConnecting = false;
     };
 
     ws.onmessage = (event) => {
       try {
-        const data = typeof event.data === 'string' ? event.data : event.data.toString();
+        const data =
+          typeof event.data === "string" ? event.data : event.data.toString();
         const message = JSON.parse(data);
-        if (message.type === 'interaction') {
-          console.log('[canvas_ui] User interaction:', message);
+        if (message.type === "interaction") {
+          console.log("[canvas_ui] User interaction:", message);
           handleInteraction(message as InteractionMessage);
         }
       } catch (err) {
-        console.error('[canvas_ui] Failed to parse message:', err);
+        console.error("[canvas_ui] Failed to parse message:", err);
       }
     };
   });
@@ -218,14 +238,14 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
  * Broadcast state change to all connected clients (Canvas + CLI)
  */
 export async function broadcastStateChange(
-  event: StateChangeMessage['event'],
-  data: StateChangeMessage['data']
+  event: StateChangeMessage["event"],
+  data: StateChangeMessage["data"],
 ): Promise<void> {
   try {
     const ws = await ensureAgentBusConnection();
 
     const message: StateChangeMessage = {
-      type: 'state_change',
+      type: "state_change",
       event,
       data,
     };
@@ -233,7 +253,7 @@ export async function broadcastStateChange(
     ws.send(JSON.stringify(message));
     console.log(`[canvas_ui] Broadcast state change: ${event}`);
   } catch (error) {
-    console.error('[canvas_ui] Failed to broadcast state change:', error);
+    console.error("[canvas_ui] Failed to broadcast state change:", error);
     throw error; // Re-throw so callers know about the failure
   }
 }
@@ -250,7 +270,7 @@ export async function broadcastStateChange(
  * specified target location.
  */
 export async function canvas_ui(args: CanvasUIArgs): Promise<CanvasUIResult> {
-  const { target, spec, action = 'create', mode = 'overlay' } = args;
+  const { target, spec, action = "create", mode = "overlay" } = args;
 
   try {
     const ws = await ensureAgentBusConnection();
@@ -258,11 +278,11 @@ export async function canvas_ui(args: CanvasUIArgs): Promise<CanvasUIResult> {
     const componentId = spec.id || `canvas-${Date.now()}`;
 
     const message: CanvasUIMessage = {
-      type: 'canvas_ui',
+      type: "canvas_ui",
       action,
       target,
       componentId,
-      spec: action === 'remove' ? undefined : spec,
+      spec: action === "remove" ? undefined : spec,
       mode,
     };
 
@@ -271,22 +291,22 @@ export async function canvas_ui(args: CanvasUIArgs): Promise<CanvasUIResult> {
     console.log(`[canvas_ui] Sent ${action} for ${componentId} at ${target}`);
 
     let resultMessage: string;
-    if (action === 'remove') {
+    if (action === "remove") {
       resultMessage = `Removed component from ${target}`;
     } else {
-      resultMessage = `Component ${componentId} ${action === 'update' ? 'updated' : 'created'} at ${target}`;
+      resultMessage = `Component ${componentId} ${action === "update" ? "updated" : "created"} at ${target}`;
     }
 
     return {
       toolReturn: resultMessage,
-      status: 'success',
+      status: "success",
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error('[canvas_ui] Error:', errorMsg);
+    console.error("[canvas_ui] Error:", errorMsg);
     return {
       toolReturn: `Failed to ${action} UI component: ${errorMsg}`,
-      status: 'error',
+      status: "error",
     };
   }
 }

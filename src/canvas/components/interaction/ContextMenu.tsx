@@ -1,7 +1,7 @@
 /**
  * ContextMenu - Right-click contextual actions for elements
  */
-import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export interface ContextMenuItem {
   id: string;
@@ -20,7 +20,12 @@ export interface ContextMenuProps {
   onClose: () => void;
 }
 
-export function ContextMenu({ items, position, onSelect, onClose }: ContextMenuProps) {
+export function ContextMenu({
+  items,
+  position,
+  onSelect,
+  onClose,
+}: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
 
@@ -33,17 +38,17 @@ export function ContextMenu({ items, position, onSelect, onClose }: ContextMenuP
     };
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [onClose]);
 
@@ -78,13 +83,16 @@ export function ContextMenu({ items, position, onSelect, onClose }: ContextMenuP
     >
       {items.map((item, index) => {
         if (item.separator) {
-          return <div key={`sep-${index}`} className="dsf-context-menu__separator" />;
+          return (
+            <div key={`sep-${index}`} className="dsf-context-menu__separator" />
+          );
         }
 
         return (
           <button
+            type="button"
             key={item.id}
-            className={`dsf-context-menu__item ${item.disabled ? 'dsf-context-menu__item--disabled' : ''} ${item.danger ? 'dsf-context-menu__item--danger' : ''}`}
+            className={`dsf-context-menu__item ${item.disabled ? "dsf-context-menu__item--disabled" : ""} ${item.danger ? "dsf-context-menu__item--danger" : ""}`}
             onClick={() => {
               if (!item.disabled) {
                 onSelect(item.id);
@@ -93,9 +101,15 @@ export function ContextMenu({ items, position, onSelect, onClose }: ContextMenuP
             }}
             disabled={item.disabled}
           >
-            {item.icon && <span className="dsf-context-menu__icon">{item.icon}</span>}
+            {item.icon && (
+              <span className="dsf-context-menu__icon">{item.icon}</span>
+            )}
             <span className="dsf-context-menu__label">{item.label}</span>
-            {item.shortcut && <span className="dsf-context-menu__shortcut">{item.shortcut}</span>}
+            {item.shortcut && (
+              <span className="dsf-context-menu__shortcut">
+                {item.shortcut}
+              </span>
+            )}
           </button>
         );
       })}
@@ -104,62 +118,72 @@ export function ContextMenu({ items, position, onSelect, onClose }: ContextMenuP
 }
 
 // Predefined actions per element type
-export type ElementType = 'character' | 'rule' | 'story_segment' | 'world_card' | 'paragraph' | 'location' | 'technology' | 'story_card';
+export type ElementType =
+  | "character"
+  | "rule"
+  | "story_segment"
+  | "world_card"
+  | "paragraph"
+  | "location"
+  | "technology"
+  | "story_card";
 
 export const ELEMENT_ACTIONS: Record<ElementType, ContextMenuItem[]> = {
   character: [
-    { id: 'develop', label: 'Develop character', icon: '◈' },
-    { id: 'generate_portrait', label: 'Generate portrait', icon: '◇' },
-    { id: 'show_relationships', label: 'Show relationships', icon: '→' },
-    { id: 'separator', label: '', separator: true },
-    { id: 'ask_agent', label: 'Ask agent about...', icon: '?' },
+    { id: "develop", label: "Develop character", icon: "◈" },
+    { id: "generate_portrait", label: "Generate portrait", icon: "◇" },
+    { id: "show_relationships", label: "Show relationships", icon: "→" },
+    { id: "separator", label: "", separator: true },
+    { id: "ask_agent", label: "Ask agent about...", icon: "?" },
   ],
   rule: [
-    { id: 'test_in_story', label: 'Test in story', icon: '→' },
-    { id: 'explore_implications', label: 'Explore implications', icon: '◈' },
-    { id: 'check_contradictions', label: 'Check contradictions', icon: '!' },
-    { id: 'separator', label: '', separator: true },
-    { id: 'ask_agent', label: 'Ask agent about...', icon: '?' },
+    { id: "test_in_story", label: "Test in story", icon: "→" },
+    { id: "explore_implications", label: "Explore implications", icon: "◈" },
+    { id: "check_contradictions", label: "Check contradictions", icon: "!" },
+    { id: "separator", label: "", separator: true },
+    { id: "ask_agent", label: "Ask agent about...", icon: "?" },
   ],
   story_segment: [
-    { id: 'continue', label: 'Continue from here', icon: '→' },
-    { id: 'branch', label: 'Create branch', icon: '◇' },
-    { id: 'revise', label: 'Revise segment', icon: '✎' },
-    { id: 'generate_illustration', label: 'Generate illustration', icon: '◈' },
-    { id: 'separator', label: '', separator: true },
-    { id: 'ask_agent', label: 'Ask agent about...', icon: '?' },
+    { id: "continue", label: "Continue from here", icon: "→" },
+    { id: "branch", label: "Create branch", icon: "◇" },
+    { id: "revise", label: "Revise segment", icon: "✎" },
+    { id: "generate_illustration", label: "Generate illustration", icon: "◈" },
+    { id: "separator", label: "", separator: true },
+    { id: "ask_agent", label: "Ask agent about...", icon: "?" },
   ],
   world_card: [
-    { id: 'enter', label: 'Enter world', icon: '→' },
-    { id: 'develop', label: 'Develop further', icon: '◈' },
-    { id: 'new_story', label: 'Start new story', icon: '+' },
-    { id: 'generate_cover', label: 'Generate cover art', icon: '◇' },
+    { id: "enter", label: "Enter world", icon: "→" },
+    { id: "develop", label: "Develop further", icon: "◈" },
+    { id: "new_story", label: "Start new story", icon: "+" },
+    { id: "generate_cover", label: "Generate cover art", icon: "◇" },
   ],
   story_card: [
-    { id: 'read', label: 'Read story', icon: '→' },
-    { id: 'continue', label: 'Continue story', icon: '◈' },
-    { id: 'branch', label: 'Create branch', icon: '◇' },
+    { id: "read", label: "Read story", icon: "→" },
+    { id: "continue", label: "Continue story", icon: "◈" },
+    { id: "branch", label: "Create branch", icon: "◇" },
   ],
   paragraph: [
-    { id: 'expand', label: 'Expand this passage', icon: '◈' },
-    { id: 'revise', label: 'Revise', icon: '✎' },
-    { id: 'what_if', label: 'What if...', icon: '?' },
-    { id: 'generate_image', label: 'Illustrate this scene', icon: '◇' },
+    { id: "expand", label: "Expand this passage", icon: "◈" },
+    { id: "revise", label: "Revise", icon: "✎" },
+    { id: "what_if", label: "What if...", icon: "?" },
+    { id: "generate_image", label: "Illustrate this scene", icon: "◇" },
   ],
   location: [
-    { id: 'explore', label: 'Explore location', icon: '→' },
-    { id: 'develop', label: 'Add details', icon: '◈' },
-    { id: 'generate_image', label: 'Generate image', icon: '◇' },
-    { id: 'separator', label: '', separator: true },
-    { id: 'ask_agent', label: 'Ask agent about...', icon: '?' },
+    { id: "explore", label: "Explore location", icon: "→" },
+    { id: "develop", label: "Add details", icon: "◈" },
+    { id: "generate_image", label: "Generate image", icon: "◇" },
+    { id: "separator", label: "", separator: true },
+    { id: "ask_agent", label: "Ask agent about...", icon: "?" },
   ],
   technology: [
-    { id: 'explain', label: 'Explain technology', icon: '?' },
-    { id: 'explore_implications', label: 'Explore implications', icon: '◈' },
-    { id: 'use_in_story', label: 'Use in story', icon: '→' },
+    { id: "explain", label: "Explain technology", icon: "?" },
+    { id: "explore_implications", label: "Explore implications", icon: "◈" },
+    { id: "use_in_story", label: "Use in story", icon: "→" },
   ],
 };
 
-export function getActionsForElement(elementType: ElementType): ContextMenuItem[] {
+export function getActionsForElement(
+  elementType: ElementType,
+): ContextMenuItem[] {
   return ELEMENT_ACTIONS[elementType] || [];
 }

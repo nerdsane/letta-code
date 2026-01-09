@@ -4,14 +4,14 @@
  * A web interface for browsing DSF worlds and stories with live updates
  */
 
-import { readdir, readFile, watch } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { readdir, readFile, watch } from "node:fs/promises";
 import { join } from "node:path";
 import type { ServerWebSocket } from "bun";
-import type { World, Story } from "../types/dsf";
-import indexHtml from "./index.html";
 import { getClient } from "../agent/client";
 import { settingsManager } from "../settings-manager";
+import type { Story, World } from "../types/dsf";
+import indexHtml from "./index.html";
 
 // ============================================================================
 // Constants
@@ -73,9 +73,10 @@ async function loadAllWorlds(): Promise<World[]> {
   }
 
   // Sort by last modified (most recent first)
-  return worlds.sort((a, b) =>
-    new Date(b.development.last_modified).getTime() -
-    new Date(a.development.last_modified).getTime()
+  return worlds.sort(
+    (a, b) =>
+      new Date(b.development.last_modified).getTime() -
+      new Date(a.development.last_modified).getTime(),
   );
 }
 
@@ -125,16 +126,14 @@ async function loadAllStories(): Promise<Story[]> {
           stories.push(JSON.parse(content) as Story);
         }
       }
-    } catch (e) {
-      // Skip if not a directory
-      continue;
-    }
+    } catch (_e) {}
   }
 
   // Sort by last updated (most recent first)
-  return stories.sort((a, b) =>
-    new Date(b.metadata.last_updated).getTime() -
-    new Date(a.metadata.last_updated).getTime()
+  return stories.sort(
+    (a, b) =>
+      new Date(b.metadata.last_updated).getTime() -
+      new Date(a.metadata.last_updated).getTime(),
   );
 }
 
@@ -154,9 +153,10 @@ async function loadStoriesForWorld(worldCheckpoint: string): Promise<Story[]> {
     }
   }
 
-  return stories.sort((a, b) =>
-    new Date(b.metadata.last_updated).getTime() -
-    new Date(a.metadata.last_updated).getTime()
+  return stories.sort(
+    (a, b) =>
+      new Date(b.metadata.last_updated).getTime() -
+      new Date(a.metadata.last_updated).getTime(),
   );
 }
 
@@ -221,7 +221,9 @@ async function initializeSharedAgent() {
     await settingsManager.loadLocalProjectSettings(process.cwd());
 
     // Get the agent ID that CLI is using
-    const localSettings = settingsManager.getLocalProjectSettings(process.cwd());
+    const localSettings = settingsManager.getLocalProjectSettings(
+      process.cwd(),
+    );
     sharedAgentId = localSettings?.lastAgent || null;
 
     if (sharedAgentId) {
@@ -232,12 +234,16 @@ async function initializeSharedAgent() {
         const client = await getClient();
         const agent = await client.agents.retrieve(sharedAgentId);
         console.log(`   Agent name: ${agent.name}`);
-      } catch (error) {
-        console.warn(`   Warning: Agent ${sharedAgentId} not found. It may have been deleted.`);
+      } catch (_error) {
+        console.warn(
+          `   Warning: Agent ${sharedAgentId} not found. It may have been deleted.`,
+        );
         sharedAgentId = null;
       }
     } else {
-      console.log(`ℹ️  No shared agent found. Web UI actions will require CLI to create an agent first.`);
+      console.log(
+        `ℹ️  No shared agent found. Web UI actions will require CLI to create an agent first.`,
+      );
     }
   } catch (error) {
     console.error("Failed to initialize shared agent:", error);
@@ -341,10 +347,12 @@ export async function startCanvasServer() {
             return new Response(
               JSON.stringify({
                 error: "No agent available",
-                message: "Please create an agent in CLI first (run: ./deep-scifi.js)",
-                details: "The canvas server needs a shared agent to create stories.",
+                message:
+                  "Please create an agent in CLI first (run: ./deep-scifi.js)",
+                details:
+                  "The canvas server needs a shared agent to create stories.",
               }),
-              { status: 503, headers: { "Content-Type": "application/json" } }
+              { status: 503, headers: { "Content-Type": "application/json" } },
             );
           }
 
@@ -362,14 +370,17 @@ export async function startCanvasServer() {
             const userMessage = `Write a new story in the "${checkpoint}" world. Use the world's rules, elements, and constraints. Follow the world's premise: ${world.foundation.core_premise}`;
 
             // Create message
-            const messages = await client.agents.messages.create(sharedAgentId, {
-              messages: [
-                {
-                  role: "user",
-                  content: userMessage,
-                },
-              ],
-            });
+            const messages = await client.agents.messages.create(
+              sharedAgentId,
+              {
+                messages: [
+                  {
+                    role: "user",
+                    content: userMessage,
+                  },
+                ],
+              },
+            );
 
             // Agent will use story_manager tool to create the story
             return Response.json({
@@ -383,9 +394,10 @@ export async function startCanvasServer() {
             return new Response(
               JSON.stringify({
                 error: "Agent invocation failed",
-                message: error instanceof Error ? error.message : "Unknown error",
+                message:
+                  error instanceof Error ? error.message : "Unknown error",
               }),
-              { status: 500, headers: { "Content-Type": "application/json" } }
+              { status: 500, headers: { "Content-Type": "application/json" } },
             );
           }
         },
@@ -400,10 +412,12 @@ export async function startCanvasServer() {
             return new Response(
               JSON.stringify({
                 error: "No agent available",
-                message: "Please create an agent in CLI first (run: ./deep-scifi.js)",
-                details: "The canvas server needs a shared agent to develop worlds.",
+                message:
+                  "Please create an agent in CLI first (run: ./deep-scifi.js)",
+                details:
+                  "The canvas server needs a shared agent to develop worlds.",
               }),
-              { status: 503, headers: { "Content-Type": "application/json" } }
+              { status: 503, headers: { "Content-Type": "application/json" } },
             );
           }
 
@@ -429,14 +443,17 @@ Current state: ${world.development.state} (v${world.development.version})
 Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`;
 
             // Create message
-            const messages = await client.agents.messages.create(sharedAgentId, {
-              messages: [
-                {
-                  role: "user",
-                  content: userMessage,
-                },
-              ],
-            });
+            const messages = await client.agents.messages.create(
+              sharedAgentId,
+              {
+                messages: [
+                  {
+                    role: "user",
+                    content: userMessage,
+                  },
+                ],
+              },
+            );
 
             // Agent will use world_manager tool to update the world
             return Response.json({
@@ -450,9 +467,10 @@ Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`;
             return new Response(
               JSON.stringify({
                 error: "Agent invocation failed",
-                message: error instanceof Error ? error.message : "Unknown error",
+                message:
+                  error instanceof Error ? error.message : "Unknown error",
               }),
-              { status: 500, headers: { "Content-Type": "application/json" } }
+              { status: 500, headers: { "Content-Type": "application/json" } },
             );
           }
         },
@@ -460,7 +478,10 @@ Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`;
 
       "/api/continue": {
         async POST(req) {
-          const body = await req.json() as { story_id?: string; segment_id?: string };
+          const body = (await req.json()) as {
+            story_id?: string;
+            segment_id?: string;
+          };
           const { story_id, segment_id } = body;
 
           if (!story_id) {
@@ -472,10 +493,12 @@ Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`;
             return new Response(
               JSON.stringify({
                 error: "No agent available",
-                message: "Please create an agent in CLI first (run: ./deep-scifi.js)",
-                details: "The canvas server needs a shared agent to continue stories.",
+                message:
+                  "Please create an agent in CLI first (run: ./deep-scifi.js)",
+                details:
+                  "The canvas server needs a shared agent to continue stories.",
               }),
-              { status: 503, headers: { "Content-Type": "application/json" } }
+              { status: 503, headers: { "Content-Type": "application/json" } },
             );
           }
 
@@ -499,14 +522,17 @@ Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`;
             const userMessage = `Continue writing story "${story.metadata.title}". Write the next segment, continuing from where the story left off.`;
 
             // Create message (non-streaming for now, streaming in next step)
-            const messages = await client.agents.messages.create(sharedAgentId, {
-              messages: [
-                {
-                  role: "user",
-                  content: userMessage,
-                },
-              ],
-            });
+            const messages = await client.agents.messages.create(
+              sharedAgentId,
+              {
+                messages: [
+                  {
+                    role: "user",
+                    content: userMessage,
+                  },
+                ],
+              },
+            );
 
             // File watcher will notify web UI when segment is written
             return Response.json({
@@ -520,9 +546,10 @@ Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`;
             return new Response(
               JSON.stringify({
                 error: "Agent invocation failed",
-                message: error instanceof Error ? error.message : "Unknown error",
+                message:
+                  error instanceof Error ? error.message : "Unknown error",
               }),
-              { status: 500, headers: { "Content-Type": "application/json" } }
+              { status: 500, headers: { "Content-Type": "application/json" } },
             );
           }
         },
@@ -575,7 +602,7 @@ Focus areas: ${world.foundation.deep_focus_areas.primary.join(", ")}`;
         clients.add(ws);
       },
 
-      message(ws, message) {
+      message(_ws, message) {
         console.log("Received WebSocket message:", message);
       },
 

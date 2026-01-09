@@ -1,25 +1,30 @@
-import { forwardRef } from 'react';
-import type { ComponentSpec } from './types';
-import { DSFDialog } from './radix/Dialog';
-import { Button } from './primitives/Button';
-import { Text } from './primitives/Text';
-import { Image } from './primitives/Image';
-import { Gallery } from './primitives/Gallery';
-import { Card } from './primitives/Card';
-import { Timeline } from './primitives/Timeline';
-import { Callout } from './primitives/Callout';
-import { Stats } from './primitives/Stats';
-import { Badge } from './primitives/Badge';
-import { Divider } from './primitives/Divider';
-import { Stack } from './layout/Stack';
-import { Grid } from './layout/Grid';
-import { Hero, ScrollSection, ProgressBar, ActionBar } from './experience';
-import { RawJsx } from './RawJsx';
+import { forwardRef } from "react";
+import { ActionBar, Hero, ProgressBar, ScrollSection } from "./experience";
+import { Grid } from "./layout/Grid";
+import { Stack } from "./layout/Stack";
+import { Badge } from "./primitives/Badge";
+import { Button } from "./primitives/Button";
+import { Callout } from "./primitives/Callout";
+import { Card } from "./primitives/Card";
+import { Divider } from "./primitives/Divider";
+import { Gallery } from "./primitives/Gallery";
+import { Image } from "./primitives/Image";
+import { Stats } from "./primitives/Stats";
+import { Text } from "./primitives/Text";
+import { Timeline } from "./primitives/Timeline";
+import { RawJsx } from "./RawJsx";
+import { DSFDialog } from "./radix/Dialog";
+import type { ComponentSpec } from "./types";
 
 interface RendererProps {
   spec: ComponentSpec;
-  onInteraction: (componentId: string, interactionType: string, data: any, target?: string) => void;
-  [key: string]: any; // Allow spreading additional props from Radix asChild
+  onInteraction: (
+    componentId: string,
+    interactionType: string,
+    data: any,
+    target?: string,
+  ) => void;
+  [key: string]: any;
 }
 
 export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
@@ -27,42 +32,57 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
     const { type, id } = spec;
 
     switch (type) {
-      case 'Dialog': {
+      case "Dialog": {
         const { props, children } = spec as any;
         return (
           <DSFDialog
             trigger={
-              props.trigger ?
-                <DynamicRenderer spec={props.trigger} onInteraction={onInteraction} /> :
-                undefined
+              props.trigger ? (
+                <DynamicRenderer
+                  spec={props.trigger}
+                  onInteraction={onInteraction}
+                />
+              ) : undefined
             }
             title={props.title}
             description={props.description}
             open={props.open}
             onOpenChange={(open) => {
               if (id && props.onOpenChange) {
-                onInteraction(id, 'dialog_change', { open }, props.onOpenChange);
+                onInteraction(
+                  id,
+                  "dialog_change",
+                  { open },
+                  props.onOpenChange,
+                );
               }
             }}
           >
             {children ? (
               Array.isArray(children) ? (
                 children.map((child, i) => (
-                  <DynamicRenderer key={i} spec={child} onInteraction={onInteraction} />
+                  <DynamicRenderer
+                    key={i}
+                    spec={child}
+                    onInteraction={onInteraction}
+                  />
                 ))
               ) : (
-                <DynamicRenderer spec={children} onInteraction={onInteraction} />
+                <DynamicRenderer
+                  spec={children}
+                  onInteraction={onInteraction}
+                />
               )
             ) : null}
           </DSFDialog>
         );
       }
 
-      case 'Button': {
+      case "Button": {
         const { props } = spec as any;
         const handleClick = (e: any) => {
           if (id && props.onClick) {
-            onInteraction(id, 'click', {}, props.onClick);
+            onInteraction(id, "click", {}, props.onClick);
           }
           if (additionalProps.onClick) {
             additionalProps.onClick(e);
@@ -80,7 +100,7 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
         );
       }
 
-      case 'Text': {
+      case "Text": {
         const { props } = spec as any;
         return (
           <Text
@@ -92,7 +112,7 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
         );
       }
 
-      case 'Stack': {
+      case "Stack": {
         const { props, children } = spec as any;
         return (
           <Stack
@@ -102,14 +122,19 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
             justify={props?.justify}
             wrap={props?.wrap}
           >
-            {Array.isArray(children) && children.map((child: ComponentSpec, i: number) => (
-              <DynamicRenderer key={i} spec={child} onInteraction={onInteraction} />
-            ))}
+            {Array.isArray(children) &&
+              children.map((child: ComponentSpec, i: number) => (
+                <DynamicRenderer
+                  key={i}
+                  spec={child}
+                  onInteraction={onInteraction}
+                />
+              ))}
           </Stack>
         );
       }
 
-      case 'Grid': {
+      case "Grid": {
         const { props, children } = spec as any;
         return (
           <Grid
@@ -122,14 +147,19 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
             align={props?.align}
             justify={props?.justify}
           >
-            {Array.isArray(children) && children.map((child: ComponentSpec, i: number) => (
-              <DynamicRenderer key={i} spec={child} onInteraction={onInteraction} />
-            ))}
+            {Array.isArray(children) &&
+              children.map((child: ComponentSpec, i: number) => (
+                <DynamicRenderer
+                  key={i}
+                  spec={child}
+                  onInteraction={onInteraction}
+                />
+              ))}
           </Grid>
         );
       }
 
-      case 'Image': {
+      case "Image": {
         const { props } = spec as any;
         return (
           <Image
@@ -138,14 +168,18 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
             caption={props.caption}
             size={props.size}
             lightbox={props.lightbox}
-            onClick={props.onClick ? () => {
-              if (id) onInteraction(id, 'click', {}, props.onClick);
-            } : undefined}
+            onClick={
+              props.onClick
+                ? () => {
+                    if (id) onInteraction(id, "click", {}, props.onClick);
+                  }
+                : undefined
+            }
           />
         );
       }
 
-      case 'Gallery': {
+      case "Gallery": {
         const { props } = spec as any;
         return (
           <Gallery
@@ -158,7 +192,7 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
         );
       }
 
-      case 'Card': {
+      case "Card": {
         const { props, children } = spec as any;
         return (
           <Card
@@ -168,24 +202,35 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
             imagePosition={props.imagePosition}
             variant={props.variant}
             accent={props.accent}
-            onClick={props.onClick ? () => {
-              if (id) onInteraction(id, 'click', {}, props.onClick);
-            } : undefined}
+            onClick={
+              props.onClick
+                ? () => {
+                    if (id) onInteraction(id, "click", {}, props.onClick);
+                  }
+                : undefined
+            }
           >
             {children ? (
               Array.isArray(children) ? (
                 children.map((child, i) => (
-                  <DynamicRenderer key={i} spec={child} onInteraction={onInteraction} />
+                  <DynamicRenderer
+                    key={i}
+                    spec={child}
+                    onInteraction={onInteraction}
+                  />
                 ))
               ) : (
-                <DynamicRenderer spec={children} onInteraction={onInteraction} />
+                <DynamicRenderer
+                  spec={children}
+                  onInteraction={onInteraction}
+                />
               )
             ) : null}
           </Card>
         );
       }
 
-      case 'Timeline': {
+      case "Timeline": {
         const { props } = spec as any;
         return (
           <Timeline
@@ -197,7 +242,7 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
         );
       }
 
-      case 'Callout': {
+      case "Callout": {
         const { props, children } = spec as any;
         return (
           <Callout
@@ -208,17 +253,24 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
             {children ? (
               Array.isArray(children) ? (
                 children.map((child, i) => (
-                  <DynamicRenderer key={i} spec={child} onInteraction={onInteraction} />
+                  <DynamicRenderer
+                    key={i}
+                    spec={child}
+                    onInteraction={onInteraction}
+                  />
                 ))
               ) : (
-                <DynamicRenderer spec={children} onInteraction={onInteraction} />
+                <DynamicRenderer
+                  spec={children}
+                  onInteraction={onInteraction}
+                />
               )
             ) : null}
           </Callout>
         );
       }
 
-      case 'Stats': {
+      case "Stats": {
         const { props } = spec as any;
         return (
           <Stats
@@ -229,7 +281,7 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
         );
       }
 
-      case 'Badge': {
+      case "Badge": {
         const { props } = spec as any;
         return (
           <Badge
@@ -241,7 +293,7 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
         );
       }
 
-      case 'Divider': {
+      case "Divider": {
         const { props } = spec as any;
         return (
           <Divider
@@ -253,7 +305,7 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
       }
 
       // Experience Components
-      case 'Hero': {
+      case "Hero": {
         const { props } = spec as any;
         return (
           <Hero
@@ -265,17 +317,32 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
             showScrollIndicator={props.showScrollIndicator}
             height={props.height}
             overlay={props.overlay}
-            onBadgeClick={props.onBadgeClick ? () => {
-              if (id) onInteraction(id, 'badge_click', {}, props.onBadgeClick);
-            } : undefined}
-            onScrollClick={props.onScrollClick ? () => {
-              if (id) onInteraction(id, 'scroll_click', {}, props.onScrollClick);
-            } : undefined}
+            onBadgeClick={
+              props.onBadgeClick
+                ? () => {
+                    if (id)
+                      onInteraction(id, "badge_click", {}, props.onBadgeClick);
+                  }
+                : undefined
+            }
+            onScrollClick={
+              props.onScrollClick
+                ? () => {
+                    if (id)
+                      onInteraction(
+                        id,
+                        "scroll_click",
+                        {},
+                        props.onScrollClick,
+                      );
+                  }
+                : undefined
+            }
           />
         );
       }
 
-      case 'ScrollSection': {
+      case "ScrollSection": {
         const { props, children } = spec as any;
         return (
           <ScrollSection
@@ -286,17 +353,24 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
             {children ? (
               Array.isArray(children) ? (
                 children.map((child: ComponentSpec, i: number) => (
-                  <DynamicRenderer key={i} spec={child} onInteraction={onInteraction} />
+                  <DynamicRenderer
+                    key={i}
+                    spec={child}
+                    onInteraction={onInteraction}
+                  />
                 ))
               ) : (
-                <DynamicRenderer spec={children} onInteraction={onInteraction} />
+                <DynamicRenderer
+                  spec={children}
+                  onInteraction={onInteraction}
+                />
               )
             ) : null}
           </ScrollSection>
         );
       }
 
-      case 'ProgressBar': {
+      case "ProgressBar": {
         const { props } = spec as any;
         return (
           <ProgressBar
@@ -308,32 +382,32 @@ export const DynamicRenderer = forwardRef<HTMLElement, RendererProps>(
         );
       }
 
-      case 'ActionBar': {
+      case "ActionBar": {
         const { props } = spec as any;
         return (
           <ActionBar
             actions={props.actions || []}
             title={props.title}
             onAction={(actionId) => {
-              if (id) onInteraction(id, 'action', { actionId }, props.onAction);
+              if (id) onInteraction(id, "action", { actionId }, props.onAction);
             }}
           />
         );
       }
 
-      case 'RawJsx': {
+      case "RawJsx": {
         const { props } = spec as any;
         return <RawJsx jsx={props.jsx} />;
       }
 
       default:
         return (
-          <div style={{ color: 'var(--text-tertiary)', padding: '1rem' }}>
+          <div style={{ color: "var(--text-tertiary)", padding: "1rem" }}>
             Unknown component type: {type}
           </div>
         );
     }
-  }
+  },
 );
 
-DynamicRenderer.displayName = 'DynamicRenderer';
+DynamicRenderer.displayName = "DynamicRenderer";

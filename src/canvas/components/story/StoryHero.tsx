@@ -17,7 +17,7 @@ export function StoryHero({
   chapterInfo,
   readTime,
   scrollProgress,
-  onWorldClick
+  onWorldClick,
 }: StoryHeroProps) {
   // Parallax calculations - hero moves slower than scroll
   const parallaxOffset = scrollProgress * 150;
@@ -34,7 +34,7 @@ export function StoryHero({
           style={{
             transform: `translateY(${parallaxOffset}px) scale(${scale})`,
             opacity: Math.max(0.3, opacity),
-            filter: `blur(${blur}px)`
+            filter: `blur(${blur}px)`,
           }}
         >
           <img src={heroImage} alt="" className="hero-image" />
@@ -50,7 +50,7 @@ export function StoryHero({
         className="hero-content"
         style={{
           opacity,
-          transform: `translateY(${parallaxOffset * 0.5}px)`
+          transform: `translateY(${parallaxOffset * 0.5}px)`,
         }}
       >
         {/* World badge */}

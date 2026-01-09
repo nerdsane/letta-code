@@ -8,14 +8,10 @@
  * - delete: Remove asset
  */
 
-import { mkdir, readFile, writeFile, readdir, unlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type {
-  StoryAsset,
-  AssetManagerArgs,
-  AssetManagerResult,
-} from "../../types/dsf";
+import type { AssetManagerArgs, AssetManagerResult } from "../../types/dsf";
 
 // ============================================================================
 // Constants
@@ -31,9 +27,12 @@ export async function asset_manager(
   args: AssetManagerArgs,
 ): Promise<AssetManagerResult> {
   try {
-    console.error("asset_manager called with args:", JSON.stringify(args, null, 2));
+    console.error(
+      "asset_manager called with args:",
+      JSON.stringify(args, null, 2),
+    );
 
-    if (!args || typeof args !== 'object') {
+    if (!args || typeof args !== "object") {
       return {
         toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
         status: "error",
@@ -158,7 +157,7 @@ async function loadAsset(args: AssetManagerArgs): Promise<AssetManagerResult> {
   }
 
   const data = await readFile(assetPath);
-  const base64 = data.toString("base64");
+  const _base64 = data.toString("base64");
 
   // If we have asset metadata, return it
   if (args.asset) {
@@ -199,29 +198,32 @@ async function listAssets(args: AssetManagerArgs): Promise<AssetManagerResult> {
     const storyDir = join(ASSETS_DIR, args.story_id);
     if (existsSync(storyDir)) {
       const files = await readdir(storyDir);
-      assets.push(...files.map(f => join(args.story_id!, f)));
+      assets.push(...files.map((f) => join(args.story_id!, f)));
     }
   } else if (args.world_checkpoint) {
     // List assets for this specific world
     const worldDir = join(ASSETS_DIR, "worlds", args.world_checkpoint);
     if (existsSync(worldDir)) {
       const files = await readdir(worldDir);
-      assets.push(...files.map(f => join("worlds", args.world_checkpoint!, f)));
+      assets.push(
+        ...files.map((f) => join("worlds", args.world_checkpoint!, f)),
+      );
     }
   } else {
     // List all assets
     const files = await readdir(ASSETS_DIR, { recursive: true });
-    assets.push(...files.filter(f => typeof f === 'string') as string[]);
+    assets.push(...(files.filter((f) => typeof f === "string") as string[]));
   }
 
-  const summary = assets.length > 0
-    ? `Found ${assets.length} assets:\n${assets.map(a => `  - ${a}`).join("\n")}`
-    : "No assets found";
+  const summary =
+    assets.length > 0
+      ? `Found ${assets.length} assets:\n${assets.map((a) => `  - ${a}`).join("\n")}`
+      : "No assets found";
 
   return {
     toolReturn: summary,
     status: "success",
-    data: assets as any, // Would need to return proper StoryAsset objects
+    data: assets as any,
   };
 }
 
@@ -229,7 +231,9 @@ async function listAssets(args: AssetManagerArgs): Promise<AssetManagerResult> {
 // Operation: Delete Asset
 // ============================================================================
 
-async function deleteAsset(args: AssetManagerArgs): Promise<AssetManagerResult> {
+async function deleteAsset(
+  args: AssetManagerArgs,
+): Promise<AssetManagerResult> {
   if (!args.asset_id && !args.asset) {
     return {
       toolReturn: "asset_id or asset is required for delete operation",
@@ -270,7 +274,7 @@ async function findAssetPath(assetId: string): Promise<string | null> {
   const files = await readdir(ASSETS_DIR, { recursive: true });
 
   for (const file of files) {
-    if (typeof file === 'string' && file.includes(assetId)) {
+    if (typeof file === "string" && file.includes(assetId)) {
       return join(ASSETS_DIR, file);
     }
   }

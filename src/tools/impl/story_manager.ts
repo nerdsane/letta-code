@@ -11,29 +11,28 @@
  * - update_metadata: Update story metadata
  */
 
-import { mkdir, readFile, writeFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
+  ContinuationContext,
   Story,
-  StorySegment,
   StoryBranch,
   StoryEndpoint,
   StoryManagerArgs,
   StoryManagerResult,
-  ContinuationContext,
+  StorySegment,
   World,
-  WorldContributions,
 } from "../../types/dsf";
-import { world_manager } from "./world_manager";
 import { broadcastStateChange } from "./canvas_ui";
+import { world_manager } from "./world_manager";
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 const STORIES_DIR = ".dsf/stories";
-const ASSETS_DIR = ".dsf/assets";
+const _ASSETS_DIR = ".dsf/assets";
 
 // ============================================================================
 // Main Entry Point
@@ -43,9 +42,12 @@ export async function story_manager(
   args: StoryManagerArgs,
 ): Promise<StoryManagerResult> {
   try {
-    console.error("story_manager called with args:", JSON.stringify(args, null, 2));
+    console.error(
+      "story_manager called with args:",
+      JSON.stringify(args, null, 2),
+    );
 
-    if (!args || typeof args !== 'object') {
+    if (!args || typeof args !== "object") {
       return {
         toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
         status: "error",
@@ -92,7 +94,9 @@ export async function story_manager(
 // Operation: Create Story
 // ============================================================================
 
-async function createStory(args: StoryManagerArgs): Promise<StoryManagerResult> {
+async function createStory(
+  args: StoryManagerArgs,
+): Promise<StoryManagerResult> {
   if (!args.world_checkpoint) {
     return {
       toolReturn: "world_checkpoint is required for create operation",
@@ -158,7 +162,7 @@ async function createStory(args: StoryManagerArgs): Promise<StoryManagerResult> 
   await writeFile(filePath, JSON.stringify(story, null, 2), "utf-8");
 
   // Broadcast state change for reactive UI
-  await broadcastStateChange('story_started', {
+  await broadcastStateChange("story_started", {
     storyId: storyId,
     worldId: args.world_checkpoint,
   });
@@ -174,7 +178,9 @@ async function createStory(args: StoryManagerArgs): Promise<StoryManagerResult> 
 // Operation: Save Segment
 // ============================================================================
 
-async function saveSegment(args: StoryManagerArgs): Promise<StoryManagerResult> {
+async function saveSegment(
+  args: StoryManagerArgs,
+): Promise<StoryManagerResult> {
   if (!args.story_id) {
     return {
       toolReturn: "story_id is required for save_segment operation",
@@ -190,7 +196,10 @@ async function saveSegment(args: StoryManagerArgs): Promise<StoryManagerResult> 
   }
 
   // Load story
-  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
+  const loadResult = await loadStory({
+    operation: "load",
+    story_id: args.story_id,
+  });
   if (loadResult.status === "error") {
     return loadResult;
   }
@@ -222,7 +231,7 @@ async function saveSegment(args: StoryManagerArgs): Promise<StoryManagerResult> 
   await writeFile(filePath, JSON.stringify(story, null, 2), "utf-8");
 
   // Broadcast state change for reactive UI
-  await broadcastStateChange('story_continued', {
+  await broadcastStateChange("story_continued", {
     storyId: story.id,
     segmentId: segmentId,
     worldId: story.world_checkpoint,
@@ -270,7 +279,9 @@ async function loadStory(args: StoryManagerArgs): Promise<StoryManagerResult> {
 // Operation: List Stories
 // ============================================================================
 
-async function listStories(args: StoryManagerArgs): Promise<StoryManagerResult> {
+async function listStories(
+  args: StoryManagerArgs,
+): Promise<StoryManagerResult> {
   const stories: Story[] = [];
 
   if (!existsSync(STORIES_DIR)) {
@@ -312,9 +323,12 @@ async function listStories(args: StoryManagerArgs): Promise<StoryManagerResult> 
   }
 
   // Format output
-  const summary = stories.map(s =>
-    `- ${s.metadata.title} (${s.id})\n  World: ${s.world_checkpoint}, Segments: ${s.segments.length}, Status: ${s.metadata.status}`
-  ).join("\n");
+  const summary = stories
+    .map(
+      (s) =>
+        `- ${s.metadata.title} (${s.id})\n  World: ${s.world_checkpoint}, Segments: ${s.segments.length}, Status: ${s.metadata.status}`,
+    )
+    .join("\n");
 
   return {
     toolReturn: `Found ${stories.length} stories:\n${summary}`,
@@ -327,7 +341,9 @@ async function listStories(args: StoryManagerArgs): Promise<StoryManagerResult> 
 // Operation: Create Branch
 // ============================================================================
 
-async function createBranch(args: StoryManagerArgs): Promise<StoryManagerResult> {
+async function createBranch(
+  args: StoryManagerArgs,
+): Promise<StoryManagerResult> {
   if (!args.story_id) {
     return {
       toolReturn: "story_id is required for branch operation",
@@ -343,7 +359,10 @@ async function createBranch(args: StoryManagerArgs): Promise<StoryManagerResult>
   }
 
   // Load story
-  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
+  const loadResult = await loadStory({
+    operation: "load",
+    story_id: args.story_id,
+  });
   if (loadResult.status === "error") {
     return loadResult;
   }
@@ -396,7 +415,9 @@ async function createBranch(args: StoryManagerArgs): Promise<StoryManagerResult>
 // Operation: Get Continuation Context
 // ============================================================================
 
-async function getContinuationContext(args: StoryManagerArgs): Promise<StoryManagerResult> {
+async function getContinuationContext(
+  args: StoryManagerArgs,
+): Promise<StoryManagerResult> {
   if (!args.story_id) {
     return {
       toolReturn: "story_id is required for continue operation",
@@ -405,7 +426,10 @@ async function getContinuationContext(args: StoryManagerArgs): Promise<StoryMana
   }
 
   // Load story
-  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
+  const loadResult = await loadStory({
+    operation: "load",
+    story_id: args.story_id,
+  });
   if (loadResult.status === "error") {
     return loadResult;
   }
@@ -431,34 +455,45 @@ async function getContinuationContext(args: StoryManagerArgs): Promise<StoryMana
   const lastSegment = story.segments[story.segments.length - 1];
   if (!lastSegment) {
     return {
-      toolReturn: "Cannot continue: story has no segments yet. Use save_segment to add the first segment.",
+      toolReturn:
+        "Cannot continue: story has no segments yet. Use save_segment to add the first segment.",
       status: "error",
     };
   }
 
   // Get active endpoints
-  const activeEndpoints = story.endpoints.filter(ep => ep.status === "active" || ep.status === "pending");
+  const activeEndpoints = story.endpoints.filter(
+    (ep) => ep.status === "active" || ep.status === "pending",
+  );
 
   // Gather rules that have been applied
   const appliedRuleIds = new Set<string>();
   for (const segment of story.segments) {
-    segment.world_evolution?.rules_applied?.forEach(id => appliedRuleIds.add(id));
+    segment.world_evolution?.rules_applied?.forEach((id) =>
+      appliedRuleIds.add(id),
+    );
   }
-  const rulesInPlay = world.foundation.rules.filter(r => appliedRuleIds.has(r.id));
+  const rulesInPlay = world.foundation.rules.filter((r) =>
+    appliedRuleIds.has(r.id),
+  );
 
   // Gather elements that have been introduced
   const introducedElementIds = new Set<string>();
   for (const segment of story.segments) {
-    segment.world_evolution?.elements_introduced?.forEach(id => introducedElementIds.add(id));
+    segment.world_evolution?.elements_introduced?.forEach((id) =>
+      introducedElementIds.add(id),
+    );
   }
-  const elementsInPlay = world.surface.visible_elements.filter(e => introducedElementIds.has(e.id));
+  const elementsInPlay = world.surface.visible_elements.filter((e) =>
+    introducedElementIds.has(e.id),
+  );
 
   // Suggest directions
   const suggestedDirections: string[] = [];
 
   // From branches
   if (lastSegment.branches && lastSegment.branches.length > 0) {
-    lastSegment.branches.forEach(b => {
+    lastSegment.branches.forEach((b) => {
       if (b.status === "pending") {
         suggestedDirections.push(`Branch: ${b.prompt}`);
       }
@@ -466,14 +501,26 @@ async function getContinuationContext(args: StoryManagerArgs): Promise<StoryMana
   }
 
   // From world questions
-  if (lastSegment.world_evolution.new_questions && lastSegment.world_evolution.new_questions.length > 0) {
-    suggestedDirections.push(`Explore questions: ${lastSegment.world_evolution.new_questions.join(", ")}`);
+  if (
+    lastSegment.world_evolution.new_questions &&
+    lastSegment.world_evolution.new_questions.length > 0
+  ) {
+    suggestedDirections.push(
+      `Explore questions: ${lastSegment.world_evolution.new_questions.join(", ")}`,
+    );
   }
 
   // From unused rules
-  const unusedRules = world.foundation.rules.filter(r => !appliedRuleIds.has(r.id));
+  const unusedRules = world.foundation.rules.filter(
+    (r) => !appliedRuleIds.has(r.id),
+  );
   if (unusedRules.length > 0) {
-    suggestedDirections.push(`Test rules: ${unusedRules.slice(0, 3).map(r => r.id).join(", ")}`);
+    suggestedDirections.push(
+      `Test rules: ${unusedRules
+        .slice(0, 3)
+        .map((r) => r.id)
+        .join(", ")}`,
+    );
   }
 
   const context: ContinuationContext = {
@@ -487,7 +534,7 @@ async function getContinuationContext(args: StoryManagerArgs): Promise<StoryMana
   };
 
   return {
-    toolReturn: `Continuation context for "${story.metadata.title}"\n\nLast segment: ${lastSegment.id} (${lastSegment.word_count} words)\nActive endpoints: ${activeEndpoints.length}\nSuggested directions:\n${suggestedDirections.map(d => `  - ${d}`).join("\n")}\n\nRules in play: ${rulesInPlay.length}\nElements in play: ${elementsInPlay.length}`,
+    toolReturn: `Continuation context for "${story.metadata.title}"\n\nLast segment: ${lastSegment.id} (${lastSegment.word_count} words)\nActive endpoints: ${activeEndpoints.length}\nSuggested directions:\n${suggestedDirections.map((d) => `  - ${d}`).join("\n")}\n\nRules in play: ${rulesInPlay.length}\nElements in play: ${elementsInPlay.length}`,
     status: "success",
     data: context,
   };
@@ -497,7 +544,9 @@ async function getContinuationContext(args: StoryManagerArgs): Promise<StoryMana
 // Operation: Update Metadata
 // ============================================================================
 
-async function updateMetadata(args: StoryManagerArgs): Promise<StoryManagerResult> {
+async function updateMetadata(
+  args: StoryManagerArgs,
+): Promise<StoryManagerResult> {
   if (!args.story_id) {
     return {
       toolReturn: "story_id is required for update_metadata operation",
@@ -513,7 +562,10 @@ async function updateMetadata(args: StoryManagerArgs): Promise<StoryManagerResul
   }
 
   // Load story
-  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
+  const loadResult = await loadStory({
+    operation: "load",
+    story_id: args.story_id,
+  });
   if (loadResult.status === "error") {
     return loadResult;
   }
@@ -570,7 +622,9 @@ async function findStoryFile(storyId: string): Promise<string | null> {
 function updateEndpoints(story: Story, newSegment: StorySegment): void {
   // Remove endpoint for parent segment (if any)
   if (newSegment.parent_segment) {
-    story.endpoints = story.endpoints.filter(ep => ep.segment_id !== newSegment.parent_segment);
+    story.endpoints = story.endpoints.filter(
+      (ep) => ep.segment_id !== newSegment.parent_segment,
+    );
   }
 
   // Add endpoint for new segment
@@ -598,7 +652,10 @@ function updateWorldContributions(story: Story, segment: StorySegment): void {
   // Add new elements (guard against missing world_evolution)
   if (segment.world_evolution?.elements_introduced) {
     for (const elemId of segment.world_evolution.elements_introduced) {
-      if (!contrib.characters_developed.includes(elemId) && !contrib.locations_explored.includes(elemId)) {
+      if (
+        !contrib.characters_developed.includes(elemId) &&
+        !contrib.locations_explored.includes(elemId)
+      ) {
         // Assume character for now (could be smarter)
         contrib.characters_developed.push(elemId);
       }

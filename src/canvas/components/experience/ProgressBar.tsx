@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import './experience.css';
+import { useEffect, useState } from "react";
+import "./experience.css";
 
 export interface ProgressBarProps {
   /** Container element to track scroll progress within. Defaults to document */
   containerId?: string;
   /** Position of the progress bar */
-  position?: 'top' | 'bottom';
+  position?: "top" | "bottom";
   /** Height of the bar in pixels */
   height?: number;
   /** Show percentage label */
@@ -14,7 +14,7 @@ export interface ProgressBarProps {
 
 export function ProgressBar({
   containerId,
-  position = 'top',
+  position = "top",
   height = 2,
   showLabel = false,
 }: ProgressBarProps) {
@@ -43,16 +43,14 @@ export function ProgressBar({
       setProgress(Math.min(100, Math.max(0, currentProgress)));
     };
 
-    const target = containerId
-      ? document.getElementById(containerId)
-      : window;
+    const target = containerId ? document.getElementById(containerId) : window;
 
     if (!target) return;
 
-    target.addEventListener('scroll', calculateProgress, { passive: true });
+    target.addEventListener("scroll", calculateProgress, { passive: true });
     calculateProgress(); // Initial calculation
 
-    return () => target.removeEventListener('scroll', calculateProgress);
+    return () => target.removeEventListener("scroll", calculateProgress);
   }, [containerId]);
 
   return (

@@ -521,14 +521,23 @@ export function onChunk(b: Buffers, chunk: LettaStreamingResponseWithCosts) {
       if (chunk.output_cost !== undefined && chunk.output_cost !== null) {
         b.usage.outputCost = (b.usage.outputCost || 0) + chunk.output_cost;
       }
-      if (chunk.cached_input_cost !== undefined && chunk.cached_input_cost !== null) {
-        b.usage.cachedInputCost = (b.usage.cachedInputCost || 0) + chunk.cached_input_cost;
+      if (
+        chunk.cached_input_cost !== undefined &&
+        chunk.cached_input_cost !== null
+      ) {
+        b.usage.cachedInputCost =
+          (b.usage.cachedInputCost || 0) + chunk.cached_input_cost;
       }
-      if (chunk.cache_write_cost !== undefined && chunk.cache_write_cost !== null) {
-        b.usage.cacheWriteCost = (b.usage.cacheWriteCost || 0) + chunk.cache_write_cost;
+      if (
+        chunk.cache_write_cost !== undefined &&
+        chunk.cache_write_cost !== null
+      ) {
+        b.usage.cacheWriteCost =
+          (b.usage.cacheWriteCost || 0) + chunk.cache_write_cost;
       }
       if (chunk.reasoning_cost !== undefined && chunk.reasoning_cost !== null) {
-        b.usage.reasoningCost = (b.usage.reasoningCost || 0) + chunk.reasoning_cost;
+        b.usage.reasoningCost =
+          (b.usage.reasoningCost || 0) + chunk.reasoning_cost;
       }
       if (chunk.total_cost !== undefined && chunk.total_cost !== null) {
         b.usage.totalCost = (b.usage.totalCost || 0) + chunk.total_cost;

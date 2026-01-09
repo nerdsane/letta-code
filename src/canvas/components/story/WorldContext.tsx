@@ -1,24 +1,24 @@
 interface WorldContextProps {
-  contextType: 'rule' | 'character' | 'location' | 'tech';
+  contextType: "rule" | "character" | "location" | "tech";
   title?: string;
   content?: string;
   isVisible: boolean;
-  'data-section-index'?: number;
+  "data-section-index"?: number;
   className?: string;
 }
 
 const CONTEXT_ICONS: Record<string, string> = {
-  rule: '⚖',
-  character: '◉',
-  location: '◇',
-  tech: '⬡'
+  rule: "⚖",
+  character: "◉",
+  location: "◇",
+  tech: "⬡",
 };
 
 const CONTEXT_LABELS: Record<string, string> = {
-  rule: 'World Rule',
-  character: 'Character',
-  location: 'Location',
-  tech: 'Technology'
+  rule: "World Rule",
+  character: "Character",
+  location: "Location",
+  tech: "Technology",
 };
 
 export function WorldContext({
@@ -28,13 +28,13 @@ export function WorldContext({
   isVisible,
   ...props
 }: WorldContextProps) {
-  const icon = CONTEXT_ICONS[contextType] || '◈';
-  const label = CONTEXT_LABELS[contextType] || 'World Context';
+  const icon = CONTEXT_ICONS[contextType] || "◈";
+  const label = CONTEXT_LABELS[contextType] || "World Context";
 
   return (
     <aside
       {...props}
-      className={`world-context context-${contextType} ${isVisible ? 'visible' : ''}`}
+      className={`world-context context-${contextType} ${isVisible ? "visible" : ""}`}
     >
       <div className="context-header">
         <span className="context-icon">{icon}</span>

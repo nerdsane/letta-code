@@ -1,20 +1,20 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { StoryHero } from './StoryHero';
-import { StorySection } from './StorySection';
-import { InlineMedia } from './InlineMedia';
-import { WorldContext } from './WorldContext';
-import { StoryActions } from './StoryActions';
-import { VisualNovelReader, storyContentToVNScene } from './VisualNovelReader';
-import type { CharacterSprite } from './CharacterLayer';
-import './immersive.css';
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { CharacterSprite } from "./CharacterLayer";
+import { InlineMedia } from "./InlineMedia";
+import { StoryActions } from "./StoryActions";
+import { StoryHero } from "./StoryHero";
+import { StorySection } from "./StorySection";
+import { storyContentToVNScene, VisualNovelReader } from "./VisualNovelReader";
+import { WorldContext } from "./WorldContext";
+import "./immersive.css";
 
 // Story content types
 export interface StoryContent {
-  type: 'text' | 'image' | 'gallery' | 'world-context' | 'divider';
+  type: "text" | "image" | "gallery" | "world-context" | "divider";
   content?: string;
   src?: string;
   images?: Array<{ src: string; alt?: string; caption?: string }>;
-  contextType?: 'rule' | 'character' | 'location' | 'tech';
+  contextType?: "rule" | "character" | "location" | "tech";
   title?: string;
   description?: string;
   fullBleed?: boolean;
@@ -25,7 +25,7 @@ export interface SceneConfig {
   background?: string;
   music?: string;
   characters?: CharacterSprite[];
-  transition?: 'fade' | 'slide' | 'dissolve';
+  transition?: "fade" | "slide" | "dissolve";
 }
 
 export interface StoryData {
@@ -47,7 +47,7 @@ export interface StoryData {
   characterColors?: Record<string, string>;
 }
 
-export type ReadingMode = 'scroll' | 'visual-novel';
+export type ReadingMode = "scroll" | "visual-novel";
 
 interface ImmersiveStoryReaderProps {
   story: StoryData;
@@ -67,21 +67,23 @@ export function ImmersiveStoryReader({
   onContinue,
   onBranch,
   onWorldExplore,
-  mode = 'scroll',
+  mode = "scroll",
   onModeChange,
   showModeToggle = true,
 }: ImmersiveStoryReaderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set([0]));
+  const [visibleSections, setVisibleSections] = useState<Set<number>>(
+    new Set([0]),
+  );
   const [currentMode, setCurrentMode] = useState<ReadingMode>(mode);
   const [sceneBackground, setSceneBackground] = useState<string | undefined>(
-    story.scene?.background || story.heroImage
+    story.scene?.background || story.heroImage,
   );
 
   // Toggle reading mode
   const toggleMode = useCallback(() => {
-    const newMode = currentMode === 'scroll' ? 'visual-novel' : 'scroll';
+    const newMode = currentMode === "scroll" ? "visual-novel" : "scroll";
     setCurrentMode(newMode);
     onModeChange?.(newMode);
   }, [currentMode, onModeChange]);
@@ -105,8 +107,8 @@ export function ImmersiveStoryReader({
       setScrollProgress(progress);
     };
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Intersection Observer for scroll-triggered animations
@@ -114,7 +116,10 @@ export function ImmersiveStoryReader({
     const observer = new IntersectionObserver(
       (entries: IntersectionObserverEntry[]) => {
         entries.forEach((entry: IntersectionObserverEntry) => {
-          const index = parseInt(entry.target.getAttribute('data-section-index') || '0', 10);
+          const index = parseInt(
+            entry.target.getAttribute("data-section-index") || "0",
+            10,
+          );
           setVisibleSections((prev) => {
             const next = new Set(prev);
             if (entry.isIntersecting) {
@@ -126,43 +131,44 @@ export function ImmersiveStoryReader({
       },
       {
         root: containerRef.current,
-        rootMargin: '-10% 0px -10% 0px',
-        threshold: [0, 0.1, 0.5, 1]
-      }
+        rootMargin: "-10% 0px -10% 0px",
+        threshold: [0, 0.1, 0.5, 1],
+      },
     );
 
     const container = containerRef.current;
     if (container) {
-      const sections = container.querySelectorAll('[data-section-index]');
+      const sections = container.querySelectorAll("[data-section-index]");
       sections.forEach((section: Element) => observer.observe(section));
     }
 
     return () => observer.disconnect();
-  }, [story.content]);
+  }, []);
 
   // Convert story content to VN scene format for VN mode
   const vnScene = useCallback(() => {
     // Combine all text content into dialogue lines
     const textContent = story.content
-      .filter(item => item.type === 'text')
-      .map(item => item.content || '')
-      .join('\n\n');
+      .filter((item) => item.type === "text")
+      .map((item) => item.content || "")
+      .join("\n\n");
 
     return storyContentToVNScene(
       textContent,
       story.id,
       sceneBackground,
-      story.scene?.characters
+      story.scene?.characters,
     );
   }, [story.content, story.id, sceneBackground, story.scene?.characters]);
 
   // VN Mode rendering
-  if (currentMode === 'visual-novel') {
+  if (currentMode === "visual-novel") {
     return (
       <div className="immersive-reader immersive-reader--vn-mode">
         {/* Mode toggle */}
         {showModeToggle && (
           <button
+            type="button"
             className="immersive-mode-toggle"
             onClick={toggleMode}
             title="Switch to scroll mode"
@@ -188,7 +194,7 @@ export function ImmersiveStoryReader({
     <div
       ref={containerRef}
       className="immersive-reader immersive-reader--scroll-mode"
-      style={{ '--scroll-progress': scrollProgress } as React.CSSProperties}
+      style={{ "--scroll-progress": scrollProgress } as React.CSSProperties}
     >
       {/* Scene background layer */}
       {sceneBackground && (
@@ -204,6 +210,7 @@ export function ImmersiveStoryReader({
       {/* Mode toggle */}
       {showModeToggle && (
         <button
+          type="button"
           className="immersive-mode-toggle"
           onClick={toggleMode}
           title="Switch to visual novel mode"
@@ -242,23 +249,23 @@ export function ImmersiveStoryReader({
         {story.content.map((item, index) => {
           const isVisible = visibleSections.has(index);
           const sectionProps = {
-            'data-section-index': index,
-            className: `immersive-section ${isVisible ? 'visible' : ''}`
+            "data-section-index": index,
+            className: `immersive-section ${isVisible ? "visible" : ""}`,
           };
 
           switch (item.type) {
-            case 'text':
+            case "text":
               return (
                 <StorySection
                   key={index}
                   {...sectionProps}
-                  content={item.content || ''}
+                  content={item.content || ""}
                   isVisible={isVisible}
                   index={index}
                 />
               );
 
-            case 'image':
+            case "image":
               return (
                 <InlineMedia
                   key={index}
@@ -271,7 +278,7 @@ export function ImmersiveStoryReader({
                 />
               );
 
-            case 'gallery':
+            case "gallery":
               return (
                 <InlineMedia
                   key={index}
@@ -282,24 +289,24 @@ export function ImmersiveStoryReader({
                 />
               );
 
-            case 'world-context':
+            case "world-context":
               return (
                 <WorldContext
                   key={index}
                   {...sectionProps}
-                  contextType={item.contextType || 'rule'}
+                  contextType={item.contextType || "rule"}
                   title={item.title}
                   content={item.content || item.description}
                   isVisible={isVisible}
                 />
               );
 
-            case 'divider':
+            case "divider":
               return (
                 <div
                   key={index}
                   {...sectionProps}
-                  className={`immersive-divider ${isVisible ? 'visible' : ''}`}
+                  className={`immersive-divider ${isVisible ? "visible" : ""}`}
                 >
                   <span className="divider-ornament">✦</span>
                 </div>

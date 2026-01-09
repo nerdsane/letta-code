@@ -5,9 +5,10 @@
  * AgentSuggestions panel in the canvas UI.
  */
 
-import type { SuggestionMessage } from '../../agent-bus/types';
+import type { SuggestionMessage } from "../../agent-bus/types";
 
-const AGENT_BUS_URL = process.env.AGENT_BUS_URL || 'ws://localhost:8284/ws?type=agent';
+const AGENT_BUS_URL =
+  process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
 
 // ============================================================================
 // Tool Interface
@@ -16,7 +17,7 @@ const AGENT_BUS_URL = process.env.AGENT_BUS_URL || 'ws://localhost:8284/ws?type=
 interface SendSuggestionArgs {
   title: string;
   description: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   action_id: string;
   action_label?: string;
   action_data?: any;
@@ -24,7 +25,7 @@ interface SendSuggestionArgs {
 
 interface SendSuggestionResult {
   toolReturn: string;
-  status: 'success' | 'error';
+  status: "success" | "error";
 }
 
 // ============================================================================
@@ -33,7 +34,10 @@ interface SendSuggestionResult {
 
 let agentBusWs: WebSocket | null = null;
 let isConnecting = false;
-let pendingCallbacks: { resolve: (ws: WebSocket) => void; reject: (err: Error) => void }[] = [];
+let pendingCallbacks: {
+  resolve: (ws: WebSocket) => void;
+  reject: (err: Error) => void;
+}[] = [];
 
 function ensureAgentBusConnection(): Promise<WebSocket> {
   return new Promise((resolve, reject) => {
@@ -51,7 +55,7 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
     const ws = new WebSocket(AGENT_BUS_URL);
 
     ws.onopen = () => {
-      console.log('[send_suggestion] Connected to Agent Bus');
+      console.log("[send_suggestion] Connected to Agent Bus");
       isConnecting = false;
       agentBusWs = ws;
       resolve(ws);
@@ -62,9 +66,9 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
     };
 
     ws.onerror = (event) => {
-      console.error('[send_suggestion] Agent Bus connection error:', event);
+      console.error("[send_suggestion] Agent Bus connection error:", event);
       isConnecting = false;
-      const err = new Error('Failed to connect to Agent Bus');
+      const err = new Error("Failed to connect to Agent Bus");
       reject(err);
       for (const cb of pendingCallbacks) {
         cb.reject(err);
@@ -73,7 +77,7 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
     };
 
     ws.onclose = () => {
-      console.log('[send_suggestion] Agent Bus connection closed');
+      console.log("[send_suggestion] Agent Bus connection closed");
       agentBusWs = null;
       isConnecting = false;
     };
@@ -94,8 +98,11 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
  * Use this to offer contextual suggestions based on current state,
  * unused elements, story opportunities, or any other insights.
  */
-export async function send_suggestion(args: SendSuggestionArgs): Promise<SendSuggestionResult> {
-  const { title, description, priority, action_id, action_label, action_data } = args;
+export async function send_suggestion(
+  args: SendSuggestionArgs,
+): Promise<SendSuggestionResult> {
+  const { title, description, priority, action_id, action_label, action_data } =
+    args;
 
   try {
     const ws = await ensureAgentBusConnection();
@@ -103,7 +110,7 @@ export async function send_suggestion(args: SendSuggestionArgs): Promise<SendSug
     const suggestionId = `sug-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     const message: SuggestionMessage = {
-      type: 'suggestion',
+      type: "suggestion",
       payload: {
         id: suggestionId,
         priority,
@@ -121,14 +128,14 @@ export async function send_suggestion(args: SendSuggestionArgs): Promise<SendSug
 
     return {
       toolReturn: `Suggestion "${title}" sent to canvas`,
-      status: 'success',
+      status: "success",
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error('[send_suggestion] Error:', errorMsg);
+    console.error("[send_suggestion] Error:", errorMsg);
     return {
       toolReturn: `Failed to send suggestion: ${errorMsg}`,
-      status: 'error',
+      status: "error",
     };
   }
 }

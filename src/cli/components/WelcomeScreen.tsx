@@ -9,7 +9,6 @@ import { settingsManager } from "../../settings-manager";
 import { getVersion } from "../../version";
 import { useTerminalWidth } from "../hooks/useTerminalWidth";
 import { asciiLogo } from "./AsciiArt";
-import { colors } from "./colors";
 
 /**
  * Convert absolute path to use ~ for home directory
@@ -104,7 +103,6 @@ export function WelcomeScreen({
       {/* Left column: Logo - solid teal */}
       <Box flexDirection="column" paddingLeft={1} paddingRight={2}>
         {logoLines.map((line, idx) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: Logo lines are static and never reorder
           <Text key={idx} bold color="#00F0FF">
             {line}
           </Text>

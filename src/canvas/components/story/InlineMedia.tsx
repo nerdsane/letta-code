@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 interface ImageData {
   src: string;
@@ -7,13 +7,13 @@ interface ImageData {
 }
 
 interface InlineMediaProps {
-  type: 'image' | 'gallery';
+  type: "image" | "gallery";
   src?: string;
   caption?: string;
   images?: ImageData[];
   fullBleed?: boolean;
   isVisible: boolean;
-  'data-section-index'?: number;
+  "data-section-index"?: number;
   className?: string;
 }
 
@@ -36,41 +36,52 @@ export function InlineMedia({
 
   const closeLightbox = () => setLightboxOpen(false);
 
-  const navigateLightbox = (direction: 'prev' | 'next') => {
+  const navigateLightbox = (direction: "prev" | "next") => {
     if (!images) return;
     const max = images.length - 1;
-    if (direction === 'prev') {
+    if (direction === "prev") {
       setLightboxIndex((i) => (i === 0 ? max : i - 1));
     } else {
       setLightboxIndex((i) => (i === max ? 0 : i + 1));
     }
   };
 
-  if (type === 'image' && src) {
+  if (type === "image" && src) {
     return (
       <>
         <figure
           {...props}
-          className={`inline-media inline-image ${fullBleed ? 'full-bleed' : ''} ${isVisible ? 'visible' : ''}`}
+          className={`inline-media inline-image ${fullBleed ? "full-bleed" : ""} ${isVisible ? "visible" : ""}`}
         >
           <div className="media-frame">
             <img
               src={src}
-              alt={caption || ''}
+              alt={caption || ""}
               onClick={() => openLightbox()}
               loading="lazy"
             />
             <div className="media-shine" />
           </div>
-          {caption && <figcaption className="media-caption">{caption}</figcaption>}
+          {caption && (
+            <figcaption className="media-caption">{caption}</figcaption>
+          )}
         </figure>
 
         {/* Lightbox */}
         {lightboxOpen && (
           <div className="media-lightbox" onClick={closeLightbox}>
-            <button className="lightbox-close" onClick={closeLightbox}>×</button>
-            <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-              <img src={src} alt={caption || ''} />
+            <button
+              type="button"
+              className="lightbox-close"
+              onClick={closeLightbox}
+            >
+              ×
+            </button>
+            <div
+              className="lightbox-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img src={src} alt={caption || ""} />
               {caption && <p className="lightbox-caption">{caption}</p>}
             </div>
           </div>
@@ -79,14 +90,17 @@ export function InlineMedia({
     );
   }
 
-  if (type === 'gallery' && images && images.length > 0) {
+  if (type === "gallery" && images && images.length > 0) {
     return (
       <>
         <div
           {...props}
-          className={`inline-media inline-gallery ${isVisible ? 'visible' : ''}`}
+          className={`inline-media inline-gallery ${isVisible ? "visible" : ""}`}
         >
-          <div className="gallery-grid" style={{ '--count': images.length } as React.CSSProperties}>
+          <div
+            className="gallery-grid"
+            style={{ "--count": images.length } as React.CSSProperties}
+          >
             {images.map((img, index) => (
               <figure
                 key={index}
@@ -96,13 +110,17 @@ export function InlineMedia({
                 <div className="media-frame">
                   <img
                     src={img.src}
-                    alt={img.alt || ''}
+                    alt={img.alt || ""}
                     onClick={() => openLightbox(index)}
                     loading="lazy"
                   />
                   <div className="media-shine" />
                 </div>
-                {img.caption && <figcaption className="media-caption">{img.caption}</figcaption>}
+                {img.caption && (
+                  <figcaption className="media-caption">
+                    {img.caption}
+                  </figcaption>
+                )}
               </figure>
             ))}
           </div>
@@ -111,27 +129,49 @@ export function InlineMedia({
         {/* Lightbox with navigation */}
         {lightboxOpen && images && images.length > 0 && (
           <div className="media-lightbox" onClick={closeLightbox}>
-            <button className="lightbox-close" onClick={closeLightbox}>×</button>
+            <button
+              type="button"
+              className="lightbox-close"
+              onClick={closeLightbox}
+            >
+              ×
+            </button>
             {images.length > 1 && (
               <>
                 <button
+                  type="button"
                   className="lightbox-nav lightbox-prev"
-                  onClick={(e) => { e.stopPropagation(); navigateLightbox('prev'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateLightbox("prev");
+                  }}
                 >
                   ‹
                 </button>
                 <button
+                  type="button"
                   className="lightbox-nav lightbox-next"
-                  onClick={(e) => { e.stopPropagation(); navigateLightbox('next'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateLightbox("next");
+                  }}
                 >
                   ›
                 </button>
               </>
             )}
-            <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-              <img src={images[lightboxIndex]?.src || ''} alt={images[lightboxIndex]?.alt || ''} />
+            <div
+              className="lightbox-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={images[lightboxIndex]?.src || ""}
+                alt={images[lightboxIndex]?.alt || ""}
+              />
               {images[lightboxIndex]?.caption && (
-                <p className="lightbox-caption">{images[lightboxIndex].caption}</p>
+                <p className="lightbox-caption">
+                  {images[lightboxIndex].caption}
+                </p>
               )}
               {images.length > 1 && (
                 <p className="lightbox-counter">

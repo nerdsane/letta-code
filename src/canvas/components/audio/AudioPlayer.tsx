@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import './audio-player.css';
+import { useCallback, useEffect, useRef, useState } from "react";
+import "./audio-player.css";
 
 interface AudioPlayerProps {
   src: string;
@@ -49,14 +49,14 @@ export function AudioPlayer({
       onEnded?.();
     };
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("ended", handleEnded);
 
     return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("ended", handleEnded);
     };
   }, [onEnded, onTimeUpdate]);
 
@@ -87,11 +87,14 @@ export function AudioPlayer({
     setCurrentTime(time);
   }, []);
 
-  const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    setIsMuted(false);
-  }, []);
+  const handleVolumeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newVolume = parseFloat(e.target.value);
+      setVolume(newVolume);
+      setIsMuted(false);
+    },
+    [],
+  );
 
   const toggleMute = useCallback(() => {
     setIsMuted(!isMuted);
@@ -100,15 +103,19 @@ export function AudioPlayer({
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   if (minimal) {
     return (
       <div className="audio-player audio-player--minimal">
         <audio ref={audioRef} src={src} autoPlay={autoPlay} loop={loop} />
-        <button className="audio-player__play-btn" onClick={togglePlay}>
-          {isPlaying ? '⏸' : '▶'}
+        <button
+          type="button"
+          className="audio-player__play-btn"
+          onClick={togglePlay}
+        >
+          {isPlaying ? "⏸" : "▶"}
         </button>
         <div className="audio-player__time">{formatTime(currentTime)}</div>
       </div>
@@ -129,8 +136,12 @@ export function AudioPlayer({
 
       {/* Controls */}
       <div className="audio-player__controls">
-        <button className="audio-player__play-btn" onClick={togglePlay}>
-          {isPlaying ? '⏸' : '▶'}
+        <button
+          type="button"
+          className="audio-player__play-btn"
+          onClick={togglePlay}
+        >
+          {isPlaying ? "⏸" : "▶"}
         </button>
 
         {/* Progress */}
@@ -149,8 +160,12 @@ export function AudioPlayer({
 
         {/* Volume */}
         <div className="audio-player__volume">
-          <button className="audio-player__mute-btn" onClick={toggleMute}>
-            {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔈' : '🔊'}
+          <button
+            type="button"
+            className="audio-player__mute-btn"
+            onClick={toggleMute}
+          >
+            {isMuted || volume === 0 ? "🔇" : volume < 0.5 ? "🔈" : "🔊"}
           </button>
           <input
             type="range"

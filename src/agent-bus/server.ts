@@ -4,8 +4,8 @@
  * Routes messages between Agent/CLI and Canvas UI for bidirectional communication
  */
 
-import type { ServerWebSocket } from 'bun';
-import type { AgentBusMessage, AgentBusClient } from './types';
+import type { ServerWebSocket } from "bun";
+import type { AgentBusClient, AgentBusMessage } from "./types";
 
 // ============================================================================
 // State Management
@@ -34,12 +34,14 @@ function routeMessage(message: AgentBusMessage, senderId: string) {
     return;
   }
 
-  console.log(`[Agent Bus] Routing ${message.type} from ${sender.type}:${senderId}`);
+  console.log(
+    `[Agent Bus] Routing ${message.type} from ${sender.type}:${senderId}`,
+  );
 
   // Route canvas_ui messages to canvas clients
-  if (message.type === 'canvas_ui') {
+  if (message.type === "canvas_ui") {
     for (const [id, client] of clients.entries()) {
-      if (client.type === 'canvas' && id !== senderId) {
+      if (client.type === "canvas" && id !== senderId) {
         try {
           client.ws.send(JSON.stringify(message));
           console.log(`[Agent Bus] → canvas:${id}`);
@@ -51,9 +53,9 @@ function routeMessage(message: AgentBusMessage, senderId: string) {
   }
 
   // Route interaction messages to agent clients
-  if (message.type === 'interaction') {
+  if (message.type === "interaction") {
     for (const [id, client] of clients.entries()) {
-      if (client.type === 'agent' && id !== senderId) {
+      if (client.type === "agent" && id !== senderId) {
         try {
           client.ws.send(JSON.stringify(message));
           console.log(`[Agent Bus] → agent:${id}`);
@@ -65,26 +67,33 @@ function routeMessage(message: AgentBusMessage, senderId: string) {
   }
 
   // Route state_change messages to all clients (both canvas and agent)
-  if (message.type === 'state_change') {
+  if (message.type === "state_change") {
     for (const [id, client] of clients.entries()) {
       if (id !== senderId) {
         try {
           client.ws.send(JSON.stringify(message));
-          console.log(`[Agent Bus] → ${client.type}:${id} (state_change: ${(message as any).event})`);
+          console.log(
+            `[Agent Bus] → ${client.type}:${id} (state_change: ${(message as any).event})`,
+          );
         } catch (err) {
-          console.error(`[Agent Bus] Failed to send to ${client.type}:${id}`, err);
+          console.error(
+            `[Agent Bus] Failed to send to ${client.type}:${id}`,
+            err,
+          );
         }
       }
     }
   }
 
   // Route suggestion messages to canvas clients
-  if (message.type === 'suggestion') {
+  if (message.type === "suggestion") {
     for (const [id, client] of clients.entries()) {
-      if (client.type === 'canvas' && id !== senderId) {
+      if (client.type === "canvas" && id !== senderId) {
         try {
           client.ws.send(JSON.stringify(message));
-          console.log(`[Agent Bus] → canvas:${id} (suggestion: ${(message as any).payload?.title})`);
+          console.log(
+            `[Agent Bus] → canvas:${id} (suggestion: ${(message as any).payload?.title})`,
+          );
         } catch (err) {
           console.error(`[Agent Bus] Failed to send to canvas:${id}`, err);
         }
@@ -108,8 +117,8 @@ export function startAgentBus(port: number = 8284) {
       const url = new URL(req.url);
 
       // WebSocket upgrade
-      if (url.pathname === '/ws') {
-        const clientType = url.searchParams.get('type') || 'unknown';
+      if (url.pathname === "/ws") {
+        const clientType = url.searchParams.get("type") || "unknown";
         const success = server.upgrade(req, {
           data: {
             clientType,
@@ -120,30 +129,36 @@ export function startAgentBus(port: number = 8284) {
         if (success) {
           return undefined;
         }
-        return new Response('WebSocket upgrade failed', { status: 400 });
+        return new Response("WebSocket upgrade failed", { status: 400 });
       }
 
       // Health check
-      if (url.pathname === '/health') {
-        return new Response(JSON.stringify({
-          status: 'ok',
-          clients: Array.from(clients.values()).map(c => ({
-            id: c.id,
-            type: c.type,
-            connectedAt: c.connectedAt,
-          })),
-        }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
+      if (url.pathname === "/health") {
+        return new Response(
+          JSON.stringify({
+            status: "ok",
+            clients: Array.from(clients.values()).map((c) => ({
+              id: c.id,
+              type: c.type,
+              connectedAt: c.connectedAt,
+            })),
+          }),
+          {
+            headers: { "Content-Type": "application/json" },
+          },
+        );
       }
 
-      return new Response('Agent Bus Server', { status: 200 });
+      return new Response("Agent Bus Server", { status: 200 });
     },
 
     websocket: {
       open(ws: ServerWebSocket<WebSocketData>) {
         const { clientId, clientType } = ws.data;
-        const type = clientType === 'agent' || clientType === 'canvas' ? clientType : 'agent';
+        const type =
+          clientType === "agent" || clientType === "canvas"
+            ? clientType
+            : "agent";
 
         // Register client
         clients.set(clientId, {
@@ -153,14 +168,18 @@ export function startAgentBus(port: number = 8284) {
           connectedAt: new Date(),
         });
 
-        console.log(`[Agent Bus] ${type}:${clientId} connected (${clients.size} total)`);
+        console.log(
+          `[Agent Bus] ${type}:${clientId} connected (${clients.size} total)`,
+        );
 
         // Send connection confirmation
-        ws.send(JSON.stringify({
-          type: 'connect',
-          clientType: type,
-          clientId,
-        }));
+        ws.send(
+          JSON.stringify({
+            type: "connect",
+            clientType: type,
+            clientId,
+          }),
+        );
       },
 
       message(ws: ServerWebSocket<WebSocketData>, message: string | Buffer) {
@@ -170,19 +189,26 @@ export function startAgentBus(port: number = 8284) {
           const msg = JSON.parse(message.toString()) as AgentBusMessage;
           routeMessage(msg, clientId);
         } catch (err) {
-          console.error(`[Agent Bus] Failed to parse message from ${clientId}:`, err);
-          ws.send(JSON.stringify({
-            type: 'error',
-            error: 'Invalid message format',
-            details: err instanceof Error ? err.message : String(err),
-          }));
+          console.error(
+            `[Agent Bus] Failed to parse message from ${clientId}:`,
+            err,
+          );
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              error: "Invalid message format",
+              details: err instanceof Error ? err.message : String(err),
+            }),
+          );
         }
       },
 
       close(ws: ServerWebSocket<WebSocketData>) {
         const { clientId, clientType } = ws.data;
         clients.delete(clientId);
-        console.log(`[Agent Bus] ${clientType}:${clientId} disconnected (${clients.size} remaining)`);
+        console.log(
+          `[Agent Bus] ${clientType}:${clientId} disconnected (${clients.size} remaining)`,
+        );
       },
 
       error(ws: ServerWebSocket<WebSocketData>, error: Error) {

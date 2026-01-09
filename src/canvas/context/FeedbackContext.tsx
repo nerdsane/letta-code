@@ -3,12 +3,18 @@
  *
  * Provides toast notifications and agent status throughout the app
  */
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useState,
+} from "react";
 
 export interface ToastData {
   id: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'agent';
+  type: "info" | "success" | "warning" | "agent";
   duration?: number;
   action?: {
     label: string;
@@ -25,10 +31,14 @@ export interface AgentStatusData {
 interface FeedbackContextValue {
   // Toast management
   toasts: ToastData[];
-  showToast: (message: string, type?: ToastData['type'], options?: {
-    duration?: number;
-    action?: ToastData['action'];
-  }) => string;
+  showToast: (
+    message: string,
+    type?: ToastData["type"],
+    options?: {
+      duration?: number;
+      action?: ToastData["action"];
+    },
+  ) => string;
   dismissToast: (id: string) => void;
   clearAllToasts: () => void;
 
@@ -43,7 +53,7 @@ const FeedbackContext = createContext<FeedbackContextValue | null>(null);
 export function useFeedback() {
   const context = useContext(FeedbackContext);
   if (!context) {
-    throw new Error('useFeedback must be used within a FeedbackProvider');
+    throw new Error("useFeedback must be used within a FeedbackProvider");
   }
   return context;
 }
@@ -61,34 +71,37 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     isThinking: false,
   });
 
-  const showToast = useCallback((
-    message: string,
-    type: ToastData['type'] = 'info',
-    options?: { duration?: number; action?: ToastData['action'] }
-  ) => {
-    const id = `toast-${Date.now()}-${++toastIdCounter}`;
-    const toast: ToastData = {
-      id,
-      message,
-      type,
-      duration: options?.duration ?? 5000,
-      action: options?.action,
-    };
+  const showToast = useCallback(
+    (
+      message: string,
+      type: ToastData["type"] = "info",
+      options?: { duration?: number; action?: ToastData["action"] },
+    ) => {
+      const id = `toast-${Date.now()}-${++toastIdCounter}`;
+      const toast: ToastData = {
+        id,
+        message,
+        type,
+        duration: options?.duration ?? 5000,
+        action: options?.action,
+      };
 
-    setToasts(prev => {
-      // Limit to 5 toasts max
-      const newToasts = [...prev, toast];
-      if (newToasts.length > 5) {
-        return newToasts.slice(-5);
-      }
-      return newToasts;
-    });
+      setToasts((prev) => {
+        // Limit to 5 toasts max
+        const newToasts = [...prev, toast];
+        if (newToasts.length > 5) {
+          return newToasts.slice(-5);
+        }
+        return newToasts;
+      });
 
-    return id;
-  }, []);
+      return id;
+    },
+    [],
+  );
 
   const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   const clearAllToasts = useCallback(() => {
@@ -96,7 +109,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setAgentThinking = useCallback((thinking: boolean, action?: string) => {
-    setAgentStatus(prev => ({
+    setAgentStatus((prev) => ({
       ...prev,
       isThinking: thinking,
       action: thinking ? action : undefined,
@@ -105,7 +118,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setAgentProgress = useCallback((progress: number) => {
-    setAgentStatus(prev => ({
+    setAgentStatus((prev) => ({
       ...prev,
       progress,
     }));

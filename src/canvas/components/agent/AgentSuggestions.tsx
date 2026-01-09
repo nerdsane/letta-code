@@ -4,23 +4,23 @@
  * Shows suggestions sent by the agent via send_suggestion tool.
  * Only displays real agent suggestions - no static fallback patterns.
  */
-import React, { useState, useEffect } from 'react';
-import type { World, Story } from '../../../types/dsf';
+import { useEffect, useState } from "react";
+import type { Story, World } from "../../../types/dsf";
 
 export interface Suggestion {
   id: string;
-  type?: 'rule' | 'branch' | 'character' | 'continuation' | 'world' | 'custom';
+  type?: "rule" | "branch" | "character" | "continuation" | "world" | "custom";
   title: string;
   description: string; // Full text, never truncated
   action: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   data?: any;
 }
 
 // Agent suggestion from Agent Bus
 export interface AgentSuggestion {
   id: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   title: string;
   description: string;
   actionId: string;
@@ -37,7 +37,7 @@ export interface AgentSuggestionsProps {
   onAccept: (suggestion: Suggestion) => void;
   onDismiss: (suggestionId: string) => void;
   maxSuggestions?: number;
-  position?: 'sidebar' | 'floating' | 'inline';
+  position?: "sidebar" | "floating" | "inline";
 }
 
 export function AgentSuggestions({
@@ -48,7 +48,7 @@ export function AgentSuggestions({
   onAccept,
   onDismiss,
   maxSuggestions = 5,
-  position = 'floating',
+  position = "floating",
 }: AgentSuggestionsProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -59,10 +59,10 @@ export function AgentSuggestions({
     // Convert agent suggestions to Suggestion format
     const fromAgent: Suggestion[] = agentSuggestions.map((s) => ({
       id: s.id,
-      type: 'custom' as const,
+      type: "custom" as const,
       title: s.title,
       description: s.description,
-      action: s.actionLabel || 'Accept',
+      action: s.actionLabel || "Accept",
       priority: s.priority,
       data: { actionId: s.actionId, ...s.actionData },
     }));
@@ -87,8 +87,11 @@ export function AgentSuggestions({
   if (suggestions.length === 0) return null;
 
   return (
-    <div className={`dsf-agent-suggestions dsf-agent-suggestions--${position} ${isCollapsed ? 'dsf-agent-suggestions--collapsed' : ''}`}>
+    <div
+      className={`dsf-agent-suggestions dsf-agent-suggestions--${position} ${isCollapsed ? "dsf-agent-suggestions--collapsed" : ""}`}
+    >
       <button
+        type="button"
         className="dsf-agent-suggestions__header"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
@@ -97,7 +100,7 @@ export function AgentSuggestions({
           Agent Suggests ({suggestions.length})
         </span>
         <span className="dsf-agent-suggestions__toggle">
-          {isCollapsed ? '▼' : '▲'}
+          {isCollapsed ? "▼" : "▲"}
         </span>
       </button>
 
@@ -110,17 +113,18 @@ export function AgentSuggestions({
             >
               <div className="dsf-agent-suggestions__item-header">
                 <span className="dsf-agent-suggestions__item-type">
-                  {suggestion.type === 'rule' && '◈'}
-                  {suggestion.type === 'branch' && '◇'}
-                  {suggestion.type === 'character' && '○'}
-                  {suggestion.type === 'continuation' && '→'}
-                  {suggestion.type === 'world' && '✦'}
-                  {suggestion.type === 'custom' && '◆'}
+                  {suggestion.type === "rule" && "◈"}
+                  {suggestion.type === "branch" && "◇"}
+                  {suggestion.type === "character" && "○"}
+                  {suggestion.type === "continuation" && "→"}
+                  {suggestion.type === "world" && "✦"}
+                  {suggestion.type === "custom" && "◆"}
                 </span>
                 <span className="dsf-agent-suggestions__item-title">
                   {suggestion.title}
                 </span>
                 <button
+                  type="button"
                   className="dsf-agent-suggestions__dismiss"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -130,8 +134,11 @@ export function AgentSuggestions({
                   ×
                 </button>
               </div>
-              <p className="dsf-agent-suggestions__item-desc">{suggestion.description}</p>
+              <p className="dsf-agent-suggestions__item-desc">
+                {suggestion.description}
+              </p>
               <button
+                type="button"
                 className="dsf-agent-suggestions__action"
                 onClick={() => onAccept(suggestion)}
               >

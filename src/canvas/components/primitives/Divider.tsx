@@ -1,18 +1,18 @@
 export interface DividerProps {
-  variant?: 'default' | 'accent' | 'dashed';
-  spacing?: 'sm' | 'md' | 'lg';
+  variant?: "default" | "accent" | "dashed";
+  spacing?: "sm" | "md" | "lg";
   label?: string;
 }
 
 export function Divider({
-  variant = 'default',
-  spacing = 'md',
-  label
+  variant = "default",
+  spacing = "md",
+  label,
 }: DividerProps) {
   const spacingMap = {
-    sm: 'var(--space-2)',
-    md: 'var(--space-4)',
-    lg: 'var(--space-6)'
+    sm: "var(--space-2)",
+    md: "var(--space-4)",
+    lg: "var(--space-6)",
   };
 
   if (label) {

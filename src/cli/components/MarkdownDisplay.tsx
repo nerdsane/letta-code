@@ -80,7 +80,6 @@ export const MarkdownDisplay: React.FC<MarkdownDisplayProps> = ({
         <Box flexDirection="row">
           <Text dimColor={dimColor}>│</Text>
           {headerRow.map((cell, idx) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static table content
             <Box key={`h-${idx}`} flexDirection="row">
               <Text bold dimColor={dimColor}>
                 {" "}
@@ -94,7 +93,6 @@ export const MarkdownDisplay: React.FC<MarkdownDisplayProps> = ({
         <Box flexDirection="row">
           <Text dimColor={dimColor}>├</Text>
           {colWidths.map((width, idx) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static table content
             <Box key={`s-${idx}`} flexDirection="row">
               <Text dimColor={dimColor}>{"─".repeat(width + 2)}</Text>
               <Text dimColor={dimColor}>
@@ -105,11 +103,9 @@ export const MarkdownDisplay: React.FC<MarkdownDisplayProps> = ({
         </Box>
         {/* Body rows */}
         {bodyRows.map((row, rowIdx) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: static table content
           <Box key={`r-${rowIdx}`} flexDirection="row">
             <Text dimColor={dimColor}>│</Text>
             {row.map((cell, colIdx) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: static table content
               <Box key={`c-${colIdx}`} flexDirection="row">
                 <Text dimColor={dimColor}>
                   {" "}

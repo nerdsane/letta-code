@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import './experience.css';
+import React, { useEffect, useRef, useState } from "react";
+import "./experience.css";
 
 export interface HeroProps {
   title: string;
@@ -8,8 +8,8 @@ export interface HeroProps {
   badge?: string;
   meta?: string[];
   showScrollIndicator?: boolean;
-  height?: 'full' | 'large' | 'medium' | 'compact';
-  overlay?: 'dark' | 'gradient' | 'none';
+  height?: "full" | "large" | "medium" | "compact";
+  overlay?: "dark" | "gradient" | "none";
   onBadgeClick?: () => void;
   onScrollClick?: () => void;
 }
@@ -21,8 +21,8 @@ export function Hero({
   badge,
   meta,
   showScrollIndicator = true,
-  height = 'full',
-  overlay = 'gradient',
+  height = "full",
+  overlay = "gradient",
   onBadgeClick,
   onScrollClick,
 }: HeroProps) {
@@ -39,18 +39,18 @@ export function Hero({
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const parallaxOffset = scrollY * 0.3;
   const contentOpacity = Math.max(0, 1 - scrollY / 400);
 
   const heightClass = {
-    full: 'exp-hero--full',
-    large: 'exp-hero--large',
-    medium: 'exp-hero--medium',
-    compact: 'exp-hero--compact',
+    full: "exp-hero--full",
+    large: "exp-hero--large",
+    medium: "exp-hero--medium",
+    compact: "exp-hero--compact",
   }[height];
 
   const handleScrollClick = () => {
@@ -60,7 +60,7 @@ export function Hero({
       // Default: scroll to next section
       window.scrollTo({
         top: window.innerHeight,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
     }
   };
@@ -73,15 +73,20 @@ export function Hero({
           style={{ transform: `translateY(${parallaxOffset}px)` }}
         >
           <img src={backgroundImage} alt="" className="exp-hero__bg-image" />
-          {overlay !== 'none' && (
-            <div className={`exp-hero__overlay exp-hero__overlay--${overlay}`} />
+          {overlay !== "none" && (
+            <div
+              className={`exp-hero__overlay exp-hero__overlay--${overlay}`}
+            />
           )}
         </div>
       )}
 
       <div
         className="exp-hero__content"
-        style={{ opacity: contentOpacity, transform: `translateY(${scrollY * 0.1}px)` }}
+        style={{
+          opacity: contentOpacity,
+          transform: `translateY(${scrollY * 0.1}px)`,
+        }}
       >
         {badge && (
           <button

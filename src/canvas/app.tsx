@@ -1,25 +1,31 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { World, Story, StorySegment } from "../types/dsf";
+import type { Story, World } from "../types/dsf";
 import type { ComponentSpec } from "./components/types";
 import "./styles.css";
-import { DynamicRenderer } from "./components/DynamicRenderer";
-import { MountPoint } from "./components/MountPoint";
 import { AgentBusClient } from "./agentBusClient";
+import { AgentSuggestions, type Suggestion } from "./components/agent";
+import { DynamicRenderer } from "./components/DynamicRenderer";
+import { AgentStatus, ToastContainer } from "./components/feedback";
+import {
+  type ElementType,
+  FloatingInput,
+  InteractiveElement,
+  useFloatingInput,
+} from "./components/interaction";
+import { MountPoint } from "./components/MountPoint";
 import { ImmersiveStoryReader } from "./components/story";
 import { mockStory } from "./components/story/mockStory";
-import { WorldSpace } from "./components/world";
 import { WelcomeSpace } from "./components/welcome";
+import { WorldSpace } from "./components/world";
 import { FeedbackProvider, useFeedbackSafe } from "./context/FeedbackContext";
-import { ToastContainer, AgentStatus } from "./components/feedback";
-import { FloatingInput, useFloatingInput, InteractiveElement, type ElementType } from "./components/interaction";
-import { AgentSuggestions, type Suggestion } from "./components/agent";
 
 // ============================================================================
 // ASCII Art Logo
 // ============================================================================
 
-const ASCII_LOGO = `██████╗ ███████╗███████╗██████╗
+const _ASCII_LOGO = `██████╗ ███████╗███████╗██████╗
 ██╔══██╗██╔════╝██╔════╝██╔══██╗
 ██║  ██║█████╗  █████╗  ██████╔╝
 ██║  ██║██╔══╝  ██╔══╝  ██╔═══╝
@@ -41,7 +47,7 @@ type View = "canvas" | "world" | "story";
 interface AgentUIEntry {
   componentId: string;
   spec: ComponentSpec;
-  mode: 'overlay' | 'fullscreen' | 'inline';
+  mode: "overlay" | "fullscreen" | "inline";
 }
 
 interface AppState {
@@ -62,7 +68,7 @@ interface AppState {
   pendingExperience: { storyId: string; spec: any } | null; // Experience ready but not shown
   agentSuggestions: Array<{
     id: string;
-    priority: 'high' | 'medium' | 'low';
+    priority: "high" | "medium" | "low";
     title: string;
     description: string;
     actionId: string;
@@ -81,7 +87,7 @@ async function waitForCondition(
     timeoutMs?: number;
     intervalMs?: number;
     onCheck?: (attempt: number) => void;
-  } = {}
+  } = {},
 ): Promise<boolean> {
   const { timeoutMs = 30000, intervalMs = 2000, onCheck } = options;
   const startTime = Date.now();
@@ -153,28 +159,28 @@ function App() {
     };
 
     return () => ws.close();
-  }, []);
+  }, [loadData]);
 
   // ESC key handler for fullscreen and immersive modes
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         if (state.fullscreenUI) {
-          setState(s => ({ ...s, fullscreenUI: null }));
+          setState((s) => ({ ...s, fullscreenUI: null }));
         } else if (state.showImmersiveDemo) {
-          setState(s => ({ ...s, showImmersiveDemo: false }));
+          setState((s) => ({ ...s, showImmersiveDemo: false }));
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [state.fullscreenUI, state.showImmersiveDemo]);
 
   // Load initial data
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   async function loadData() {
     try {
@@ -185,8 +191,8 @@ function App() {
         fetch("/api/stories"),
       ]);
 
-      const worlds = await worldsRes.json() as World[];
-      const stories = await storiesRes.json() as Story[];
+      const worlds = (await worldsRes.json()) as World[];
+      const stories = (await storiesRes.json()) as Story[];
 
       setState((s) => ({
         ...s,
@@ -214,13 +220,13 @@ function App() {
   function selectStory(story: Story) {
     // Guard: Don't re-request if already pending or fullscreen exists for this story
     if (pendingStoryRequests.current.has(story.id)) {
-      console.log('[Canvas] Story request already pending:', story.id);
+      console.log("[Canvas] Story request already pending:", story.id);
       return;
     }
 
     // Guard: Don't request if fullscreen UI already exists for this story
-    if (state.fullscreenUI?.target?.includes(story.id.replace(/_/g, '-'))) {
-      console.log('[Canvas] Fullscreen already exists for story:', story.id);
+    if (state.fullscreenUI?.target?.includes(story.id.replace(/_/g, "-"))) {
+      console.log("[Canvas] Fullscreen already exists for story:", story.id);
       return;
     }
 
@@ -233,20 +239,20 @@ function App() {
     }));
 
     // 2. Request immersive experience in BACKGROUND (if connected)
-    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+    if (agentBusRef.current?.isConnected()) {
       // Mark as pending BEFORE sending to prevent race conditions
       pendingStoryRequests.current.add(story.id);
 
       agentBusRef.current.sendInteraction(
-        'canvas-story-request',
-        'story_read_request',
+        "canvas-story-request",
+        "story_read_request",
         {
           storyId: story.id,
           title: story.metadata.title,
           segmentCount: (story.segments || []).length,
           story: story,
         },
-        'story-experience'
+        "story-experience",
       );
     } else {
       // No agent bus, just clear thinking state
@@ -260,7 +266,12 @@ function App() {
       if (state.selectedStory) {
         pendingStoryRequests.current.delete(state.selectedStory.id);
       }
-      setState((s) => ({ ...s, view: "world", pendingExperience: null, agentThinking: false }));
+      setState((s) => ({
+        ...s,
+        view: "world",
+        pendingExperience: null,
+        agentThinking: false,
+      }));
     } else if (state.view === "world") {
       setState((s) => ({ ...s, view: "canvas", selectedWorld: null }));
     }
@@ -288,29 +299,43 @@ function App() {
     componentId: string,
     interactionType: string,
     data: any,
-    target?: string
+    target?: string,
   ) {
-    console.log('[Dynamic UI] Interaction:', {
+    console.log("[Dynamic UI] Interaction:", {
       componentId,
       interactionType,
       data,
-      target
+      target,
     });
 
     // Send interaction to agent via Agent Bus
-    if (agentBusRef.current && agentBusRef.current.isConnected()) {
-      agentBusRef.current.sendInteraction(componentId, interactionType, data, target);
+    if (agentBusRef.current?.isConnected()) {
+      agentBusRef.current.sendInteraction(
+        componentId,
+        interactionType,
+        data,
+        target,
+      );
     } else {
-      console.warn('[Canvas] Agent Bus not connected, interaction not sent');
+      console.warn("[Canvas] Agent Bus not connected, interaction not sent");
     }
   }
 
   // Handle element context menu actions
-  function handleElementAction(actionId: string, elementId: string, elementType: ElementType, elementData?: any) {
-    console.log('[Canvas] Element action:', { actionId, elementId, elementType });
+  function handleElementAction(
+    actionId: string,
+    elementId: string,
+    elementType: ElementType,
+    elementData?: any,
+  ) {
+    console.log("[Canvas] Element action:", {
+      actionId,
+      elementId,
+      elementType,
+    });
 
     // Send to agent via Agent Bus
-    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+    if (agentBusRef.current?.isConnected()) {
       agentBusRef.current.sendInteraction(
         `element-${elementType}-${elementId}`,
         `element_action`,
@@ -321,57 +346,69 @@ function App() {
           elementData,
           context: {
             view: state.view,
-            worldId: state.selectedWorld ? getWorldCheckpointName(state.selectedWorld) : undefined,
+            worldId: state.selectedWorld
+              ? getWorldCheckpointName(state.selectedWorld)
+              : undefined,
             storyId: state.selectedStory?.id,
           },
         },
-        'agent'
+        "agent",
       );
 
       // Show feedback
-      feedback?.showToast(`Action: ${actionId}`, 'agent');
-      setState(s => ({ ...s, agentThinking: true, agentAction: `Processing ${actionId}...` }));
+      feedback?.showToast(`Action: ${actionId}`, "agent");
+      setState((s) => ({
+        ...s,
+        agentThinking: true,
+        agentAction: `Processing ${actionId}...`,
+      }));
     } else {
-      feedback?.showToast('Agent not connected', 'warning');
+      feedback?.showToast("Agent not connected", "warning");
     }
   }
 
   // Handle suggestion acceptance
   function handleSuggestionAccept(suggestion: Suggestion) {
-    console.log('[Canvas] Suggestion accepted:', suggestion);
+    console.log("[Canvas] Suggestion accepted:", suggestion);
 
-    if (agentBusRef.current && agentBusRef.current.isConnected()) {
+    if (agentBusRef.current?.isConnected()) {
       agentBusRef.current.sendInteraction(
         `suggestion-${suggestion.id}`,
-        'suggestion_accepted',
+        "suggestion_accepted",
         {
           suggestion,
           context: {
             view: state.view,
-            worldId: state.selectedWorld ? getWorldCheckpointName(state.selectedWorld) : undefined,
+            worldId: state.selectedWorld
+              ? getWorldCheckpointName(state.selectedWorld)
+              : undefined,
             storyId: state.selectedStory?.id,
           },
         },
-        'agent'
+        "agent",
       );
 
-      feedback?.showToast(`Working on: ${suggestion.title}`, 'agent');
-      setState(s => ({ ...s, agentThinking: true, agentAction: suggestion.action }));
+      feedback?.showToast(`Working on: ${suggestion.title}`, "agent");
+      setState((s) => ({
+        ...s,
+        agentThinking: true,
+        agentAction: suggestion.action,
+      }));
     }
   }
 
   function handleSuggestionDismiss(suggestionId: string) {
-    console.log('[Canvas] Suggestion dismissed:', suggestionId);
+    console.log("[Canvas] Suggestion dismissed:", suggestionId);
   }
 
   // Initialize Agent Bus connection
   useEffect(() => {
     const agentBus = new AgentBusClient({
-      onCanvasUI: (componentId, target, action, spec, mode = 'overlay') => {
+      onCanvasUI: (componentId, target, action, spec, mode = "overlay") => {
         setState((s) => {
           // Handle fullscreen mode - store as pending experience (don't auto-switch)
-          if (mode === 'fullscreen') {
-            if (action === 'remove') {
+          if (mode === "fullscreen") {
+            if (action === "remove") {
               return { ...s, fullscreenUI: null, pendingExperience: null };
             } else if (spec && s.selectedStory) {
               // Clear pending request since experience is ready
@@ -389,7 +426,7 @@ function App() {
           // Handle overlay/inline modes - stored by target
           const newAgentUI = new Map(s.agentUI);
 
-          if (action === 'remove') {
+          if (action === "remove") {
             newAgentUI.delete(target);
           } else if (spec) {
             newAgentUI.set(target, { componentId, spec, mode });
@@ -399,26 +436,38 @@ function App() {
         });
       },
       onStateChange: (event, data) => {
-        console.log('[Canvas] State change:', event, data);
+        console.log("[Canvas] State change:", event, data);
 
         // Handle state changes with soft refresh (no full page reload)
         switch (event) {
-          case 'agent_thinking':
-            setState(s => ({ ...s, agentThinking: true, agentAction: data.action }));
+          case "agent_thinking":
+            setState((s) => ({
+              ...s,
+              agentThinking: true,
+              agentAction: data.action,
+            }));
             feedback?.setAgentThinking(true, data.action);
             break;
-          case 'agent_done':
-            setState(s => ({ ...s, agentThinking: false, agentAction: undefined }));
+          case "agent_done":
+            setState((s) => ({
+              ...s,
+              agentThinking: false,
+              agentAction: undefined,
+            }));
             feedback?.setAgentThinking(false);
             break;
-          case 'story_started':
+          case "story_started":
             // Show toast and refresh data
-            feedback?.showToast('New story created!', 'success');
+            feedback?.showToast("New story created!", "success");
             Promise.all([
-              fetch('/api/stories').then(res => res.json()) as Promise<Story[]>,
-              fetch('/api/worlds').then(res => res.json()) as Promise<World[]>,
+              fetch("/api/stories").then((res) => res.json()) as Promise<
+                Story[]
+              >,
+              fetch("/api/worlds").then((res) => res.json()) as Promise<
+                World[]
+              >,
             ]).then(([stories, worlds]) => {
-              setState(prev => ({
+              setState((prev) => ({
                 ...prev,
                 stories,
                 worlds,
@@ -426,14 +475,18 @@ function App() {
               }));
             });
             break;
-          case 'story_continued':
+          case "story_continued":
             // Show toast and refresh data
-            feedback?.showToast('Story continued', 'agent');
+            feedback?.showToast("Story continued", "agent");
             Promise.all([
-              fetch('/api/stories').then(res => res.json()) as Promise<Story[]>,
-              fetch('/api/worlds').then(res => res.json()) as Promise<World[]>,
+              fetch("/api/stories").then((res) => res.json()) as Promise<
+                Story[]
+              >,
+              fetch("/api/worlds").then((res) => res.json()) as Promise<
+                World[]
+              >,
             ]).then(([stories, worlds]) => {
-              setState(prev => ({
+              setState((prev) => ({
                 ...prev,
                 stories,
                 worlds,
@@ -441,21 +494,27 @@ function App() {
               }));
             });
             break;
-          case 'world_entered':
+          case "world_entered":
             // Show toast and refresh worlds data
-            feedback?.showToast('World updated', 'agent');
-            (fetch('/api/worlds').then(res => res.json()) as Promise<World[]>).then(worlds => {
-              setState(prev => ({ ...prev, worlds, agentThinking: false }));
+            feedback?.showToast("World updated", "agent");
+            (
+              fetch("/api/worlds").then((res) => res.json()) as Promise<World[]>
+            ).then((worlds) => {
+              setState((prev) => ({ ...prev, worlds, agentThinking: false }));
             });
             break;
-          case 'image_generated':
+          case "image_generated":
             // Show toast and refresh to show new images
-            feedback?.showToast('Image generated', 'success');
+            feedback?.showToast("Image generated", "success");
             Promise.all([
-              fetch('/api/stories').then(res => res.json()) as Promise<Story[]>,
-              fetch('/api/worlds').then(res => res.json()) as Promise<World[]>,
+              fetch("/api/stories").then((res) => res.json()) as Promise<
+                Story[]
+              >,
+              fetch("/api/worlds").then((res) => res.json()) as Promise<
+                World[]
+              >,
             ]).then(([stories, worlds]) => {
-              setState(prev => ({
+              setState((prev) => ({
                 ...prev,
                 stories,
                 worlds,
@@ -466,21 +525,23 @@ function App() {
         }
       },
       onConnect: (clientId) => {
-        console.log('[Canvas] Connected to Agent Bus:', clientId);
+        console.log("[Canvas] Connected to Agent Bus:", clientId);
         setState((s) => ({ ...s, agentBusConnected: true }));
       },
       onDisconnect: () => {
-        console.log('[Canvas] Disconnected from Agent Bus');
+        console.log("[Canvas] Disconnected from Agent Bus");
         setState((s) => ({ ...s, agentBusConnected: false }));
       },
       onError: (error) => {
-        console.error('[Canvas] Agent Bus error:', error);
+        console.error("[Canvas] Agent Bus error:", error);
       },
       onSuggestion: (suggestion) => {
-        console.log('[Canvas] Received suggestion:', suggestion);
+        console.log("[Canvas] Received suggestion:", suggestion);
         setState((s) => {
           // Add to suggestions, keep max 10, remove oldest if needed
-          const existing = s.agentSuggestions.filter(sug => sug.id !== suggestion.id);
+          const existing = s.agentSuggestions.filter(
+            (sug) => sug.id !== suggestion.id,
+          );
           const updated = [...existing, suggestion].slice(-10);
           return { ...s, agentSuggestions: updated };
         });
@@ -508,8 +569,8 @@ function App() {
     return (
       <ImmersiveStoryReader
         story={mockStory}
-        onContinue={() => console.log('Continue story')}
-        onBranch={(branchId) => console.log('Branch selected:', branchId)}
+        onContinue={() => console.log("Continue story")}
+        onBranch={(branchId) => console.log("Branch selected:", branchId)}
         onWorldExplore={() => {
           toggleImmersiveDemo();
         }}
@@ -528,50 +589,58 @@ function App() {
       />
 
       {/* Agent Bus UI components (overlay mode) */}
-      {Array.from(state.agentUI.entries()).map(([target, { componentId, spec }]) => {
-        // For now, render all components as floating (TODO: add proper mount points)
-        return (
-          <div
-            key={componentId}
-            data-target={target}
-            style={{ position: 'fixed', bottom: '80px', right: '20px', zIndex: 2001 }}
-          >
-            <DynamicRenderer
-              spec={spec}
-              onInteraction={handleDynamicUIInteraction}
-            />
-          </div>
-        );
-      })}
+      {Array.from(state.agentUI.entries()).map(
+        ([target, { componentId, spec }]) => {
+          // For now, render all components as floating (TODO: add proper mount points)
+          return (
+            <div
+              key={componentId}
+              data-target={target}
+              style={{
+                position: "fixed",
+                bottom: "80px",
+                right: "20px",
+                zIndex: 2001,
+              }}
+            >
+              <DynamicRenderer
+                spec={spec}
+                onInteraction={handleDynamicUIInteraction}
+              />
+            </div>
+          );
+        },
+      )}
 
       {/* Fullscreen UI - takes over entire viewport */}
       {state.fullscreenUI && (
         <div
           className="fullscreen-ui"
           style={{
-            position: 'fixed',
+            position: "fixed",
             inset: 0,
             zIndex: 3000,
-            background: 'var(--bg-primary)',
-            overflow: 'auto',
+            background: "var(--bg-primary)",
+            overflow: "auto",
           }}
         >
           {/* Close button */}
           <button
-            onClick={() => setState(s => ({ ...s, fullscreenUI: null }))}
+            type="button"
+            onClick={() => setState((s) => ({ ...s, fullscreenUI: null }))}
             style={{
-              position: 'fixed',
-              top: '20px',
-              right: '20px',
+              position: "fixed",
+              top: "20px",
+              right: "20px",
               zIndex: 3001,
-              padding: '8px 12px',
-              background: 'rgba(10, 10, 10, 0.9)',
-              border: '1px solid rgba(0, 255, 204, 0.3)',
-              color: 'rgba(0, 255, 204, 0.8)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              letterSpacing: '0.1em',
-              cursor: 'pointer',
+              padding: "8px 12px",
+              background: "rgba(10, 10, 10, 0.9)",
+              border: "1px solid rgba(0, 255, 204, 0.3)",
+              color: "rgba(0, 255, 204, 0.8)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.1em",
+              cursor: "pointer",
             }}
           >
             ESC
@@ -600,18 +669,21 @@ function App() {
           />
         )}
 
-        {state.view === "world" && state.selectedWorld && (
-          state.useImmersiveWorld ? (
+        {state.view === "world" &&
+          state.selectedWorld &&
+          (state.useImmersiveWorld ? (
             <WorldSpace
               world={state.selectedWorld}
               stories={state.stories.filter(
-                (s) => s.world_checkpoint === getWorldCheckpointName(state.selectedWorld!)
+                (s) =>
+                  s.world_checkpoint ===
+                  getWorldCheckpointName(state.selectedWorld!),
               )}
               onSelectStory={selectStory}
               onStartNewStory={() => {
                 // Trigger new story creation
                 const checkpoint = getWorldCheckpointName(state.selectedWorld!);
-                fetch(`/api/world/${checkpoint}/new-story`, { method: 'POST' })
+                fetch(`/api/world/${checkpoint}/new-story`, { method: "POST" })
                   .then(() => window.location.reload())
                   .catch(console.error);
               }}
@@ -621,14 +693,15 @@ function App() {
             <WorldView
               world={state.selectedWorld}
               stories={state.stories.filter(
-                (s) => s.world_checkpoint === getWorldCheckpointName(state.selectedWorld!)
+                (s) =>
+                  s.world_checkpoint ===
+                  getWorldCheckpointName(state.selectedWorld!),
               )}
               onSelectStory={selectStory}
               agentUI={state.agentUI}
               onInteraction={handleDynamicUIInteraction}
             />
-          )
-        )}
+          ))}
 
         {state.view === "story" && state.selectedStory && (
           <>
@@ -641,16 +714,19 @@ function App() {
             {/* Enhance button - shows when immersive experience is ready */}
             {state.pendingExperience?.storyId === state.selectedStory.id && (
               <button
+                type="button"
                 className="enhance-experience-btn"
-                onClick={() => setState(s => ({
-                  ...s,
-                  fullscreenUI: {
-                    componentId: 'story-experience',
-                    spec: s.pendingExperience!.spec,
-                    mode: 'fullscreen',
-                  },
-                  pendingExperience: null,
-                }))}
+                onClick={() =>
+                  setState((s) => ({
+                    ...s,
+                    fullscreenUI: {
+                      componentId: "story-experience",
+                      spec: s.pendingExperience?.spec,
+                      mode: "fullscreen",
+                    },
+                    pendingExperience: null,
+                  }))
+                }
               >
                 ✨ View Immersive Experience
               </button>
@@ -674,7 +750,10 @@ function App() {
       <ToastContainer />
 
       {/* Global floating input (Cmd/Ctrl+K) */}
-      <FloatingInputWrapper agentBusRef={agentBusRef} currentView={state.view} />
+      <FloatingInputWrapper
+        agentBusRef={agentBusRef}
+        currentView={state.view}
+      />
     </div>
   );
 }
@@ -689,24 +768,27 @@ function FloatingInputWrapper({
 }) {
   const floatingInput = useFloatingInput();
 
-  const handleSendMessage = useCallback((message: string, context: any) => {
-    if (agentBusRef.current && agentBusRef.current.isConnected()) {
-      agentBusRef.current.sendInteraction(
-        'floating-input',
-        'user_message',
-        {
-          message,
-          context: {
-            ...context,
-            view: currentView,
+  const handleSendMessage = useCallback(
+    (message: string, context: any) => {
+      if (agentBusRef.current?.isConnected()) {
+        agentBusRef.current.sendInteraction(
+          "floating-input",
+          "user_message",
+          {
+            message,
+            context: {
+              ...context,
+              view: currentView,
+            },
           },
-        },
-        'agent'
-      );
-    } else {
-      console.warn('[Canvas] Agent Bus not connected, message not sent');
-    }
-  }, [agentBusRef, currentView]);
+          "agent",
+        );
+      } else {
+        console.warn("[Canvas] Agent Bus not connected, message not sent");
+      }
+    },
+    [agentBusRef, currentView],
+  );
 
   return (
     <FloatingInput
@@ -750,7 +832,7 @@ function Header({
       <div className="header-left">
         <div className="logo" onClick={onHome}>
           <pre className="logo-ascii">
-{`██████╗ ███████╗███████╗██████╗
+            {`██████╗ ███████╗███████╗██████╗
 ██╔══██╗██╔════╝██╔════╝██╔══██╗
 ██║  ██║█████╗  █████╗  ██████╔╝
 ██║  ██║██╔══╝  ██╔══╝  ██╔═══╝
@@ -765,7 +847,7 @@ function Header({
           </pre>
         </div>
         {view !== "canvas" && (
-          <button className="back-button" onClick={onBack}>
+          <button type="button" className="back-button" onClick={onBack}>
             ← Back
           </button>
         )}
@@ -786,7 +868,9 @@ function Header({
         {selectedStory && (
           <>
             <span className="breadcrumb-separator">/</span>
-            <span className="breadcrumb-item">{selectedStory.metadata.title}</span>
+            <span className="breadcrumb-item">
+              {selectedStory.metadata.title}
+            </span>
           </>
         )}
       </nav>
@@ -798,7 +882,7 @@ function Header({
 // Canvas View
 // ============================================================================
 
-function CanvasView({
+function _CanvasView({
   worlds,
   stories,
   onSelectWorld,
@@ -831,7 +915,9 @@ function CanvasView({
       </section>
 
       <section className="section">
-        <h2 className="section-title">Active Stories ({activeStories.length})</h2>
+        <h2 className="section-title">
+          Active Stories ({activeStories.length})
+        </h2>
         <div className="stories-list">
           {activeStories.length === 0 ? (
             <EmptyState message="No active stories. Start writing!" />
@@ -865,7 +951,12 @@ function WorldView({
   stories: Story[];
   onSelectStory: (story: Story) => void;
   agentUI: Map<string, { componentId: string; spec: ComponentSpec }>;
-  onInteraction: (componentId: string, interactionType: string, data: any, target?: string) => void;
+  onInteraction: (
+    componentId: string,
+    interactionType: string,
+    data: any,
+    target?: string,
+  ) => void;
 }) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
@@ -905,7 +996,10 @@ function WorldView({
         throw new Error(errorMessage);
       }
 
-      const result = await response.json() as { status: string; message?: string };
+      const _result = (await response.json()) as {
+        status: string;
+        message?: string;
+      };
       setActionMessage("Agent is creating story... checking for updates...");
 
       // POLL for new story
@@ -923,9 +1017,11 @@ function WorldView({
           timeoutMs: 60000,
           intervalMs: 2000,
           onCheck: (attempt) => {
-            setActionMessage(`Agent is creating story... (checking ${attempt})`);
+            setActionMessage(
+              `Agent is creating story... (checking ${attempt})`,
+            );
           },
-        }
+        },
       );
 
       if (success) {
@@ -937,7 +1033,8 @@ function WorldView({
       }
     } catch (error) {
       console.error("Error creating story:", error);
-      const errorMsg = error instanceof Error ? error.message : "Failed to create story";
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to create story";
       setActionMessage(`Error: ${errorMsg}`);
       setTimeout(() => setActionMessage(null), 5000);
     } finally {
@@ -969,7 +1066,10 @@ function WorldView({
         throw new Error(errorMessage);
       }
 
-      const result = await response.json() as { status: string; message?: string };
+      const _result = (await response.json()) as {
+        status: string;
+        message?: string;
+      };
       setActionMessage("Agent is developing world... checking for updates...");
 
       // POLL for world version change
@@ -978,7 +1078,9 @@ function WorldView({
           try {
             const worldsRes = await fetch("/api/worlds");
             const worlds = (await worldsRes.json()) as World[];
-            const updatedWorld = worlds.find((w) => getWorldCheckpointName(w) === checkpoint);
+            const updatedWorld = worlds.find(
+              (w) => getWorldCheckpointName(w) === checkpoint,
+            );
             return (updatedWorld?.development.version || 0) > initialVersion;
           } catch {
             return false;
@@ -988,9 +1090,11 @@ function WorldView({
           timeoutMs: 60000,
           intervalMs: 2000,
           onCheck: (attempt) => {
-            setActionMessage(`Agent is developing world... (checking ${attempt})`);
+            setActionMessage(
+              `Agent is developing world... (checking ${attempt})`,
+            );
           },
-        }
+        },
       );
 
       if (success) {
@@ -1002,7 +1106,8 @@ function WorldView({
       }
     } catch (error) {
       console.error("Error developing world:", error);
-      const errorMsg = error instanceof Error ? error.message : "Failed to develop world";
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to develop world";
       setActionMessage(`Error: ${errorMsg}`);
       setTimeout(() => setActionMessage(null), 5000);
     } finally {
@@ -1030,6 +1135,7 @@ function WorldView({
 
       <div className="world-actions">
         <button
+          type="button"
           className="action-button action-button-primary"
           onClick={handleNewStory}
           disabled={isWorking}
@@ -1037,6 +1143,7 @@ function WorldView({
           Write Story in This World
         </button>
         <button
+          type="button"
           className="action-button action-button-secondary"
           onClick={handleDevelopWorld}
           disabled={isWorking}
@@ -1045,11 +1152,7 @@ function WorldView({
         </button>
       </div>
 
-      {actionMessage && (
-        <div className="action-message">
-          {actionMessage}
-        </div>
-      )}
+      {actionMessage && <div className="action-message">{actionMessage}</div>}
 
       {/* Agent UI: World Overview */}
       <MountPoint
@@ -1060,7 +1163,9 @@ function WorldView({
 
       <div className="world-content">
         <section className="world-section">
-          <h3 className="subsection-title">Rules ({world.foundation.rules.length})</h3>
+          <h3 className="subsection-title">
+            Rules ({world.foundation.rules.length})
+          </h3>
           <div className="rules-list">
             {world.foundation.rules.map((rule) => (
               <div key={rule.id} className="rule-item">
@@ -1080,7 +1185,9 @@ function WorldView({
               <div key={element.id} className="element-item">
                 <div className="element-header">
                   <span className="element-type">{element.type}</span>
-                  {element.name && <span className="element-name">{element.name}</span>}
+                  {element.name && (
+                    <span className="element-name">{element.name}</span>
+                  )}
                 </div>
                 <p className="element-description">{element.description}</p>
               </div>
@@ -1144,7 +1251,9 @@ function MarkdownContent({
       const assetId = match[2];
 
       // Find the asset
-      const asset = assets?.find((a) => a.id === assetId || a.path.includes(assetId));
+      const asset = assets?.find(
+        (a) => a.id === assetId || a.path.includes(assetId),
+      );
 
       if (asset) {
         parts.push(
@@ -1154,14 +1263,17 @@ function MarkdownContent({
             alt={altText || asset.description || "Story image"}
             className="inline-image"
             style={{ maxWidth: "100%", height: "auto", margin: "1rem 0" }}
-          />
+          />,
         );
       } else {
         // Asset not found, show placeholder
         parts.push(
-          <span key={`missing-${assetId}-${match.index}`} className="missing-image">
+          <span
+            key={`missing-${assetId}-${match.index}`}
+            className="missing-image"
+          >
             [Image: {altText || assetId}]
-          </span>
+          </span>,
         );
       }
 
@@ -1205,11 +1317,23 @@ function StoryView({
 }: {
   story: Story;
   agentUI: Map<string, { componentId: string; spec: ComponentSpec }>;
-  onInteraction: (componentId: string, interactionType: string, data: any, target?: string) => void;
-  onElementAction?: (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => void;
+  onInteraction: (
+    componentId: string,
+    interactionType: string,
+    data: any,
+    target?: string,
+  ) => void;
+  onElementAction?: (
+    actionId: string,
+    elementId: string,
+    elementType: ElementType,
+    elementData?: any,
+  ) => void;
 }) {
   const segments = story.segments || [];
-  const [activeSegmentIndex, setActiveSegmentIndex] = useState(Math.max(0, segments.length - 1));
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState(
+    Math.max(0, segments.length - 1),
+  );
   const [continuingStory, setContinuingStory] = useState(false);
   const [continueMessage, setContinueMessage] = useState<string | null>(null);
 
@@ -1254,7 +1378,7 @@ function StoryView({
         throw new Error(errorMessage);
       }
 
-      const result = await response.json() as {
+      const _result = (await response.json()) as {
         status: string;
         message?: string;
         story_id?: string;
@@ -1281,14 +1405,16 @@ function StoryView({
           onCheck: (attempt) => {
             setContinueMessage(`Agent is writing... (checking ${attempt})`);
           },
-        }
+        },
       );
 
       if (success) {
         setContinueMessage("✓ New segment added! Refreshing...");
         window.location.reload(); // Reload page to show new segment
       } else {
-        setContinueMessage("⚠ Timeout waiting for segment. Try refreshing page.");
+        setContinueMessage(
+          "⚠ Timeout waiting for segment. Try refreshing page.",
+        );
         setTimeout(() => {
           setContinuingStory(false);
           setContinueMessage(null);
@@ -1297,7 +1423,9 @@ function StoryView({
     } catch (error) {
       setContinuingStory(false);
       setContinueMessage(null);
-      alert(`Failed to continue story:\n\n${error instanceof Error ? error.message : error}`);
+      alert(
+        `Failed to continue story:\n\n${error instanceof Error ? error.message : error}`,
+      );
     }
   }
 
@@ -1327,6 +1455,7 @@ function StoryView({
           <div className="segment-nav">
             {segments.map((seg, index) => (
               <button
+                type="button"
                 key={seg.id}
                 className={`segment-nav-button ${index === activeSegmentIndex ? "active" : ""}`}
                 onClick={() => setActiveSegmentIndex(index)}
@@ -1346,100 +1475,122 @@ function StoryView({
               <div className="segment-content">
                 <div className="segment-header">
                   <h3 className="segment-id">{segment.id}</h3>
-                  <span className="segment-word-count">{segment.word_count} words</span>
+                  <span className="segment-word-count">
+                    {segment.word_count} words
+                  </span>
                 </div>
 
-              {segment.assets && segment.assets.length > 0 && (
-                <div className="segment-assets">
-                  {segment.assets.map((asset) => (
-                    <div key={asset.id} className="asset-item">
-                      {asset.type === "image" && (
-                        <img
-                          src={`/api/assets/${asset.path}`}
-                          alt={asset.description || "Story asset"}
-                          className="asset-image"
-                        />
+                {segment.assets && segment.assets.length > 0 && (
+                  <div className="segment-assets">
+                    {segment.assets.map((asset) => (
+                      <div key={asset.id} className="asset-item">
+                        {asset.type === "image" && (
+                          <img
+                            src={`/api/assets/${asset.path}`}
+                            alt={asset.description || "Story asset"}
+                            className="asset-image"
+                          />
+                        )}
+                        {asset.description && (
+                          <p className="asset-description">
+                            {asset.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Agent UI: Before Segment Text */}
+                <MountPoint
+                  target={`story_segment_${segment.id}_before`}
+                  components={getComponentsForTarget(
+                    `story_segment_${segment.id}_before`,
+                  )}
+                  onInteraction={onInteraction}
+                />
+
+                <div className="segment-text">
+                  <MarkdownContent
+                    content={segment.content}
+                    assets={segment.assets}
+                  />
+                </div>
+
+                {/* Agent UI: After Segment Text */}
+                <MountPoint
+                  target={`story_segment_${segment.id}`}
+                  components={getComponentsForTarget(
+                    `story_segment_${segment.id}`,
+                  )}
+                  onInteraction={onInteraction}
+                />
+
+                {segment.world_evolution && (
+                  <div className="world-evolution">
+                    <h4>World Evolution</h4>
+                    {segment.world_evolution.rules_applied &&
+                      segment.world_evolution.rules_applied.length > 0 && (
+                        <div className="evolution-item">
+                          <strong>Rules Applied:</strong>{" "}
+                          {segment.world_evolution.rules_applied.join(", ")}
+                        </div>
                       )}
-                      {asset.description && (
-                        <p className="asset-description">{asset.description}</p>
+                    {segment.world_evolution.elements_introduced &&
+                      segment.world_evolution.elements_introduced.length >
+                        0 && (
+                        <div className="evolution-item">
+                          <strong>Elements Introduced:</strong>{" "}
+                          {segment.world_evolution.elements_introduced.join(
+                            ", ",
+                          )}
+                        </div>
                       )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                    {segment.world_evolution.new_questions &&
+                      segment.world_evolution.new_questions.length > 0 && (
+                        <div className="evolution-item">
+                          <strong>New Questions:</strong>
+                          <ul>
+                            {segment.world_evolution.new_questions.map(
+                              (q, i) => (
+                                <li key={i}>{q}</li>
+                              ),
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                  </div>
+                )}
 
-              {/* Agent UI: Before Segment Text */}
-              <MountPoint
-                target={`story_segment_${segment.id}_before`}
-                components={getComponentsForTarget(`story_segment_${segment.id}_before`)}
-                onInteraction={onInteraction}
-              />
+                {segment.branches && segment.branches.length > 0 && (
+                  <div className="branches">
+                    <h4>Story Branches</h4>
+                    {segment.branches.map((branch) => (
+                      <div key={branch.id} className="branch-item">
+                        <span className="branch-status">{branch.status}</span>
+                        <span className="branch-prompt">{branch.prompt}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-              <div className="segment-text">
-                <MarkdownContent content={segment.content} assets={segment.assets} />
-              </div>
-
-              {/* Agent UI: After Segment Text */}
-              <MountPoint
-                target={`story_segment_${segment.id}`}
-                components={getComponentsForTarget(`story_segment_${segment.id}`)}
-                onInteraction={onInteraction}
-              />
-
-              {segment.world_evolution && (
-                <div className="world-evolution">
-                  <h4>World Evolution</h4>
-                  {segment.world_evolution.rules_applied && segment.world_evolution.rules_applied.length > 0 && (
-                    <div className="evolution-item">
-                      <strong>Rules Applied:</strong> {segment.world_evolution.rules_applied.join(", ")}
-                    </div>
-                  )}
-                  {segment.world_evolution.elements_introduced && segment.world_evolution.elements_introduced.length > 0 && (
-                    <div className="evolution-item">
-                      <strong>Elements Introduced:</strong> {segment.world_evolution.elements_introduced.join(", ")}
-                    </div>
-                  )}
-                  {segment.world_evolution.new_questions && segment.world_evolution.new_questions.length > 0 && (
-                    <div className="evolution-item">
-                      <strong>New Questions:</strong>
-                      <ul>
-                        {segment.world_evolution.new_questions.map((q, i) => (
-                          <li key={i}>{q}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {segment.branches && segment.branches.length > 0 && (
-                <div className="branches">
-                  <h4>Story Branches</h4>
-                  {segment.branches.map((branch) => (
-                    <div key={branch.id} className="branch-item">
-                      <span className="branch-status">{branch.status}</span>
-                      <span className="branch-prompt">{branch.prompt}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {activeSegmentIndex === segments.length - 1 && (
-                <div className="story-actions">
-                  <button
-                    className="continue-button"
-                    onClick={handleContinue}
-                    disabled={continuingStory}
-                  >
-                    {continuingStory ? "Agent is writing..." : "Continue Story →"}
-                  </button>
-                  {continueMessage && (
-                    <div className="continue-message">
-                      {continueMessage}
-                    </div>
-                  )}
-                </div>
-              )}
+                {activeSegmentIndex === segments.length - 1 && (
+                  <div className="story-actions">
+                    <button
+                      type="button"
+                      className="continue-button"
+                      onClick={handleContinue}
+                      disabled={continuingStory}
+                    >
+                      {continuingStory
+                        ? "Agent is writing..."
+                        : "Continue Story →"}
+                    </button>
+                    {continueMessage && (
+                      <div className="continue-message">{continueMessage}</div>
+                    )}
+                  </div>
+                )}
               </div>
             </InteractiveElement>
           )}
@@ -1476,13 +1627,17 @@ function WorldCard({ world, onClick }: { world: World; onClick: () => void }) {
         <h3 className="world-card-title">{getWorldTitle(world)}</h3>
         <div className="world-card-badges">
           {world.year && <span className="world-card-year">{world.year}</span>}
-          <span className="world-card-version">v{world.development.version}</span>
+          <span className="world-card-version">
+            v{world.development.version}
+          </span>
         </div>
       </div>
       <p className="world-card-premise">{world.foundation.core_premise}</p>
       <div className="world-card-footer">
         <span className="world-card-state">{world.development.state}</span>
-        <span className="world-card-rules">{world.foundation.rules.length} rules</span>
+        <span className="world-card-rules">
+          {world.foundation.rules.length} rules
+        </span>
         <span className="world-card-elements">
           {world.surface.visible_elements.length} elements
         </span>
@@ -1532,12 +1687,20 @@ function LoadingScreen() {
   );
 }
 
-function ErrorScreen({ error, onRetry }: { error: string; onRetry: () => void }) {
+function ErrorScreen({
+  error,
+  onRetry,
+}: {
+  error: string;
+  onRetry: () => void;
+}) {
   return (
     <div className="error-screen">
       <h2>Error Loading Data</h2>
       <p>{error}</p>
-      <button onClick={onRetry}>Retry</button>
+      <button type="button" onClick={onRetry}>
+        Retry
+      </button>
     </div>
   );
 }
@@ -1552,14 +1715,20 @@ function EmptyState({ message }: { message: string }) {
 
 function getWorldTitle(world: World): string {
   // Try to extract a title from the premise or use the first element name
-  if (world.surface?.visible_elements && world.surface.visible_elements.length > 0 && world.surface.visible_elements[0]?.name) {
+  if (
+    world.surface?.visible_elements &&
+    world.surface.visible_elements.length > 0 &&
+    world.surface.visible_elements[0]?.name
+  ) {
     return world.surface.visible_elements[0].name;
   }
 
   // Use first few words of premise
   const premise = world.foundation?.core_premise || "Untitled World";
   const words = premise.split(" ").slice(0, 5);
-  return words.join(" ") + (words.length < premise.split(" ").length ? "..." : "");
+  return (
+    words.join(" ") + (words.length < premise.split(" ").length ? "..." : "")
+  );
 }
 
 function getWorldCheckpointName(world: World): string {
@@ -1570,11 +1739,13 @@ function getWorldCheckpointName(world: World): string {
 
   // Fallback: derive checkpoint name from world data (legacy support)
   const premise = world.foundation?.core_premise || "";
-  return premise
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_|_$/g, "")
-    .substring(0, 30) || "unnamed_world";
+  return (
+    premise
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "")
+      .substring(0, 30) || "unnamed_world"
+  );
 }
 
 // ============================================================================
@@ -1585,7 +1756,7 @@ if (typeof document !== "undefined") {
   const rootElement = document.getElementById("root");
   if (rootElement) {
     // Clear loading content
-    rootElement.innerHTML = '';
+    rootElement.innerHTML = "";
 
     const root = createRoot(rootElement);
     root.render(<AppWithFeedback />);

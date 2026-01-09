@@ -145,7 +145,7 @@
 }
 
 .world-space__timeline::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -257,7 +257,9 @@
 .world-space__story-arrow {
   color: var(--text-tertiary, #5a5a5a);
   font-size: 1.25rem;
-  transition: transform 0.3s ease, color 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    color 0.3s ease;
 }
 
 .world-space__story:hover .world-space__story-arrow {

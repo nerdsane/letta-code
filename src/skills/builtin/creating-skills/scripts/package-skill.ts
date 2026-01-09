@@ -116,7 +116,6 @@ function crc32(data: Buffer): number {
   const table = getCrc32Table();
 
   for (let i = 0; i < data.length; i++) {
-    // biome-ignore lint/style/noNonNullAssertion: array access within bounds
     crc = (crc >>> 8) ^ (table[(crc ^ data[i]!) & 0xff] as number);
   }
 

@@ -5,13 +5,13 @@
  * Unified WebSocket architecture
  */
 
-import type { ComponentSpec } from '../canvas/components/types';
+import type { ComponentSpec } from "../canvas/components/types";
 
 // ============================================================================
 // Client Types
 // ============================================================================
 
-export type ClientType = 'browser' | 'cli';
+export type ClientType = "browser" | "cli";
 
 export interface ConnectedClient {
   id: string;
@@ -23,14 +23,23 @@ export interface ConnectedClient {
 // ============================================================================
 
 export interface StreamChunk {
-  type: 'reasoning' | 'reasoning_end' | 'tool_call' | 'tool_result' | 'assistant' | 'assistant_end' | 'error' | 'done' | 'usage';
+  type:
+    | "reasoning"
+    | "reasoning_end"
+    | "tool_call"
+    | "tool_result"
+    | "assistant"
+    | "assistant_end"
+    | "error"
+    | "done"
+    | "usage";
   id?: string;
   content?: string;
   toolCallId?: string;
   toolName?: string;
   toolArgs?: string;
   toolResult?: string;
-  toolStatus?: 'pending' | 'running' | 'success' | 'error';
+  toolStatus?: "pending" | "running" | "success" | "error";
   usage?: {
     promptTokens?: number;
     completionTokens?: number;
@@ -47,7 +56,7 @@ export interface StreamChunk {
  * Chat message from CLI/Browser to agent
  */
 export interface ChatMessage {
-  type: 'chat_message';
+  type: "chat_message";
   content: string;
   context?: {
     worldId?: string;
@@ -59,7 +68,7 @@ export interface ChatMessage {
  * Canvas → Agent: User interaction events
  */
 export interface InteractionMessage {
-  type: 'interaction';
+  type: "interaction";
   componentId: string;
   interactionType: string; // 'click', 'dialog_change', 'input_change', etc.
   data: any;
@@ -70,7 +79,7 @@ export interface InteractionMessage {
  * Ping for keep-alive
  */
 export interface PingMessage {
-  type: 'ping';
+  type: "ping";
 }
 
 // ============================================================================
@@ -81,7 +90,7 @@ export interface PingMessage {
  * Connection confirmation from server
  */
 export interface ConnectMessage {
-  type: 'connect';
+  type: "connect";
   clientId: string;
   sessionId: string;
   connectedClients: ConnectedClient[];
@@ -91,7 +100,7 @@ export interface ConnectMessage {
  * Streaming chat response chunk
  */
 export interface ChatChunkMessage {
-  type: 'chat_chunk';
+  type: "chat_chunk";
   chunk: StreamChunk;
 }
 
@@ -99,20 +108,27 @@ export interface ChatChunkMessage {
  * Agent → Canvas: Create or update UI components
  */
 export interface CanvasUIMessage {
-  type: 'canvas_ui';
-  action: 'create' | 'update' | 'remove';
+  type: "canvas_ui";
+  action: "create" | "update" | "remove";
   target: string; // Mount point: 'story_segment_123', 'world_overview', 'floating'
   componentId: string; // Unique ID for this component
   spec?: ComponentSpec; // The UI component spec (omit for 'remove')
-  mode?: 'overlay' | 'fullscreen' | 'inline'; // How to display: overlay (floating), fullscreen (takeover), inline (in content)
+  mode?: "overlay" | "fullscreen" | "inline"; // How to display: overlay (floating), fullscreen (takeover), inline (in content)
 }
 
 /**
  * Agent → Canvas/CLI: State change notifications
  */
 export interface StateChangeMessage {
-  type: 'state_change';
-  event: 'story_started' | 'story_continued' | 'branch_selected' | 'world_entered' | 'image_generated' | 'agent_thinking' | 'agent_done';
+  type: "state_change";
+  event:
+    | "story_started"
+    | "story_continued"
+    | "branch_selected"
+    | "world_entered"
+    | "image_generated"
+    | "agent_thinking"
+    | "agent_done";
   data: {
     storyId?: string;
     worldId?: string;
@@ -129,10 +145,10 @@ export interface StateChangeMessage {
  * Agent → Canvas: Proactive suggestion
  */
 export interface SuggestionMessage {
-  type: 'suggestion';
+  type: "suggestion";
   payload: {
     id: string;
-    priority: 'high' | 'medium' | 'low';
+    priority: "high" | "medium" | "low";
     title: string;
     description: string; // Full text, never truncated
     actionId: string;
@@ -145,7 +161,7 @@ export interface SuggestionMessage {
  * Client join notification
  */
 export interface ClientJoinedMessage {
-  type: 'client_joined';
+  type: "client_joined";
   client: ConnectedClient;
 }
 
@@ -153,7 +169,7 @@ export interface ClientJoinedMessage {
  * Client leave notification
  */
 export interface ClientLeftMessage {
-  type: 'client_left';
+  type: "client_left";
   clientId: string;
   clientType: ClientType;
 }
@@ -162,7 +178,7 @@ export interface ClientLeftMessage {
  * Error messages
  */
 export interface ErrorMessage {
-  type: 'error';
+  type: "error";
   error: string;
   details?: any;
 }
@@ -171,7 +187,7 @@ export interface ErrorMessage {
  * Pong response
  */
 export interface PongMessage {
-  type: 'pong';
+  type: "pong";
 }
 
 // ============================================================================

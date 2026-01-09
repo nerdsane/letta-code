@@ -50,7 +50,11 @@ export function formatUsageStats({
   ];
 
   // Add cost information if available
-  if (stats.usage.totalCost !== undefined && stats.usage.totalCost !== null && stats.usage.totalCost > 0) {
+  if (
+    stats.usage.totalCost !== undefined &&
+    stats.usage.totalCost !== null &&
+    stats.usage.totalCost > 0
+  ) {
     const formatCost = (cost: number) => `$${cost.toFixed(4)}`;
 
     let costLine = `Session cost:          ${formatCost(stats.usage.totalCost)}`;

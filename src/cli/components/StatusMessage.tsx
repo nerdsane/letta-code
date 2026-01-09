@@ -22,7 +22,6 @@ function renderColoredText(text: string): React.ReactNode {
       // Remove ** markers and render with accent color
       const content = part.slice(2, -2);
       return (
-        // biome-ignore lint/suspicious/noArrayIndexKey: Static text parts never reorder
         <Text key={i} color={colors.footer.agentName}>
           {content}
         </Text>
@@ -30,7 +29,6 @@ function renderColoredText(text: string): React.ReactNode {
     }
     // Regular dimmed text
     return (
-      // biome-ignore lint/suspicious/noArrayIndexKey: Static text parts never reorder
       <Text key={i} dimColor>
         {part}
       </Text>
@@ -55,7 +53,6 @@ export const StatusMessage = memo(({ line }: { line: StatusLine }) => {
   return (
     <Box flexDirection="column">
       {line.lines.map((text, idx) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: Static status lines never reorder
         <Box key={idx} flexDirection="row">
           <Box width={2} flexShrink={0}>
             <Text dimColor>{idx === 0 ? "●" : " "}</Text>

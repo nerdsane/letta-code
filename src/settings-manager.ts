@@ -348,7 +348,6 @@ class SettingsManager {
         "Secrets not available, storing tokens in settings file for persistence",
       );
 
-      // biome-ignore lint/style/noNonNullAssertion: at this point will always exist
       const fallbackSettings: Settings = { ...this.settings! };
 
       if (secureTokens.refreshToken) {

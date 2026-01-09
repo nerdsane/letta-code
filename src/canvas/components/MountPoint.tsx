@@ -5,8 +5,8 @@
  * Multiple components can be mounted at the same target.
  */
 
-import type { ComponentSpec } from './types';
-import { DynamicRenderer } from './DynamicRenderer';
+import { DynamicRenderer } from "./DynamicRenderer";
+import type { ComponentSpec } from "./types";
 
 interface MountPointProps {
   /**
@@ -23,7 +23,12 @@ interface MountPointProps {
   /**
    * Callback for user interactions
    */
-  onInteraction: (componentId: string, interactionType: string, data: any, target?: string) => void;
+  onInteraction: (
+    componentId: string,
+    interactionType: string,
+    data: any,
+    target?: string,
+  ) => void;
 
   /**
    * Optional CSS class for styling the mount point container
@@ -33,7 +38,7 @@ interface MountPointProps {
   /**
    * Layout direction for multiple components
    */
-  layout?: 'vertical' | 'horizontal';
+  layout?: "vertical" | "horizontal";
 
   /**
    * Spacing between components (px)
@@ -57,8 +62,8 @@ export function MountPoint({
   target,
   components,
   onInteraction,
-  className = '',
-  layout = 'vertical',
+  className = "",
+  layout = "vertical",
   spacing = 16,
 }: MountPointProps) {
   if (components.length === 0) {
@@ -66,8 +71,8 @@ export function MountPoint({
   }
 
   const containerStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: layout === 'vertical' ? 'column' : 'row',
+    display: "flex",
+    flexDirection: layout === "vertical" ? "column" : "row",
     gap: `${spacing}px`,
     margin: `${spacing}px 0`,
   };
@@ -80,10 +85,7 @@ export function MountPoint({
     >
       {components.map(({ componentId, spec }) => (
         <div key={componentId} className="mount-point-item">
-          <DynamicRenderer
-            spec={spec}
-            onInteraction={onInteraction}
-          />
+          <DynamicRenderer spec={spec} onInteraction={onInteraction} />
         </div>
       ))}
     </div>

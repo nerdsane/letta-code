@@ -98,9 +98,7 @@ function findNextWordBoundary(text: string, cursorPos: number): number {
 
 type WordDirection = "left" | "right";
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: Terminal escape sequences require ESC control character
 const OPTION_LEFT_PATTERN = /^\u001b\[(?:1;)?(?:3|4|7|8|9)D$/;
-// biome-ignore lint/suspicious/noControlCharactersInRegex: Terminal escape sequences require ESC control character
 const OPTION_RIGHT_PATTERN = /^\u001b\[(?:1;)?(?:3|4|7|8|9)C$/;
 
 function detectOptionWordDirection(sequence: string): WordDirection | null {
@@ -469,7 +467,6 @@ export function PasteAwareTextInput({
       // fn+Delete (forward delete): ESC[3~ - standard ANSI escape sequence
       // With kitty flag 1, modifiers come as ESC[3;modifier~ (no event type).
       // Use caretOffsetRef which is updated synchronously via onCursorOffsetChange
-      // biome-ignore lint/suspicious/noControlCharactersInRegex: ESC sequence matching
       if (sequence === "\x1b[3~" || /^\x1b\[3;\d+~$/.test(sequence)) {
         // Set timestamp so ink-text-input skips its delete handling
         globalThis.__lettaForwardDeleteTimestamp = Date.now();

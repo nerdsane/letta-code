@@ -17,9 +17,15 @@
   background: var(--bg-primary, #000000);
 }
 
-.exp-hero--full { min-height: 100vh; }
-.exp-hero--large { min-height: 80vh; }
-.exp-hero--medium { min-height: 60vh; }
+.exp-hero--full {
+  min-height: 100vh;
+}
+.exp-hero--large {
+  min-height: 80vh;
+}
+.exp-hero--medium {
+  min-height: 60vh;
+}
 .exp-hero--compact {
   min-height: auto;
   padding: 2rem 0;
@@ -108,8 +114,13 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .exp-hero__title {
@@ -185,8 +196,13 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(10px); }
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(10px);
+  }
 }
 
 /* ============================================================================
@@ -194,7 +210,9 @@
    ============================================================================ */
 
 .exp-scroll {
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transition:
+    opacity 0.8s ease-out,
+    transform 0.8s ease-out;
 }
 
 /* Fade up animation */
@@ -262,8 +280,12 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-.exp-progress--top { top: 0; }
-.exp-progress--bottom { bottom: 0; }
+.exp-progress--top {
+  top: 0;
+}
+.exp-progress--bottom {
+  bottom: 0;
+}
 
 .exp-progress__bar {
   height: 100%;
@@ -399,7 +421,9 @@
 
 .exp-actions__btn-arrow {
   color: var(--text-tertiary, #5a5a5a);
-  transition: transform 0.3s ease, color 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    color 0.3s ease;
 }
 
 .exp-actions__btn:hover .exp-actions__btn-arrow {

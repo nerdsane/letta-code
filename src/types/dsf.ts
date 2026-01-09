@@ -16,14 +16,14 @@ export interface World {
   foundation: Foundation;
   constraints: Constraint[];
   changelog?: ChangelogEntry[];
-  asset?: StoryAsset;  // Cover image for the world
+  asset?: StoryAsset; // Cover image for the world
 }
 
 export interface DevelopmentMetadata {
   state: "sketch" | "draft" | "detailed";
   version: number;
-  created: string;           // ISO timestamp
-  last_modified: string;     // ISO timestamp
+  created: string; // ISO timestamp
+  last_modified: string; // ISO timestamp
   revision_notes?: string[];
 }
 
@@ -35,7 +35,7 @@ export interface Surface {
 }
 
 export interface RevealedInfo {
-  when: string;              // "chapter 1", "page 5", etc
+  when: string; // "chapter 1", "page 5", etc
   how: "shown" | "told" | "implied";
   context: string;
 }
@@ -52,8 +52,8 @@ export interface Foundation {
 }
 
 export interface DeepFocusAreas {
-  primary: string[];         // 2-3 main areas to go deep on
-  emerging?: string[];       // New areas being explored
+  primary: string[]; // 2-3 main areas to go deep on
+  emerging?: string[]; // New areas being explored
   depth_level: Record<string, "surface" | "medium" | "deep">;
 }
 
@@ -69,8 +69,8 @@ export interface WorkingNotes {
 
 export interface Element {
   id: string;
-  type: string;              // "character", "location", "tech", etc
-  name?: string;             // May use roles initially
+  type: string; // "character", "location", "tech", etc
+  name?: string; // May use roles initially
   description: string;
   detail_level: "sketch" | "detailed";
   introduced_in_version: number;
@@ -80,8 +80,8 @@ export interface Element {
 }
 
 export interface Relationship {
-  to: string;                // element_id
-  type: string;              // "conflicts_with", "depends_on", etc
+  to: string; // element_id
+  type: string; // "conflicts_with", "depends_on", etc
   strength: "weak" | "moderate" | "strong";
 }
 
@@ -165,34 +165,40 @@ export interface ChangelogEntry {
 export interface WorldDiff {
   version_diff: [number, number];
   timestamp_diff: [string, string];
-  state_change?: ["sketch" | "draft" | "detailed", "sketch" | "draft" | "detailed"];
+  state_change?: [
+    "sketch" | "draft" | "detailed",
+    "sketch" | "draft" | "detailed",
+  ];
   elements_added: Element[];
-  elements_removed: string[];  // IDs
+  elements_removed: string[]; // IDs
   elements_modified: {
     id: string;
     changes: string[];
   }[];
   rules_added: Rule[];
-  rules_removed: string[];     // IDs
+  rules_removed: string[]; // IDs
   rules_modified: {
     id: string;
     changes: string[];
   }[];
   constraints_added: Constraint[];
   constraints_removed: string[]; // IDs
-  depth_changes: Record<string, {
-    from: "surface" | "medium" | "deep";
-    to: "surface" | "medium" | "deep";
-  }>;
+  depth_changes: Record<
+    string,
+    {
+      from: "surface" | "medium" | "deep";
+      to: "surface" | "medium" | "deep";
+    }
+  >;
   changelog_entries: ChangelogEntry[];
   summary: string;
 }
 
 export interface UpdateOperation {
-  path: string;              // JSON path like "foundation.rules" or "surface.opening_scene"
+  path: string; // JSON path like "foundation.rules" or "surface.opening_scene"
   operation: "add" | "update" | "remove";
   value?: any;
-  reason?: string;           // Why this change (goes into changelog)
+  reason?: string; // Why this change (goes into changelog)
 }
 
 // ============================================================================
@@ -208,25 +214,25 @@ export interface ConsistencyReport {
 }
 
 export interface Contradiction {
-  elements: string[];        // IDs of conflicting elements
+  elements: string[]; // IDs of conflicting elements
   description: string;
   severity: "minor" | "major";
   suggestion?: string;
 }
 
 export interface DepthAssessment {
-  depth_score: number;       // 1-5
+  depth_score: number; // 1-5
   depth_category: "surface" | "medium" | "deep";
   reasoning: string;
   strengths: string[];
   could_go_deeper: string[];
-  comparison: string;        // "typical", "above average", "shallow"
+  comparison: string; // "typical", "above average", "shallow"
 }
 
 export interface NoveltyReport {
   novelty_score: number;
   new_elements: {
-    entities: string[];      // IDs
+    entities: string[]; // IDs
     rules: string[];
     relationships: string[];
   };
@@ -261,13 +267,13 @@ export interface NarrativeEvaluation {
   };
   grounding: {
     follows_world_rules: boolean;
-    rules_used: string[];    // IDs
+    rules_used: string[]; // IDs
     violations: string[];
   };
   quality: {
-    emotional_resonance: number;  // 1-5
-    interestingness: number;      // 1-5
-    originality: number;          // 1-5
+    emotional_resonance: number; // 1-5
+    interestingness: number; // 1-5
+    originality: number; // 1-5
   };
   feedback: string;
   strengths: string[];
@@ -298,8 +304,8 @@ export interface Story {
 
 export interface StoryMetadata {
   title: string;
-  created: string;           // ISO timestamp
-  last_updated: string;      // ISO timestamp
+  created: string; // ISO timestamp
+  last_updated: string; // ISO timestamp
   status: "active" | "completed" | "abandoned" | "paused";
   tags?: string[];
   author_notes?: string;
@@ -309,8 +315,8 @@ export interface StorySegment {
   id: string;
   content: string;
   word_count: number;
-  created: string;           // ISO timestamp
-  parent_segment: string | null;  // null for first segment
+  created: string; // ISO timestamp
+  parent_segment: string | null; // null for first segment
 
   // World evolution tracking
   world_evolution: SegmentWorldEvolution;
@@ -323,42 +329,42 @@ export interface StorySegment {
 }
 
 export interface SegmentWorldEvolution {
-  elements_introduced?: string[];   // Element IDs
-  rules_applied?: string[];         // Rule IDs
-  rules_challenged?: string[];      // Rules that were tested/bent
-  new_questions?: string[];         // Questions raised for worldbuilding
-  world_changes?: string[];         // How this segment changed the world
+  elements_introduced?: string[]; // Element IDs
+  rules_applied?: string[]; // Rule IDs
+  rules_challenged?: string[]; // Rules that were tested/bent
+  new_questions?: string[]; // Questions raised for worldbuilding
+  world_changes?: string[]; // How this segment changed the world
 }
 
 export interface StoryAsset {
   id: string;
   type: "image" | "audio" | "video" | "document";
-  path: string;              // Relative to .dsf/assets/
+  path: string; // Relative to .dsf/assets/
   description?: string;
-  generated?: boolean;       // Was this AI-generated?
-  prompt?: string;           // Generation prompt if applicable
+  generated?: boolean; // Was this AI-generated?
+  prompt?: string; // Generation prompt if applicable
 }
 
 export interface StoryBranch {
   id: string;
-  prompt: string;            // What this branch is about
+  prompt: string; // What this branch is about
   status: "active" | "pending" | "completed" | "abandoned";
-  segment_id?: string;       // If this branch has been written
+  segment_id?: string; // If this branch has been written
 }
 
 export interface StoryEndpoint {
   segment_id: string;
-  branch_id?: string;        // If this is a branch endpoint
+  branch_id?: string; // If this is a branch endpoint
   status: "active" | "pending" | "completed";
-  continuation_prompt?: string;  // Suggested next direction
+  continuation_prompt?: string; // Suggested next direction
 }
 
 export interface WorldContributions {
-  characters_developed: string[];    // Element IDs
-  locations_explored: string[];      // Element IDs
-  rules_tested: string[];            // Rule IDs
-  new_rules_discovered: string[];    // Rules created through story
-  contradictions_found: string[];    // Issues discovered
+  characters_developed: string[]; // Element IDs
+  locations_explored: string[]; // Element IDs
+  rules_tested: string[]; // Rule IDs
+  new_rules_discovered: string[]; // Rules created through story
+  contradictions_found: string[]; // Issues discovered
   themes_explored: string[];
 }
 
@@ -367,7 +373,14 @@ export interface WorldContributions {
 // ============================================================================
 
 export interface StoryManagerArgs {
-  operation: "create" | "save_segment" | "load" | "list" | "branch" | "continue" | "update_metadata";
+  operation:
+    | "create"
+    | "save_segment"
+    | "load"
+    | "list"
+    | "branch"
+    | "continue"
+    | "update_metadata";
   story_id?: string;
   world_checkpoint?: string;
   title?: string;
@@ -403,7 +416,7 @@ export interface AssetManagerArgs {
   asset_id?: string;
   story_id?: string;
   world_checkpoint?: string;
-  data?: string;             // Base64 or file path
+  data?: string; // Base64 or file path
 }
 
 export interface AssetManagerResult {

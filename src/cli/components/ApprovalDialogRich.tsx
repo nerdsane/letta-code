@@ -538,7 +538,6 @@ export const ApprovalDialog = memo(function ApprovalDialog({
   const approvalContext = approvalContexts[0] || null;
 
   // Reset state when approval changes (e.g., moving from tool 2 to tool 3)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: need to trigger on progress change
   useEffect(() => {
     setSelectedOption(0);
     setIsEnteringReason(false);

@@ -1,8 +1,7 @@
-import React from 'react';
-import type { World, Story } from '../../../types/dsf';
-import { Hero, ScrollSection, ProgressBar, ActionBar } from '../experience';
-import { InteractiveElement, type ElementType } from '../interaction';
-import './world-space.css';
+import type { Story, World } from "../../../types/dsf";
+import { ActionBar, Hero, ProgressBar, ScrollSection } from "../experience";
+import { type ElementType, InteractiveElement } from "../interaction";
+import "./world-space.css";
 
 export interface WorldSpaceProps {
   world: World;
@@ -10,7 +9,12 @@ export interface WorldSpaceProps {
   onSelectStory: (story: Story) => void;
   onExploreElement?: (elementId: string, elementType: string) => void;
   onStartNewStory?: () => void;
-  onElementAction?: (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => void;
+  onElementAction?: (
+    actionId: string,
+    elementId: string,
+    elementType: ElementType,
+    elementData?: any,
+  ) => void;
 }
 
 export function WorldSpace({
@@ -22,62 +26,83 @@ export function WorldSpace({
   onElementAction,
 }: WorldSpaceProps) {
   // Default action handler that falls back to onExploreElement
-  const handleAction = (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => {
+  const handleAction = (
+    actionId: string,
+    elementId: string,
+    elementType: ElementType,
+    elementData?: any,
+  ) => {
     if (onElementAction) {
       onElementAction(actionId, elementId, elementType, elementData);
-    } else if (onExploreElement && (actionId === 'develop' || actionId === 'explore')) {
+    } else if (
+      onExploreElement &&
+      (actionId === "develop" || actionId === "explore")
+    ) {
       onExploreElement(elementId, elementType);
     }
   };
   // Guard against missing nested properties
-  const foundation = world?.foundation || { core_premise: 'Unknown World', rules: [] };
+  const foundation = world?.foundation || {
+    core_premise: "Unknown World",
+    rules: [],
+  };
   const surface = world?.surface || { visible_elements: [] };
-  const development = world?.development || { version: 0, state: 'sketch' };
+  const development = world?.development || { version: 0, state: "sketch" };
 
   // Derive world title from visible elements or premise
   const worldTitle = (() => {
     if (surface.visible_elements?.[0]?.name) {
       return surface.visible_elements[0].name;
     }
-    const premise = foundation.core_premise || 'Untitled World';
-    const words = premise.split(' ').slice(0, 5);
-    return words.join(' ') + (words.length < premise.split(' ').length ? '...' : '');
+    const premise = foundation.core_premise || "Untitled World";
+    const words = premise.split(" ").slice(0, 5);
+    return (
+      words.join(" ") + (words.length < premise.split(" ").length ? "..." : "")
+    );
   })();
 
   // Derive era from history or development state
-  const worldEra = foundation.history?.eras?.[0] || development.state || 'Active';
+  const worldEra =
+    foundation.history?.eras?.[0] || development.state || "Active";
 
   // Get world cover image if available
-  const coverImage = world.asset?.path ? `/api/assets/${world.asset.path}` : undefined;
+  const coverImage = world.asset?.path
+    ? `/api/assets/${world.asset.path}`
+    : undefined;
 
   // Build timeline from changelog
   const changelog = world?.changelog || [];
   const timelineEvents = changelog.slice(0, 5).map((entry, i) => ({
     id: `v${entry.version}`,
     title: `Version ${entry.version}`,
-    description: entry.changes.join(', '),
+    description: entry.changes.join(", "),
     date: new Date(entry.timestamp).toLocaleDateString(),
-    status: i === 0 ? 'current' as const : 'completed' as const,
+    status: i === 0 ? ("current" as const) : ("completed" as const),
   }));
 
   // Group visible elements by type
   const visibleElements = surface.visible_elements || [];
-  const characters = visibleElements.filter(e => e.type === 'character');
-  const locations = visibleElements.filter(e => e.type === 'location');
-  const technologies = visibleElements.filter(e => e.type === 'technology');
+  const characters = visibleElements.filter((e) => e.type === "character");
+  const locations = visibleElements.filter((e) => e.type === "location");
+  const technologies = visibleElements.filter((e) => e.type === "technology");
 
   // Build actions
   const actions = [
-    ...(onStartNewStory ? [{
-      id: 'new-story',
-      label: 'Start a new story in this world',
-      variant: 'primary' as const,
-    }] : []),
-    ...stories.slice(0, 3).map(story => ({
+    ...(onStartNewStory
+      ? [
+          {
+            id: "new-story",
+            label: "Start a new story in this world",
+            variant: "primary" as const,
+          },
+        ]
+      : []),
+    ...stories.slice(0, 3).map((story) => ({
       id: `story-${story.id}`,
       label: story.metadata.title,
-      description: story.metadata.status === 'active' ? 'Continue reading' : 'Completed',
-      variant: 'branch' as const,
+      description:
+        story.metadata.status === "active" ? "Continue reading" : "Completed",
+      variant: "branch" as const,
     })),
   ];
 
@@ -109,7 +134,11 @@ export function WorldSpace({
           </h2>
           <div className="world-space__rules">
             {(foundation.rules || []).map((rule, i) => (
-              <ScrollSection key={rule.id} animation="slide-left" delay={i * 100}>
+              <ScrollSection
+                key={rule.id}
+                animation="slide-left"
+                delay={i * 100}
+              >
                 <InteractiveElement
                   elementType="rule"
                   elementId={rule.id}
@@ -117,8 +146,12 @@ export function WorldSpace({
                   onAction={handleAction}
                 >
                   <div className="world-space__rule">
-                    <span className="world-space__rule-type">{rule.certainty}</span>
-                    <p className="world-space__rule-statement">{rule.statement}</p>
+                    <span className="world-space__rule-type">
+                      {rule.certainty}
+                    </span>
+                    <p className="world-space__rule-statement">
+                      {rule.statement}
+                    </p>
                   </div>
                 </InteractiveElement>
               </ScrollSection>
@@ -145,11 +178,16 @@ export function WorldSpace({
                     onAction={handleAction}
                   >
                     <button
+                      type="button"
                       className="world-space__card"
-                      onClick={() => onExploreElement?.(char.id, 'character')}
+                      onClick={() => onExploreElement?.(char.id, "character")}
                     >
-                      <h3 className="world-space__card-name">{char.name || char.id}</h3>
-                      <p className="world-space__card-desc">{char.description}</p>
+                      <h3 className="world-space__card-name">
+                        {char.name || char.id}
+                      </h3>
+                      <p className="world-space__card-desc">
+                        {char.description}
+                      </p>
                       {char.first_appearance && (
                         <span className="world-space__card-meta">
                           First seen: Segment {char.first_appearance}
@@ -182,11 +220,16 @@ export function WorldSpace({
                     onAction={handleAction}
                   >
                     <button
+                      type="button"
                       className="world-space__card world-space__card--location"
-                      onClick={() => onExploreElement?.(loc.id, 'location')}
+                      onClick={() => onExploreElement?.(loc.id, "location")}
                     >
-                      <h3 className="world-space__card-name">{loc.name || loc.id}</h3>
-                      <p className="world-space__card-desc">{loc.description}</p>
+                      <h3 className="world-space__card-name">
+                        {loc.name || loc.id}
+                      </h3>
+                      <p className="world-space__card-desc">
+                        {loc.description}
+                      </p>
                     </button>
                   </InteractiveElement>
                 </ScrollSection>
@@ -214,11 +257,16 @@ export function WorldSpace({
                     onAction={handleAction}
                   >
                     <button
+                      type="button"
                       className="world-space__card world-space__card--tech"
-                      onClick={() => onExploreElement?.(tech.id, 'technology')}
+                      onClick={() => onExploreElement?.(tech.id, "technology")}
                     >
-                      <h3 className="world-space__card-name">{tech.name || tech.id}</h3>
-                      <p className="world-space__card-desc">{tech.description}</p>
+                      <h3 className="world-space__card-name">
+                        {tech.name || tech.id}
+                      </h3>
+                      <p className="world-space__card-desc">
+                        {tech.description}
+                      </p>
                     </button>
                   </InteractiveElement>
                 </ScrollSection>
@@ -238,13 +286,25 @@ export function WorldSpace({
             </h2>
             <div className="world-space__timeline">
               {timelineEvents.map((event, i) => (
-                <ScrollSection key={event.id} animation="slide-right" delay={i * 100}>
-                  <div className={`world-space__timeline-item ${event.status === 'current' ? 'world-space__timeline-item--current' : ''}`}>
+                <ScrollSection
+                  key={event.id}
+                  animation="slide-right"
+                  delay={i * 100}
+                >
+                  <div
+                    className={`world-space__timeline-item ${event.status === "current" ? "world-space__timeline-item--current" : ""}`}
+                  >
                     <div className="world-space__timeline-marker" />
                     <div className="world-space__timeline-content">
-                      <span className="world-space__timeline-date">{event.date}</span>
-                      <h4 className="world-space__timeline-title">{event.title}</h4>
-                      <p className="world-space__timeline-desc">{event.description}</p>
+                      <span className="world-space__timeline-date">
+                        {event.date}
+                      </span>
+                      <h4 className="world-space__timeline-title">
+                        {event.title}
+                      </h4>
+                      <p className="world-space__timeline-desc">
+                        {event.description}
+                      </p>
                     </div>
                   </div>
                 </ScrollSection>
@@ -271,13 +331,17 @@ export function WorldSpace({
                   onAction={handleAction}
                 >
                   <button
+                    type="button"
                     className="world-space__story"
                     onClick={() => onSelectStory(story)}
                   >
                     <div className="world-space__story-info">
-                      <h3 className="world-space__story-title">{story.metadata.title}</h3>
+                      <h3 className="world-space__story-title">
+                        {story.metadata.title}
+                      </h3>
                       <span className="world-space__story-meta">
-                        {story.segments.length} segments · {story.metadata.status}
+                        {story.segments.length} segments ·{" "}
+                        {story.metadata.status}
                       </span>
                     </div>
                     <span className="world-space__story-arrow">→</span>
@@ -295,11 +359,11 @@ export function WorldSpace({
           title="What would you like to do?"
           actions={actions}
           onAction={(actionId) => {
-            if (actionId === 'new-story') {
+            if (actionId === "new-story") {
               onStartNewStory?.();
-            } else if (actionId.startsWith('story-')) {
-              const storyId = actionId.replace('story-', '');
-              const story = stories.find(s => s.id === storyId);
+            } else if (actionId.startsWith("story-")) {
+              const storyId = actionId.replace("story-", "");
+              const story = stories.find((s) => s.id === storyId);
               if (story) onSelectStory(story);
             }
           }}

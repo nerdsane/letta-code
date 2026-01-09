@@ -1,8 +1,7 @@
-import React from 'react';
-import type { World, Story } from '../../../types/dsf';
-import { Hero, ScrollSection, ActionBar } from '../experience';
-import { InteractiveElement, type ElementType } from '../interaction';
-import './welcome-space.css';
+import type { Story, World } from "../../../types/dsf";
+import { ActionBar, Hero, ScrollSection } from "../experience";
+import { type ElementType, InteractiveElement } from "../interaction";
+import "./welcome-space.css";
 
 export interface WelcomeSpaceProps {
   worlds: World[];
@@ -10,7 +9,12 @@ export interface WelcomeSpaceProps {
   onSelectWorld: (world: World) => void;
   onSelectStory: (story: Story) => void;
   onStartNewWorld?: () => void;
-  onElementAction?: (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => void;
+  onElementAction?: (
+    actionId: string,
+    elementId: string,
+    elementType: ElementType,
+    elementData?: any,
+  ) => void;
 }
 
 // Helper to derive world title
@@ -18,20 +22,29 @@ function getWorldTitle(world: World): string {
   if (world.surface?.visible_elements?.[0]?.name) {
     return world.surface.visible_elements[0].name;
   }
-  const premise = world.foundation?.core_premise || 'Untitled World';
-  const words = premise.split(' ').slice(0, 5);
-  return words.join(' ') + (words.length < premise.split(' ').length ? '...' : '');
+  const premise = world.foundation?.core_premise || "Untitled World";
+  const words = premise.split(" ").slice(0, 5);
+  return (
+    words.join(" ") + (words.length < premise.split(" ").length ? "..." : "")
+  );
 }
 
 // Helper to derive world era
 function getWorldEra(world: World): string {
-  return world.foundation?.history?.eras?.[0] || world.development?.state || 'Active';
+  return (
+    world.foundation?.history?.eras?.[0] || world.development?.state || "Active"
+  );
 }
 
 // Helper to get world ID
 function getWorldId(world: World): string {
-  const premise = world.foundation?.core_premise || '';
-  return premise.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 30) || 'world';
+  const premise = world.foundation?.core_premise || "";
+  return (
+    premise
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .substring(0, 30) || "world"
+  );
 }
 
 export function WelcomeSpace({
@@ -43,28 +56,34 @@ export function WelcomeSpace({
   onElementAction,
 }: WelcomeSpaceProps) {
   // Default action handler
-  const handleAction = (actionId: string, elementId: string, elementType: ElementType, elementData?: any) => {
+  const handleAction = (
+    actionId: string,
+    elementId: string,
+    elementType: ElementType,
+    elementData?: any,
+  ) => {
     if (onElementAction) {
       onElementAction(actionId, elementId, elementType, elementData);
-    } else if (actionId === 'enter' && elementType === 'world_card') {
+    } else if (actionId === "enter" && elementType === "world_card") {
       onSelectWorld(elementData);
-    } else if (actionId === 'read' && elementType === 'story_card') {
+    } else if (actionId === "read" && elementType === "story_card") {
       onSelectStory(elementData);
     }
   };
   // Get active stories for "Continue" section
-  const activeStories = stories.filter(s => s.metadata.status === 'active');
+  const activeStories = stories.filter((s) => s.metadata.status === "active");
   const recentStories = activeStories.slice(0, 3);
 
   // Get time-based greeting
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   // Build welcome message
   const hasActiveStories = activeStories.length > 0;
   const subtitle = hasActiveStories
-    ? `You have ${activeStories.length} stor${activeStories.length === 1 ? 'y' : 'ies'} in progress`
-    : 'Ready to explore new worlds?';
+    ? `You have ${activeStories.length} stor${activeStories.length === 1 ? "y" : "ies"} in progress`
+    : "Ready to explore new worlds?";
 
   return (
     <div className="welcome-space">
@@ -72,10 +91,7 @@ export function WelcomeSpace({
       <Hero
         title={greeting}
         subtitle={subtitle}
-        meta={[
-          `${worlds.length} worlds`,
-          `${stories.length} stories`,
-        ]}
+        meta={[`${worlds.length} worlds`, `${stories.length} stories`]}
         height="compact"
         overlay="gradient"
       />
@@ -90,7 +106,11 @@ export function WelcomeSpace({
             </h2>
             <div className="welcome-space__stories">
               {recentStories.map((story, i) => (
-                <ScrollSection key={story.id} animation="slide-left" delay={i * 100}>
+                <ScrollSection
+                  key={story.id}
+                  animation="slide-left"
+                  delay={i * 100}
+                >
                   <InteractiveElement
                     elementType="story_card"
                     elementId={story.id}
@@ -98,13 +118,17 @@ export function WelcomeSpace({
                     onAction={handleAction}
                   >
                     <button
+                      type="button"
                       className="welcome-space__story-card"
                       onClick={() => onSelectStory(story)}
                     >
                       <div className="welcome-space__story-info">
-                        <h3 className="welcome-space__story-title">{story.metadata.title}</h3>
+                        <h3 className="welcome-space__story-title">
+                          {story.metadata.title}
+                        </h3>
                         <p className="welcome-space__story-meta">
-                          {story.segments.length} segments · Last updated recently
+                          {story.segments.length} segments · Last updated
+                          recently
                         </p>
                       </div>
                       <span className="welcome-space__story-arrow">→</span>
@@ -127,7 +151,11 @@ export function WelcomeSpace({
             </h2>
             <div className="welcome-space__worlds-grid">
               {worlds.map((world, i) => (
-                <ScrollSection key={getWorldId(world) + i} animation="scale" delay={i * 100}>
+                <ScrollSection
+                  key={getWorldId(world) + i}
+                  animation="scale"
+                  delay={i * 100}
+                >
                   <InteractiveElement
                     elementType="world_card"
                     elementId={getWorldId(world)}
@@ -135,6 +163,7 @@ export function WelcomeSpace({
                     onAction={handleAction}
                   >
                     <button
+                      type="button"
                       className="welcome-space__world-card"
                       onClick={() => onSelectWorld(world)}
                     >
@@ -143,10 +172,17 @@ export function WelcomeSpace({
                           {getWorldEra(world)}
                         </span>
                       </div>
-                      <h3 className="welcome-space__world-name">{getWorldTitle(world)}</h3>
-                      <p className="welcome-space__world-premise">{world.foundation?.core_premise || ''}</p>
+                      <h3 className="welcome-space__world-name">
+                        {getWorldTitle(world)}
+                      </h3>
+                      <p className="welcome-space__world-premise">
+                        {world.foundation?.core_premise || ""}
+                      </p>
                       <div className="welcome-space__world-stats">
-                        <span>{world.surface?.visible_elements?.length || 0} elements</span>
+                        <span>
+                          {world.surface?.visible_elements?.length || 0}{" "}
+                          elements
+                        </span>
                         <span>v{world.development?.version || 0}</span>
                       </div>
                     </button>
@@ -173,7 +209,13 @@ export function WelcomeSpace({
           {onStartNewWorld && (
             <ActionBar
               title="Get started"
-              actions={[{ id: 'new-world', label: 'Create new world', variant: 'primary' }]}
+              actions={[
+                {
+                  id: "new-world",
+                  label: "Create new world",
+                  variant: "primary",
+                },
+              ]}
               onAction={() => onStartNewWorld()}
             />
           )}

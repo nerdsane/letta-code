@@ -1,11 +1,12 @@
 #!/usr/bin/env bun
+
 /**
  * Notion publisher for stories and content
  * Based on .legacy/scripts/publish_to_notion.py
  */
 
+import { parseArgs } from "node:util";
 import { Client } from "npm:@notionhq/client";
-import { parseArgs } from "util";
 
 interface NotionBlock {
   object: string;
@@ -14,46 +15,49 @@ interface NotionBlock {
 }
 
 function extractTitle(text: string): string {
-  const lines = text.trim().split('\n');
+  const lines = text.trim().split("\n");
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith('# ')) {
+    if (trimmed.startsWith("# ")) {
       return trimmed.substring(2).trim();
     }
     if (trimmed.length > 10) {
-      return trimmed.substring(0, 100) + (trimmed.length > 100 ? '...' : '');
+      return trimmed.substring(0, 100) + (trimmed.length > 100 ? "..." : "");
     }
   }
   return "Untitled";
 }
 
 function extractExcerpt(text: string, maxLength: number = 300): string {
-  const lines = text.trim().split('\n');
+  const lines = text.trim().split("\n");
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#') && trimmed.length > 50) {
+    if (trimmed && !trimmed.startsWith("#") && trimmed.length > 50) {
       const excerpt = trimmed.substring(0, maxLength);
-      return excerpt + (trimmed.length > maxLength ? '...' : '');
+      return excerpt + (trimmed.length > maxLength ? "..." : "");
     }
   }
   return "Content from agent.";
 }
 
-function textToNotionBlocks(text: string, maxBlocks: number = 100): NotionBlock[] {
+function textToNotionBlocks(
+  text: string,
+  maxBlocks: number = 100,
+): NotionBlock[] {
   const blocks: NotionBlock[] = [];
-  const lines = text.trim().split('\n');
+  const lines = text.trim().split("\n");
   let currentParagraph: string[] = [];
   let blockCount = 0;
 
   const flushParagraph = () => {
     if (currentParagraph.length > 0 && blockCount < maxBlocks) {
-      const paraText = currentParagraph.join(' ').substring(0, 2000);
+      const paraText = currentParagraph.join(" ").substring(0, 2000);
       blocks.push({
         object: "block",
         type: "paragraph",
         paragraph: {
-          rich_text: [{ type: "text", text: { content: paraText } }]
-        }
+          rich_text: [{ type: "text", text: { content: paraText } }],
+        },
       });
       currentParagraph = [];
       blockCount++;
@@ -64,7 +68,7 @@ function textToNotionBlocks(text: string, maxBlocks: number = 100): NotionBlock[
     const trimmed = line.trim();
 
     // Handle headings
-    if (trimmed.startsWith('# ')) {
+    if (trimmed.startsWith("# ")) {
       flushParagraph();
       if (blockCount < maxBlocks) {
         const headingText = trimmed.substring(2).trim().substring(0, 2000);
@@ -72,20 +76,20 @@ function textToNotionBlocks(text: string, maxBlocks: number = 100): NotionBlock[
           object: "block",
           type: "heading_2",
           heading_2: {
-            rich_text: [{ type: "text", text: { content: headingText } }]
-          }
+            rich_text: [{ type: "text", text: { content: headingText } }],
+          },
         });
         blockCount++;
       }
     }
     // Handle horizontal rules
-    else if (trimmed.startsWith('---')) {
+    else if (trimmed.startsWith("---")) {
       flushParagraph();
       if (blockCount < maxBlocks) {
         blocks.push({
           object: "block",
           type: "divider",
-          divider: {}
+          divider: {},
         });
         blockCount++;
       }
@@ -98,7 +102,7 @@ function textToNotionBlocks(text: string, maxBlocks: number = 100): NotionBlock[
     else {
       currentParagraph.push(trimmed);
       // Flush if getting too long
-      if (currentParagraph.join(' ').length > 1800) {
+      if (currentParagraph.join(" ").length > 1800) {
         flushParagraph();
       }
     }
@@ -118,17 +122,21 @@ async function publishToNotion(
     genre?: string;
     year?: number;
     metadata?: Record<string, any>;
-  }
+  },
 ) {
   const notionToken = process.env.NOTION_TOKEN;
   const databaseId = process.env.NOTION_DATABASE_ID;
 
   if (!notionToken) {
-    throw new Error("NOTION_TOKEN not set. Get your token at https://www.notion.so/my-integrations");
+    throw new Error(
+      "NOTION_TOKEN not set. Get your token at https://www.notion.so/my-integrations",
+    );
   }
 
   if (!databaseId) {
-    throw new Error("NOTION_DATABASE_ID not set. Create a database and share it with your integration.");
+    throw new Error(
+      "NOTION_DATABASE_ID not set. Create a database and share it with your integration.",
+    );
   }
 
   const notion = new Client({ auth: notionToken });
@@ -139,41 +147,41 @@ async function publishToNotion(
 
   // Build page properties
   const properties: any = {
-    "Name": {
-      title: [{ type: "text", text: { content: title } }]
+    Name: {
+      title: [{ type: "text", text: { content: title } }],
     },
-    "Generated": {
-      date: { start: new Date().toISOString() }
+    Generated: {
+      date: { start: new Date().toISOString() },
     },
-    "Excerpt": {
-      rich_text: [{ type: "text", text: { content: excerpt } }]
-    }
+    Excerpt: {
+      rich_text: [{ type: "text", text: { content: excerpt } }],
+    },
   };
 
   // Add optional properties
   if (options.type) {
-    properties["Type"] = { select: { name: options.type } };
+    properties.Type = { select: { name: options.type } };
   }
 
   if (options.genre) {
-    properties["Genre"] = {
-      rich_text: [{ type: "text", text: { content: options.genre } }]
+    properties.Genre = {
+      rich_text: [{ type: "text", text: { content: options.genre } }],
     };
   }
 
   if (options.year) {
-    properties["Year"] = { number: options.year };
+    properties.Year = { number: options.year };
   }
 
   // Add custom metadata
   if (options.metadata) {
     for (const [key, value] of Object.entries(options.metadata)) {
       const propName = key.charAt(0).toUpperCase() + key.slice(1);
-      if (typeof value === 'number') {
+      if (typeof value === "number") {
         properties[propName] = { number: value };
       } else {
         properties[propName] = {
-          rich_text: [{ type: "text", text: { content: String(value) } }]
+          rich_text: [{ type: "text", text: { content: String(value) } }],
         };
       }
     }
@@ -186,12 +194,12 @@ async function publishToNotion(
   const response = await notion.pages.create({
     parent: { database_id: databaseId },
     properties,
-    children
+    children,
   });
 
   return {
     title,
-    url: (response as any).url
+    url: (response as any).url,
   };
 }
 
@@ -200,11 +208,11 @@ async function main() {
   const { values, positionals } = parseArgs({
     args: Bun.argv.slice(2),
     options: {
-      title: { type: 'string' },
-      type: { type: 'string' },
-      genre: { type: 'string' },
-      year: { type: 'string' },
-      metadata: { type: 'string' },
+      title: { type: "string" },
+      type: { type: "string" },
+      genre: { type: "string" },
+      year: { type: "string" },
+      metadata: { type: "string" },
     },
     allowPositionals: true,
   });
@@ -224,7 +232,7 @@ async function main() {
 
   // Read content
   let content: string;
-  if (filePath === '-') {
+  if (filePath === "-") {
     // Read from stdin
     content = await Bun.stdin.text();
   } else {
@@ -248,8 +256,8 @@ async function main() {
       title: values.title,
       type: values.type,
       genre: values.genre,
-      year: values.year ? parseInt(values.year) : undefined,
-      metadata
+      year: values.year ? parseInt(values.year, 10) : undefined,
+      metadata,
     });
 
     console.log("✓ Successfully published to Notion!");

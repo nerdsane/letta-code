@@ -1,7 +1,11 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { DialogueLine, parseDialogueContent, type DialogueLineData } from './DialogueLine';
-import { CharacterLayer, type CharacterSprite } from './CharacterLayer';
-import './visual-novel.css';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CharacterLayer, type CharacterSprite } from "./CharacterLayer";
+import {
+  DialogueLine,
+  type DialogueLineData,
+  parseDialogueContent,
+} from "./DialogueLine";
+import "./visual-novel.css";
 
 export interface VNSceneData {
   id: string;
@@ -67,7 +71,7 @@ export function VisualNovelReader({
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
 
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           textProgress: progress,
           isTyping: progress < 1,
@@ -86,7 +90,7 @@ export function VisualNovelReader({
         }
       };
     }
-  }, [currentLine, state.currentLineIndex, state.isPaused, autoSpeed, state.isTyping]);
+  }, [currentLine, state.isPaused, autoSpeed, state.isTyping]);
 
   // Auto-advance
   useEffect(() => {
@@ -97,22 +101,22 @@ export function VisualNovelReader({
     }, 1500); // Wait 1.5s after typing completes
 
     return () => clearTimeout(timer);
-  }, [autoAdvance, state.isTyping, state.isPaused, hasChoices]);
+  }, [autoAdvance, state.isTyping, state.isPaused, hasChoices, advance]);
 
   // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === ' ' || e.key === 'Enter') {
+      if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         handleClick();
-      } else if (e.key === 'Escape') {
-        setState(prev => ({ ...prev, isPaused: !prev.isPaused }));
+      } else if (e.key === "Escape") {
+        setState((prev) => ({ ...prev, isPaused: !prev.isPaused }));
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.isTyping, isLastLine, hasChoices]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleClick]);
 
   const advance = useCallback(() => {
     if (isLastLine) {
@@ -122,7 +126,7 @@ export function VisualNovelReader({
       return;
     }
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       currentLineIndex: prev.currentLineIndex + 1,
       textProgress: 0,
@@ -133,7 +137,7 @@ export function VisualNovelReader({
   const handleClick = useCallback(() => {
     if (state.isTyping) {
       // Skip to end of current line
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         textProgress: 1,
         isTyping: false,
@@ -146,24 +150,29 @@ export function VisualNovelReader({
     }
   }, [state.isTyping, advance]);
 
-  const handleChoiceSelect = useCallback((choiceId: string) => {
-    onChoice?.(choiceId);
-  }, [onChoice]);
+  const handleChoiceSelect = useCallback(
+    (choiceId: string) => {
+      onChoice?.(choiceId);
+    },
+    [onChoice],
+  );
 
   // Get visible text based on progress
   const visibleText = useMemo(() => {
-    if (!currentLine) return '';
+    if (!currentLine) return "";
     const charCount = Math.floor(currentLine.text.length * state.textProgress);
     return currentLine.text.slice(0, charCount);
   }, [currentLine, state.textProgress]);
 
   // Determine which character is speaking
-  const speakingCharacter = currentLine?.speaker?.toLowerCase().replace(/\s+/g, '_');
+  const speakingCharacter = currentLine?.speaker
+    ?.toLowerCase()
+    .replace(/\s+/g, "_");
 
   return (
     <div
       ref={containerRef}
-      className={`vn-reader ${state.isPaused ? 'vn-reader--paused' : ''}`}
+      className={`vn-reader ${state.isPaused ? "vn-reader--paused" : ""}`}
       onClick={handleClick}
     >
       {/* Background Layer */}
@@ -211,6 +220,7 @@ export function VisualNovelReader({
         <div className="vn-reader__choices">
           {choices.map((choice, i) => (
             <button
+              type="button"
               key={choice.id}
               className="vn-reader__choice"
               onClick={(e) => {
@@ -222,7 +232,9 @@ export function VisualNovelReader({
               <span className="vn-reader__choice-icon">◇</span>
               <span className="vn-reader__choice-label">{choice.label}</span>
               {choice.preview && (
-                <span className="vn-reader__choice-preview">{choice.preview}</span>
+                <span className="vn-reader__choice-preview">
+                  {choice.preview}
+                </span>
               )}
             </button>
           ))}
@@ -233,13 +245,14 @@ export function VisualNovelReader({
       {showControls && (
         <div className="vn-reader__controls">
           <button
+            type="button"
             className="vn-reader__control"
             onClick={(e) => {
               e.stopPropagation();
-              setState(prev => ({ ...prev, isPaused: !prev.isPaused }));
+              setState((prev) => ({ ...prev, isPaused: !prev.isPaused }));
             }}
           >
-            {state.isPaused ? '▶' : '⏸'}
+            {state.isPaused ? "▶" : "⏸"}
           </button>
           <div className="vn-reader__progress">
             {state.currentLineIndex + 1} / {scene.lines.length}
@@ -252,10 +265,13 @@ export function VisualNovelReader({
         <div className="vn-reader__pause-overlay">
           <div className="vn-reader__pause-menu">
             <h2>Paused</h2>
-            <button onClick={(e) => {
-              e.stopPropagation();
-              setState(prev => ({ ...prev, isPaused: false }));
-            }}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setState((prev) => ({ ...prev, isPaused: false }));
+              }}
+            >
               Resume
             </button>
           </div>

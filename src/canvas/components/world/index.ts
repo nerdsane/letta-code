@@ -1,2 +1,2 @@
-export { WorldSpace } from './WorldSpace';
-export type { WorldSpaceProps } from './WorldSpace';
+export type { WorldSpaceProps } from "./WorldSpace";
+export { WorldSpace } from "./WorldSpace";

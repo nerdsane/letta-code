@@ -79,7 +79,7 @@
 }
 
 .audio-player__time {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6);
   min-width: 40px;

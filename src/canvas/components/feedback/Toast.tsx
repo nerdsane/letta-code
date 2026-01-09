@@ -1,13 +1,13 @@
 /**
  * Toast - DSF-styled notification system
  */
-import React, { useEffect, useState } from 'react';
-import { useFeedbackSafe } from '../../context/FeedbackContext';
+import { useEffect, useState } from "react";
+import { useFeedbackSafe } from "../../context/FeedbackContext";
 
 export interface ToastProps {
   id: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'agent';
+  type: "info" | "success" | "warning" | "agent";
   duration?: number;
   action?: {
     label: string;
@@ -16,7 +16,14 @@ export interface ToastProps {
   onDismiss: (id: string) => void;
 }
 
-export function Toast({ id, message, type, duration = 5000, action, onDismiss }: ToastProps) {
+export function Toast({
+  id,
+  message,
+  type,
+  duration = 5000,
+  action,
+  onDismiss,
+}: ToastProps) {
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
@@ -35,17 +42,20 @@ export function Toast({ id, message, type, duration = 5000, action, onDismiss }:
   };
 
   return (
-    <div className={`dsf-toast dsf-toast--${type} ${isExiting ? 'dsf-toast--exiting' : ''}`}>
+    <div
+      className={`dsf-toast dsf-toast--${type} ${isExiting ? "dsf-toast--exiting" : ""}`}
+    >
       <div className="dsf-toast__icon">
-        {type === 'success' && '✓'}
-        {type === 'info' && '◈'}
-        {type === 'warning' && '!'}
-        {type === 'agent' && '◇'}
+        {type === "success" && "✓"}
+        {type === "info" && "◈"}
+        {type === "warning" && "!"}
+        {type === "agent" && "◇"}
       </div>
       <div className="dsf-toast__content">
         <p className="dsf-toast__message">{message}</p>
         {action && (
           <button
+            type="button"
             className="dsf-toast__action"
             onClick={() => {
               action.onClick();
@@ -56,7 +66,11 @@ export function Toast({ id, message, type, duration = 5000, action, onDismiss }:
           </button>
         )}
       </div>
-      <button className="dsf-toast__close" onClick={handleDismiss}>
+      <button
+        type="button"
+        className="dsf-toast__close"
+        onClick={handleDismiss}
+      >
         ×
       </button>
     </div>
@@ -64,9 +78,9 @@ export function Toast({ id, message, type, duration = 5000, action, onDismiss }:
 }
 
 export interface ToastContainerProps {
-  toasts?: Array<Omit<ToastProps, 'onDismiss'>>;
+  toasts?: Array<Omit<ToastProps, "onDismiss">>;
   onDismiss?: (id: string) => void;
-  position?: 'top-right' | 'bottom-right' | 'bottom-center';
+  position?: "top-right" | "bottom-right" | "bottom-center";
 }
 
 /**
@@ -74,7 +88,11 @@ export interface ToastContainerProps {
  * 1. Self-contained: Uses FeedbackContext automatically (no props needed)
  * 2. Controlled: Pass toasts and onDismiss explicitly
  */
-export function ToastContainer({ toasts: propToasts, onDismiss: propOnDismiss, position = 'bottom-right' }: ToastContainerProps) {
+export function ToastContainer({
+  toasts: propToasts,
+  onDismiss: propOnDismiss,
+  position = "bottom-right",
+}: ToastContainerProps) {
   const feedback = useFeedbackSafe();
 
   // Use props if provided, otherwise fall back to context

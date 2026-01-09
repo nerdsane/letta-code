@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
-import './dialogue-line.css';
+import { useMemo } from "react";
+import "./dialogue-line.css";
 
 // Character color palette for visual distinction
 const CHARACTER_COLORS: Record<string, string> = {
   // Defaults - will be overridden by world character data
-  narrator: '#888888',
-  default: '#00ffcc',
+  narrator: "#888888",
+  default: "#00ffcc",
 };
 
 export interface DialogueLineData {
@@ -72,7 +72,7 @@ export function parseDialogueLine(text: string): DialogueLineData {
  */
 export function parseDialogueContent(content: string): DialogueLineData[] {
   const paragraphs = content.split(/\n\n+/);
-  return paragraphs.map(para => parseDialogueLine(para));
+  return paragraphs.map((para) => parseDialogueLine(para));
 }
 
 export function DialogueLine({
@@ -83,22 +83,27 @@ export function DialogueLine({
   onClick,
 }: DialogueLineProps) {
   const speakerColor = useMemo(() => {
-    if (!line.speaker) return characterColors.narrator || CHARACTER_COLORS.narrator;
-    const key = line.speaker.toLowerCase().replace(/\s+/g, '_');
-    return characterColors[key] || characterColors.default || CHARACTER_COLORS.default;
+    if (!line.speaker)
+      return characterColors.narrator || CHARACTER_COLORS.narrator;
+    const key = line.speaker.toLowerCase().replace(/\s+/g, "_");
+    return (
+      characterColors[key] ||
+      characterColors.default ||
+      CHARACTER_COLORS.default
+    );
   }, [line.speaker, characterColors]);
 
   // Process inline formatting
   const formattedText = useMemo(() => {
     return line.text
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>");
   }, [line.text]);
 
   if (line.isNarration) {
     return (
       <div
-        className={`dialogue-line dialogue-line--narration ${isActive ? 'dialogue-line--active' : ''}`}
+        className={`dialogue-line dialogue-line--narration ${isActive ? "dialogue-line--active" : ""}`}
         onClick={onClick}
       >
         <p
@@ -111,9 +116,9 @@ export function DialogueLine({
 
   return (
     <div
-      className={`dialogue-line ${isActive ? 'dialogue-line--active' : ''}`}
+      className={`dialogue-line ${isActive ? "dialogue-line--active" : ""}`}
       onClick={onClick}
-      style={{ '--speaker-color': speakerColor } as React.CSSProperties}
+      style={{ "--speaker-color": speakerColor } as React.CSSProperties}
     >
       {showSpeaker && line.speaker && (
         <div className="dialogue-line__speaker">

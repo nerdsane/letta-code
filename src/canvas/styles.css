@@ -26,24 +26,28 @@
   --border-accent: rgba(0, 255, 204, 0.3);
 
   /* Spacing Scale - 8px base */
-  --space-1: 0.5rem;    /* 8px */
-  --space-2: 1rem;      /* 16px */
-  --space-3: 1.5rem;    /* 24px */
-  --space-4: 2rem;      /* 32px */
-  --space-5: 3rem;      /* 48px */
-  --space-6: 4rem;      /* 64px */
+  --space-1: 0.5rem; /* 8px */
+  --space-2: 1rem; /* 16px */
+  --space-3: 1.5rem; /* 24px */
+  --space-4: 2rem; /* 32px */
+  --space-5: 3rem; /* 48px */
+  --space-6: 4rem; /* 64px */
 
   /* Typography Scale */
-  --text-xs: 0.75rem;      /* 12px */
-  --text-sm: 0.875rem;     /* 14px */
-  --text-base: 1rem;       /* 16px */
-  --text-lg: 1.125rem;     /* 18px */
-  --text-xl: 1.25rem;      /* 20px */
-  --text-2xl: 1.5rem;      /* 24px */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
 
   /* Fonts - Mix of mono for headers, sans for body */
-  --font-mono: 'Berkeley Mono', 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif;
+  --font-mono:
+    "Berkeley Mono", "SF Mono", "JetBrains Mono", "Fira Code", "Monaco", "Menlo",
+    "Consolas", "Courier New", monospace;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "Helvetica Neue",
+    sans-serif;
 }
 
 /* ============================================================================
@@ -74,7 +78,7 @@ body {
 
 /* Subtle ambient glow */
 .app::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   background:
@@ -112,13 +116,18 @@ body {
 }
 
 .header::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -1px;
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--neon-cyan) 50%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--neon-cyan) 50%,
+    transparent
+  );
   opacity: 0.2;
 }
 
@@ -225,7 +234,7 @@ body {
 }
 
 .section-title::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -263,13 +272,18 @@ body {
 
 .world-card::before,
 .story-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--neon-cyan),
+    transparent
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -491,13 +505,18 @@ body {
 }
 
 .action-button::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   transition: left 0.5s ease;
 }
 
@@ -953,13 +972,18 @@ body {
 }
 
 .continue-button::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   transition: left 0.5s ease;
 }
 
@@ -997,7 +1021,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-screen h2 {
@@ -1112,8 +1138,12 @@ a:focus-visible {
 
 /* Dialog - Neon Cyberpunk Modal */
 @keyframes dialogOverlayShow {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes dialogContentShow {
@@ -1181,7 +1211,7 @@ a:focus-visible {
 }
 
 .dsf-dialog-title::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -1px;
   left: 0;
@@ -1267,21 +1297,32 @@ a:focus-visible {
 .dsf-image-skeleton {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    var(--bg-secondary) 50%,
+    var(--bg-tertiary) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .dsf-image {
   display: block;
   width: 100%;
   height: auto;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .dsf-image.loading {
@@ -1303,10 +1344,18 @@ a:focus-visible {
   padding: var(--space-1) 0;
 }
 
-.dsf-image-small .dsf-image-container { max-width: 300px; }
-.dsf-image-medium .dsf-image-container { max-width: 500px; }
-.dsf-image-large .dsf-image-container { max-width: 700px; }
-.dsf-image-full .dsf-image-container { max-width: 100%; }
+.dsf-image-small .dsf-image-container {
+  max-width: 300px;
+}
+.dsf-image-medium .dsf-image-container {
+  max-width: 500px;
+}
+.dsf-image-large .dsf-image-container {
+  max-width: 700px;
+}
+.dsf-image-full .dsf-image-container {
+  max-width: 100%;
+}
 
 .dsf-image-error {
   display: flex;
@@ -1340,8 +1389,12 @@ a:focus-visible {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .dsf-lightbox-image {
@@ -1413,8 +1466,12 @@ a:focus-visible {
   transition: all 0.2s ease;
 }
 
-.dsf-lightbox-prev { left: var(--space-4); }
-.dsf-lightbox-next { right: var(--space-4); }
+.dsf-lightbox-prev {
+  left: var(--space-4);
+}
+.dsf-lightbox-next {
+  right: var(--space-4);
+}
 
 .dsf-lightbox-nav:hover {
   background: rgba(0, 255, 204, 0.1);
@@ -1718,7 +1775,11 @@ a:focus-visible {
 .dsf-timeline-connector {
   width: 2px;
   flex: 1;
-  background: linear-gradient(to bottom, var(--neon-cyan) 0%, var(--border-subtle) 100%);
+  background: linear-gradient(
+    to bottom,
+    var(--neon-cyan) 0%,
+    var(--border-subtle) 100%
+  );
   margin: var(--space-1) 0;
   min-height: 30px;
 }
@@ -1771,8 +1832,13 @@ a:focus-visible {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .dsf-timeline-status-upcoming .dsf-timeline-marker {
@@ -1920,12 +1986,24 @@ a:focus-visible {
 
 .dsf-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border-subtle) 20%, var(--border-subtle) 80%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--border-subtle) 20%,
+    var(--border-subtle) 80%,
+    transparent
+  );
   margin: var(--space-4) 0;
 }
 
 .dsf-divider-accent {
-  background: linear-gradient(90deg, transparent, var(--neon-cyan) 20%, var(--neon-cyan) 80%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--neon-cyan) 20%,
+    var(--neon-cyan) 80%,
+    transparent
+  );
   opacity: 0.3;
 }
 
@@ -2177,7 +2255,8 @@ a:focus-visible {
 }
 
 @keyframes agentDotPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -2433,8 +2512,12 @@ a:focus-visible {
 }
 
 @keyframes overlayFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes floatingInputShow {
@@ -2473,7 +2556,8 @@ a:focus-visible {
 }
 
 @keyframes newItemPulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -2538,8 +2622,13 @@ a:focus-visible {
 }
 
 @keyframes suggestions-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .dsf-agent-suggestions__title {
@@ -2610,7 +2699,9 @@ a:focus-visible {
   font-size: 14px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s ease, color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    color 0.2s ease;
 }
 
 .dsf-agent-suggestions__item:hover .dsf-agent-suggestions__dismiss {
@@ -2656,7 +2747,11 @@ a:focus-visible {
   bottom: 24px;
   right: 24px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, rgba(0, 255, 204, 0.2), rgba(0, 255, 255, 0.1));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 255, 204, 0.2),
+    rgba(0, 255, 255, 0.1)
+  );
   border: 1px solid var(--neon-cyan);
   color: var(--neon-cyan);
   font-family: var(--font-mono);
@@ -2670,13 +2765,18 @@ a:focus-visible {
 }
 
 .enhance-experience-btn:hover {
-  background: linear-gradient(135deg, rgba(0, 255, 204, 0.3), rgba(0, 255, 255, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 255, 204, 0.3),
+    rgba(0, 255, 255, 0.2)
+  );
   box-shadow: 0 0 30px rgba(0, 255, 204, 0.4);
   transform: translateY(-2px);
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
   }
   50% {

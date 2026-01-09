@@ -10,9 +10,9 @@
  * At least one API key must be configured for image generation to work.
  */
 
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { StoryAsset } from "../../types/dsf";
 import { asset_manager } from "./asset_manager";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { broadcastStateChange } from "./canvas_ui";
 
 // ============================================================================
@@ -53,14 +53,14 @@ export interface ImageGeneratorResult {
 function getDefaultProvider(): ImageProvider {
   const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
-  
+
   // Prefer Google (Nano Banana Pro) over OpenAI
   if (googleKey) {
     return "google";
   } else if (openaiKey) {
     return "openai";
   }
-  
+
   // No keys available - will error when called
   return "openai"; // Default to openai for backwards compatibility
 }
@@ -77,7 +77,10 @@ export async function image_generator(
   args: ImageGeneratorArgs,
 ): Promise<ImageGeneratorResult> {
   try {
-    console.error("image_generator called with args:", JSON.stringify(args, null, 2));
+    console.error(
+      "image_generator called with args:",
+      JSON.stringify(args, null, 2),
+    );
 
     if (!args || typeof args !== "object") {
       return {
@@ -96,10 +99,11 @@ export async function image_generator(
     // Validate that at least one image generation API key is available
     const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
-    
+
     if (!googleKey && !openaiKey) {
       return {
-        toolReturn: "No image generation API keys configured. Set either GOOGLE_API_KEY (preferred) or OPENAI_API_KEY in your .env file.",
+        toolReturn:
+          "No image generation API keys configured. Set either GOOGLE_API_KEY (preferred) or OPENAI_API_KEY in your .env file.",
         status: "error",
       };
     }
@@ -130,7 +134,7 @@ export async function image_generator(
     }
 
     // Don't dump base64 data into chat - just indicate the type
-    if (imageUrl.startsWith('data:')) {
+    if (imageUrl.startsWith("data:")) {
       toolReturn += `\nImage: base64 data (${Math.round(imageUrl.length / 1024)}KB)`;
     } else {
       toolReturn += `\nImage URL: ${imageUrl}`;
@@ -142,11 +146,12 @@ export async function image_generator(
       asset = await saveAsAsset(imageUrl, args);
       toolReturn += `\n\nSaved as asset: ${asset.id}\nPath: ${asset.path}`;
     } else {
-      toolReturn += "\n\nTo save this image, use the asset_manager tool or set save_as_asset: true";
+      toolReturn +=
+        "\n\nTo save this image, use the asset_manager tool or set save_as_asset: true";
     }
 
     // Broadcast state change for reactive UI
-    await broadcastStateChange('image_generated', {
+    await broadcastStateChange("image_generated", {
       assetPath: asset?.path,
       storyId: args.story_id,
       worldId: args.world_checkpoint,
@@ -225,7 +230,7 @@ async function generateWithOpenAI(
     throw new Error(`OpenAI API error (${response.status}): ${error}`);
   }
 
-  const data = await response.json() as {
+  const data = (await response.json()) as {
     data: Array<{
       b64_json?: string;
       url?: string;
@@ -285,7 +290,7 @@ async function generateWithGoogle(
     model: modelName,
   });
 
-  const numberOfImages = args.number_of_images || 1;
+  const _numberOfImages = args.number_of_images || 1;
 
   // Generate image with proper responseModalities config
   const result = await model.generateContent({
@@ -303,7 +308,7 @@ async function generateWithGoogle(
       // IMPORTANT: Must specify both TEXT and IMAGE for Nano Banana
       responseModalities: ["TEXT", "IMAGE"],
       maxOutputTokens: 8192,
-    } as any, // Type assertion needed for responseModalities which isn't in the SDK types yet
+    } as any,
   });
 
   const response = result.response;
@@ -314,12 +319,19 @@ async function generateWithGoogle(
   }
 
   const candidate = response.candidates[0];
-  if (!candidate || !candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+  if (
+    !candidate ||
+    !candidate.content ||
+    !candidate.content.parts ||
+    candidate.content.parts.length === 0
+  ) {
     throw new Error("No image data in response");
   }
 
   // Find the inline data part with image
-  const imagePart = candidate.content.parts.find((part: any) => part.inlineData?.mimeType?.startsWith("image/"));
+  const imagePart = candidate.content.parts.find((part: any) =>
+    part.inlineData?.mimeType?.startsWith("image/"),
+  );
 
   if (!imagePart || !imagePart.inlineData) {
     throw new Error("No image data found in response");
@@ -386,7 +398,8 @@ async function saveAsAsset(
     id: assetId,
     type: "image",
     path: fullPath,
-    description: args.asset_description || `Generated image: ${args.prompt.slice(0, 100)}`,
+    description:
+      args.asset_description || `Generated image: ${args.prompt.slice(0, 100)}`,
     generated: true,
     prompt: args.prompt,
   };

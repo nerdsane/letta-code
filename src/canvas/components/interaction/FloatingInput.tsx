@@ -6,7 +6,8 @@
  * - Context-aware: knows current view, selected element
  * - Types message to agent with context
  */
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface FloatingInputContext {
   view?: string;
@@ -29,9 +30,9 @@ export function FloatingInput({
   onSend,
   onClose,
   context,
-  placeholder = 'Ask the agent anything...',
+  placeholder = "Ask the agent anything...",
 }: FloatingInputProps) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus input when visible
@@ -44,22 +45,25 @@ export function FloatingInput({
   // Handle escape to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isVisible) {
+      if (e.key === "Escape" && isVisible) {
         onClose();
       }
     };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isVisible, onClose]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (value.trim()) {
-      onSend(value.trim(), context || {});
-      setValue('');
-      onClose();
-    }
-  }, [value, context, onSend, onClose]);
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (value.trim()) {
+        onSend(value.trim(), context || {});
+        setValue("");
+        onClose();
+      }
+    },
+    [value, context, onSend, onClose],
+  );
 
   if (!isVisible) return null;
 
@@ -121,13 +125,14 @@ function getContextLabel(context?: FloatingInputContext): string | null {
   }
 
   if (context.selection) {
-    const truncated = context.selection.length > 50
-      ? context.selection.slice(0, 50) + '...'
-      : context.selection;
+    const truncated =
+      context.selection.length > 50
+        ? `${context.selection.slice(0, 50)}...`
+        : context.selection;
     parts.push(`Selected: "${truncated}"`);
   }
 
-  return parts.length > 0 ? parts.join(' • ') : null;
+  return parts.length > 0 ? parts.join(" • ") : null;
 }
 
 // Hook for global keyboard shortcut
@@ -138,25 +143,25 @@ export function useFloatingInput() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd/Ctrl + K to open
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setIsVisible(true);
 
         // Capture any selected text
         const selection = window.getSelection()?.toString();
         if (selection) {
-          setContext(prev => ({ ...prev, selection }));
+          setContext((prev) => ({ ...prev, selection }));
         }
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const open = useCallback((newContext?: FloatingInputContext) => {
     if (newContext) {
-      setContext(prev => ({ ...prev, ...newContext }));
+      setContext((prev) => ({ ...prev, ...newContext }));
     }
     setIsVisible(true);
   }, []);
@@ -165,9 +170,12 @@ export function useFloatingInput() {
     setIsVisible(false);
   }, []);
 
-  const updateContext = useCallback((newContext: Partial<FloatingInputContext>) => {
-    setContext(prev => ({ ...prev, ...newContext }));
-  }, []);
+  const updateContext = useCallback(
+    (newContext: Partial<FloatingInputContext>) => {
+      setContext((prev) => ({ ...prev, ...newContext }));
+    },
+    [],
+  );
 
   return {
     isVisible,

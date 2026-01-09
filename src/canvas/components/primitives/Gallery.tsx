@@ -1,5 +1,4 @@
-import { useState, useCallback } from 'react';
-import { Image } from './Image';
+import { useCallback, useState } from "react";
 
 export interface GalleryImage {
   src: string;
@@ -10,28 +9,31 @@ export interface GalleryImage {
 export interface GalleryProps {
   images: GalleryImage[];
   columns?: 2 | 3 | 4;
-  gap?: 'sm' | 'md' | 'lg';
+  gap?: "sm" | "md" | "lg";
   lightbox?: boolean;
-  variant?: 'grid' | 'masonry' | 'carousel';
+  variant?: "grid" | "masonry" | "carousel";
 }
 
 export function Gallery({
   images,
   columns = 3,
-  gap = 'md',
+  gap = "md",
   lightbox = true,
-  variant = 'grid'
+  variant = "grid",
 }: GalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const handleImageClick = useCallback((index: number) => {
-    if (lightbox) {
-      setLightboxIndex(index);
-      setLightboxOpen(true);
-    }
-  }, [lightbox]);
+  const handleImageClick = useCallback(
+    (index: number) => {
+      if (lightbox) {
+        setLightboxIndex(index);
+        setLightboxOpen(true);
+      }
+    },
+    [lightbox],
+  );
 
   const handlePrev = useCallback(() => {
     setLightboxIndex((i) => (i > 0 ? i - 1 : images.length - 1));
@@ -41,29 +43,31 @@ export function Gallery({
     setLightboxIndex((i) => (i < images.length - 1 ? i + 1 : 0));
   }, [images.length]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') setLightboxOpen(false);
-    if (e.key === 'ArrowLeft') handlePrev();
-    if (e.key === 'ArrowRight') handleNext();
-  }, [handlePrev, handleNext]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+      if (e.key === "ArrowLeft") handlePrev();
+      if (e.key === "ArrowRight") handleNext();
+    },
+    [handlePrev, handleNext],
+  );
 
-  const gapSize = gap === 'sm' ? '8px' : gap === 'md' ? '16px' : '24px';
+  const gapSize = gap === "sm" ? "8px" : gap === "md" ? "16px" : "24px";
 
   if (images.length === 0) {
-    return (
-      <div className="dsf-gallery-empty">
-        No images to display
-      </div>
-    );
+    return <div className="dsf-gallery-empty">No images to display</div>;
   }
 
-  if (variant === 'carousel') {
+  if (variant === "carousel") {
     return (
       <div className="dsf-gallery-carousel">
         <div className="dsf-carousel-main">
           <button
+            type="button"
             className="dsf-carousel-nav dsf-carousel-prev"
-            onClick={() => setActiveIndex((i) => (i > 0 ? i - 1 : images.length - 1))}
+            onClick={() =>
+              setActiveIndex((i) => (i > 0 ? i - 1 : images.length - 1))
+            }
             aria-label="Previous"
           >
             ‹
@@ -71,27 +75,33 @@ export function Gallery({
           <div className="dsf-carousel-image-container">
             <img
               src={images[activeIndex].src}
-              alt={images[activeIndex].alt || ''}
+              alt={images[activeIndex].alt || ""}
               className="dsf-carousel-image"
               onClick={() => handleImageClick(activeIndex)}
             />
           </div>
           <button
+            type="button"
             className="dsf-carousel-nav dsf-carousel-next"
-            onClick={() => setActiveIndex((i) => (i < images.length - 1 ? i + 1 : 0))}
+            onClick={() =>
+              setActiveIndex((i) => (i < images.length - 1 ? i + 1 : 0))
+            }
             aria-label="Next"
           >
             ›
           </button>
         </div>
         {images[activeIndex].caption && (
-          <div className="dsf-carousel-caption">{images[activeIndex].caption}</div>
+          <div className="dsf-carousel-caption">
+            {images[activeIndex].caption}
+          </div>
         )}
         <div className="dsf-carousel-dots">
           {images.map((_, i) => (
             <button
+              type="button"
               key={i}
-              className={`dsf-carousel-dot ${i === activeIndex ? 'active' : ''}`}
+              className={`dsf-carousel-dot ${i === activeIndex ? "active" : ""}`}
               onClick={() => setActiveIndex(i)}
               aria-label={`Go to image ${i + 1}`}
             />
@@ -104,21 +114,48 @@ export function Gallery({
             className="dsf-lightbox-overlay"
             onClick={() => setLightboxOpen(false)}
             onKeyDown={handleKeyDown}
-            tabIndex={0}
           >
-            <button className="dsf-lightbox-close" onClick={() => setLightboxOpen(false)}>×</button>
-            <button className="dsf-lightbox-nav dsf-lightbox-prev" onClick={(e) => { e.stopPropagation(); handlePrev(); }}>‹</button>
+            <button
+              type="button"
+              className="dsf-lightbox-close"
+              onClick={() => setLightboxOpen(false)}
+            >
+              ×
+            </button>
+            <button
+              type="button"
+              className="dsf-lightbox-nav dsf-lightbox-prev"
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePrev();
+              }}
+            >
+              ‹
+            </button>
             <img
               src={images[lightboxIndex].src}
-              alt={images[lightboxIndex].alt || ''}
+              alt={images[lightboxIndex].alt || ""}
               className="dsf-lightbox-image"
               onClick={(e) => e.stopPropagation()}
             />
-            <button className="dsf-lightbox-nav dsf-lightbox-next" onClick={(e) => { e.stopPropagation(); handleNext(); }}>›</button>
+            <button
+              type="button"
+              className="dsf-lightbox-nav dsf-lightbox-next"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNext();
+              }}
+            >
+              ›
+            </button>
             {images[lightboxIndex].caption && (
-              <div className="dsf-lightbox-caption">{images[lightboxIndex].caption}</div>
+              <div className="dsf-lightbox-caption">
+                {images[lightboxIndex].caption}
+              </div>
             )}
-            <div className="dsf-lightbox-counter">{lightboxIndex + 1} / {images.length}</div>
+            <div className="dsf-lightbox-counter">
+              {lightboxIndex + 1} / {images.length}
+            </div>
           </div>
         )}
       </div>
@@ -131,9 +168,9 @@ export function Gallery({
       <div
         className={`dsf-gallery dsf-gallery-${variant}`}
         style={{
-          display: 'grid',
+          display: "grid",
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: gapSize
+          gap: gapSize,
         }}
       >
         {images.map((image, index) => (
@@ -144,7 +181,7 @@ export function Gallery({
           >
             <img
               src={image.src}
-              alt={image.alt || ''}
+              alt={image.alt || ""}
               className="dsf-gallery-image"
             />
             {image.caption && (
@@ -160,21 +197,48 @@ export function Gallery({
           className="dsf-lightbox-overlay"
           onClick={() => setLightboxOpen(false)}
           onKeyDown={handleKeyDown}
-          tabIndex={0}
         >
-          <button className="dsf-lightbox-close" onClick={() => setLightboxOpen(false)}>×</button>
-          <button className="dsf-lightbox-nav dsf-lightbox-prev" onClick={(e) => { e.stopPropagation(); handlePrev(); }}>‹</button>
+          <button
+            type="button"
+            className="dsf-lightbox-close"
+            onClick={() => setLightboxOpen(false)}
+          >
+            ×
+          </button>
+          <button
+            type="button"
+            className="dsf-lightbox-nav dsf-lightbox-prev"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePrev();
+            }}
+          >
+            ‹
+          </button>
           <img
             src={images[lightboxIndex].src}
-            alt={images[lightboxIndex].alt || ''}
+            alt={images[lightboxIndex].alt || ""}
             className="dsf-lightbox-image"
             onClick={(e) => e.stopPropagation()}
           />
-          <button className="dsf-lightbox-nav dsf-lightbox-next" onClick={(e) => { e.stopPropagation(); handleNext(); }}>›</button>
+          <button
+            type="button"
+            className="dsf-lightbox-nav dsf-lightbox-next"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNext();
+            }}
+          >
+            ›
+          </button>
           {images[lightboxIndex].caption && (
-            <div className="dsf-lightbox-caption">{images[lightboxIndex].caption}</div>
+            <div className="dsf-lightbox-caption">
+              {images[lightboxIndex].caption}
+            </div>
           )}
-          <div className="dsf-lightbox-counter">{lightboxIndex + 1} / {images.length}</div>
+          <div className="dsf-lightbox-counter">
+            {lightboxIndex + 1} / {images.length}
+          </div>
         </div>
       )}
     </>
