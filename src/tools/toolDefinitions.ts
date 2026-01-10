@@ -29,7 +29,6 @@ import SearchFileContentGeminiDescription from "./descriptions/SearchFileContent
 import ShellDescription from "./descriptions/Shell.md";
 import ShellCommandDescription from "./descriptions/ShellCommand.md";
 import SkillDescription from "./descriptions/Skill.md";
-import SearchTrajectoriesDescription from "./descriptions/search_trajectories.md";
 import SendSuggestionDescription from "./descriptions/send_suggestion.md";
 import StoryManagerDescription from "./descriptions/story_manager.md";
 import TaskDescription from "./descriptions/Task.md";
@@ -70,7 +69,6 @@ import { search_file_content } from "./impl/SearchFileContentGemini";
 import { shell } from "./impl/Shell";
 import { shell_command } from "./impl/ShellCommand";
 import { skill } from "./impl/Skill";
-import { search_trajectories } from "./impl/search_trajectories";
 import { send_suggestion } from "./impl/send_suggestion";
 import { story_manager } from "./impl/story_manager";
 import { task } from "./impl/Task";
@@ -111,7 +109,6 @@ import SearchFileContentGeminiSchema from "./schemas/SearchFileContentGemini.jso
 import ShellSchema from "./schemas/Shell.json";
 import ShellCommandSchema from "./schemas/ShellCommand.json";
 import SkillSchema from "./schemas/Skill.json";
-import SearchTrajectoriesSchema from "./schemas/search_trajectories.json";
 import SendSuggestionSchema from "./schemas/send_suggestion.json";
 import StoryManagerSchema from "./schemas/story_manager.json";
 import TaskSchema from "./schemas/Task.json";
@@ -245,11 +242,6 @@ const toolDefinitions = {
     schema: SendSuggestionSchema,
     description: SendSuggestionDescription.trim(),
     impl: send_suggestion as unknown as ToolImplementation,
-  },
-  search_trajectories: {
-    schema: SearchTrajectoriesSchema,
-    description: SearchTrajectoriesDescription.trim(),
-    impl: search_trajectories as unknown as ToolImplementation,
   },
   shell_command: {
     schema: ShellCommandSchema,

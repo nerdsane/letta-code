@@ -68,7 +68,6 @@ export const ANTHROPIC_DEFAULT_TOOLS: ToolName[] = [
   "canvas_ui",
   "get_canvas_interactions",
   "send_suggestion",
-  "search_trajectories",
 ];
 
 export const OPENAI_DEFAULT_TOOLS: ToolName[] = [
@@ -195,7 +194,6 @@ const TOOL_PERMISSIONS: Record<ToolName, { requiresApproval: boolean }> = {
   canvas_ui: { requiresApproval: false },
   get_canvas_interactions: { requiresApproval: false },
   send_suggestion: { requiresApproval: false },
-  search_trajectories: { requiresApproval: false },
 };
 
 interface JsonSchema {
