@@ -14,6 +14,11 @@ interface SearchFileContentGeminiArgs {
 export async function search_file_content(
   args: SearchFileContentGeminiArgs,
 ): Promise<{ message: string }> {
+  // Validate pattern - empty pattern would match everything and cause buffer overflow
+  if (!args.pattern || args.pattern.trim() === "") {
+    return { message: "No matches found (empty pattern)" };
+  }
+
   // Adapt Gemini params to Deep Sci-Fi's Grep tool
   const lettaArgs = {
     pattern: args.pattern,

@@ -201,7 +201,10 @@ async function runBidirectional(
   });
 }
 
-describe("input-format stream-json", () => {
+// Skip these tests if LETTA_API_KEY is not available (e.g., in forks without secrets)
+const hasApiKey = !!process.env.LETTA_API_KEY;
+
+describe.skipIf(!hasApiKey)("input-format stream-json", () => {
   test(
     "initialize control request returns session info",
     async () => {
