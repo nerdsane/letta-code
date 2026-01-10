@@ -119,18 +119,29 @@ jobs:
           deep-scifi --help
 
       - name: Headless smoke test (API)
-        # Only run when LETTA_API_KEY is available (not in forks without secrets)
-        if: ${{ secrets.LETTA_API_KEY != '' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+        # Only run on push to main or PRs from the same repo (not forks, to protect secrets)
+        # Skips gracefully if LETTA_API_KEY is not set
+        if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
         env:
           LETTA_API_KEY: ${{ secrets.LETTA_API_KEY }}
-        run: ./deep-scifi.js --prompt "ping" --tools "" --permission-mode plan
+        run: |
+          if [ -z "$LETTA_API_KEY" ]; then
+            echo "Skipping: LETTA_API_KEY not set"
+            exit 0
+          fi
+          ./deep-scifi.js --prompt "ping" --tools "" --permission-mode plan
 
       - name: Windows integration test
         # Only run on Windows, with API key available
-        if: ${{ secrets.LETTA_API_KEY != '' && runner.os == 'Windows' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+        if: ${{ runner.os == 'Windows' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
         env:
           LETTA_API_KEY: ${{ secrets.LETTA_API_KEY }}
-        run: bun run src/tests/headless-windows.ts --model haiku
+        run: |
+          if [ -z "$LETTA_API_KEY" ]; then
+            echo "Skipping: LETTA_API_KEY not set"
+            exit 0
+          fi
+          bun run src/tests/headless-windows.ts --model haiku
 
       - name: Publish dry-run
         if: ${{ github.event_name == 'push' }}
