@@ -79,17 +79,17 @@ jobs:
         run: bun run build
 
       - name: CLI help smoke test
-        run: ./letta.js --help
+        run: ./deep-scifi.js --help
 
       - name: CLI version smoke test
-        run: ./letta.js --version || true
+        run: ./deep-scifi.js --version || true
 
       - name: Bundle size check
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
-            SIZE=$(powershell -command "(Get-Item letta.js).length")
+            SIZE=$(powershell -command "(Get-Item deep-scifi.js).length")
           else
-            SIZE=$(stat -f%z ./letta.js 2>/dev/null || stat -c%s ./letta.js 2>/dev/null)
+            SIZE=$(stat -f%z ./deep-scifi.js 2>/dev/null || stat -c%s ./deep-scifi.js 2>/dev/null)
           fi
           SIZE_MB=$((SIZE / 1024 / 1024))
           echo "Bundle size: $SIZE bytes (~${SIZE_MB}MB)"
@@ -107,23 +107,23 @@ jobs:
         shell: pwsh
         run: |
           npm pack
-          npm install -g (Get-Item letta-ai-letta-code-*.tgz).FullName
-          letta --help
+          npm install -g (Get-Item deep-scifi-deep-scifi-*.tgz).FullName
+          deep-scifi --help
 
       - name: Test npm install flow (Unix)
         if: runner.os != 'Windows'
         shell: sh
         run: |
           npm pack
-          npm install -g ./letta-ai-letta-code-*.tgz
-          letta --help
+          npm install -g ./deep-scifi-deep-scifi-*.tgz
+          deep-scifi --help
 
       - name: Headless smoke test (API)
         # Only run on push to main or PRs from the same repo (not forks, to protect secrets)
         if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
         env:
           LETTA_API_KEY: ${{ secrets.LETTA_API_KEY }}
-        run: ./letta.js --prompt "ping" --tools "" --permission-mode plan
+        run: ./deep-scifi.js --prompt "ping" --tools "" --permission-mode plan
 
       - name: Windows integration test
         # Only run on Windows, with API key available
