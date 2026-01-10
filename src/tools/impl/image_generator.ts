@@ -151,8 +151,10 @@ export async function image_generator(
     }
 
     // Broadcast state change for reactive UI
+    // Send assetUrl (not assetPath) to match frontend expectations
     await broadcastStateChange("image_generated", {
-      assetPath: asset?.path,
+      assetId: asset?.id,
+      assetUrl: asset?.path ? `/api/assets/${asset.path}` : undefined,
       storyId: args.story_id,
       worldId: args.world_checkpoint,
     });
