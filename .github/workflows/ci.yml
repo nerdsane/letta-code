@@ -148,7 +148,13 @@ jobs:
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
           LETTA_API_KEY: dummy
-        run: bun publish --dry-run
+        run: |
+          if [ -z "$NPM_CONFIG_TOKEN" ]; then
+            echo "Skipping publish dry-run: NPM_TOKEN not set, using pack instead"
+            bun pm pack
+          else
+            bun publish --dry-run
+          fi
 
       - name: Pack (no auth available)
         if: ${{ github.event_name != 'push' }}
