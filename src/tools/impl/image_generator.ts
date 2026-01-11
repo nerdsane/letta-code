@@ -110,6 +110,14 @@ export async function image_generator(
 
     const provider = args.provider || getDefaultProvider();
 
+    // Broadcast that image generation is starting (for loading indicator)
+    if (args.world_checkpoint) {
+      await broadcastStateChange("image_generating", {
+        worldId: args.world_checkpoint,
+        storyId: args.story_id,
+      });
+    }
+
     // Generate image based on provider
     let imageUrl: string;
     let revisedPrompt: string | undefined;
