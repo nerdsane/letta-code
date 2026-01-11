@@ -75,6 +75,10 @@ interface AppState {
     actionLabel?: string;
     actionData?: any;
   }>; // Suggestions from agent
+  // World card UX tracking
+  newWorldIds: Set<string>; // Worlds added during this session (for highlight animation)
+  pendingImageWorldIds: Set<string>; // Worlds with image generation in progress
+  recentImageWorldIds: Set<string>; // Worlds that just received an image (for flash animation)
 }
 
 // ============================================================================
@@ -128,6 +132,10 @@ function App() {
     useImmersiveWorld: true, // Default to immersive experience
     pendingExperience: null, // Immersive experience ready for user to activate
     agentSuggestions: [], // Suggestions from agent via Agent Bus
+    // World card UX tracking
+    newWorldIds: new Set(),
+    pendingImageWorldIds: new Set(),
+    recentImageWorldIds: new Set(),
   });
 
   const agentBusRef = useRef<AgentBusClient | null>(null);
@@ -500,7 +508,43 @@ function App() {
             (
               fetch("/api/worlds").then((res) => res.json()) as Promise<World[]>
             ).then((worlds) => {
-              setState((prev) => ({ ...prev, worlds, agentThinking: false }));
+              setState((prev) => {
+                // Detect newly added worlds by comparing with previous
+                const prevWorldIds = new Set(
+                  prev.worlds.map((w) => getWorldCheckpointName(w)),
+                );
+                const newIds = new Set(prev.newWorldIds);
+                const pendingImageIds = new Set(prev.pendingImageWorldIds);
+
+                for (const world of worlds) {
+                  const worldId = getWorldCheckpointName(world);
+                  if (!prevWorldIds.has(worldId)) {
+                    // New world added
+                    newIds.add(worldId);
+                    // If no image yet, mark as pending
+                    if (!world.asset?.path) {
+                      pendingImageIds.add(worldId);
+                    }
+
+                    // Clear from newWorldIds after animation completes (3 pulses * 1.5s = 4.5s)
+                    setTimeout(() => {
+                      setState((s) => {
+                        const updated = new Set(s.newWorldIds);
+                        updated.delete(worldId);
+                        return { ...s, newWorldIds: updated };
+                      });
+                    }, 5000);
+                  }
+                }
+
+                return {
+                  ...prev,
+                  worlds,
+                  agentThinking: false,
+                  newWorldIds: newIds,
+                  pendingImageWorldIds: pendingImageIds,
+                };
+              });
             });
             break;
           case "image_generated":
@@ -514,12 +558,43 @@ function App() {
                 World[]
               >,
             ]).then(([stories, worlds]) => {
-              setState((prev) => ({
-                ...prev,
-                stories,
-                worlds,
-                agentThinking: false,
-              }));
+              setState((prev) => {
+                // Detect which worlds now have images that didn't before
+                const prevWorldsWithImages = new Set(
+                  prev.worlds
+                    .filter((w) => w.asset?.path)
+                    .map((w) => getWorldCheckpointName(w)),
+                );
+                const pendingImageIds = new Set(prev.pendingImageWorldIds);
+                const recentImageIds = new Set(prev.recentImageWorldIds);
+
+                for (const world of worlds) {
+                  const worldId = getWorldCheckpointName(world);
+                  if (world.asset?.path && !prevWorldsWithImages.has(worldId)) {
+                    // This world just got an image
+                    pendingImageIds.delete(worldId);
+                    recentImageIds.add(worldId);
+
+                    // Clear from recentImageIds after animation completes
+                    setTimeout(() => {
+                      setState((s) => {
+                        const updated = new Set(s.recentImageWorldIds);
+                        updated.delete(worldId);
+                        return { ...s, recentImageWorldIds: updated };
+                      });
+                    }, 1000); // Match animation duration
+                  }
+                }
+
+                return {
+                  ...prev,
+                  stories,
+                  worlds,
+                  agentThinking: false,
+                  pendingImageWorldIds: pendingImageIds,
+                  recentImageWorldIds: recentImageIds,
+                };
+              });
             });
             break;
         }
@@ -666,6 +741,9 @@ function App() {
             onSelectWorld={selectWorld}
             onSelectStory={selectStory}
             onElementAction={handleElementAction}
+            newWorldIds={state.newWorldIds}
+            pendingImageWorldIds={state.pendingImageWorldIds}
+            recentImageWorldIds={state.recentImageWorldIds}
           />
         )}
 

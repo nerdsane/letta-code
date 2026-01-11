@@ -219,6 +219,143 @@
 }
 
 /* ============================================================================
+   WORLD CARD IMAGE
+   ============================================================================ */
+
+.welcome-space__world-image-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  background: var(--bg-tertiary, #0f0f0f);
+}
+
+.welcome-space__world-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.welcome-space__world-image--loaded {
+  opacity: 1;
+}
+
+.welcome-space__world-image-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary, #0f0f0f);
+  color: var(--text-tertiary, #5a5a5a);
+  font-size: 2rem;
+}
+
+.welcome-space__world-image-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.welcome-space__world-image-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(0, 255, 204, 0.2);
+  border-top-color: var(--neon-cyan, #00ffcc);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   NEON HIGHLIGHT ANIMATION
+   ============================================================================ */
+
+@keyframes neon-pulse {
+  0% {
+    box-shadow:
+      0 0 5px rgba(0, 255, 204, 0.3),
+      0 0 10px rgba(0, 255, 204, 0.2),
+      0 0 20px rgba(0, 255, 204, 0.1);
+    border-color: rgba(0, 255, 204, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 10px rgba(0, 255, 204, 0.5),
+      0 0 20px rgba(0, 255, 204, 0.4),
+      0 0 40px rgba(0, 255, 204, 0.2),
+      0 0 60px rgba(0, 255, 204, 0.1);
+    border-color: rgba(0, 255, 204, 0.8);
+  }
+  100% {
+    box-shadow:
+      0 0 5px rgba(0, 255, 204, 0.3),
+      0 0 10px rgba(0, 255, 204, 0.2),
+      0 0 20px rgba(0, 255, 204, 0.1);
+    border-color: rgba(0, 255, 204, 0.5);
+  }
+}
+
+@keyframes neon-flash {
+  0% {
+    box-shadow:
+      0 0 5px rgba(0, 255, 204, 0.2),
+      0 0 10px rgba(0, 255, 204, 0.1);
+    border-color: rgba(0, 255, 204, 0.3);
+  }
+  20% {
+    box-shadow:
+      0 0 15px rgba(0, 255, 204, 0.6),
+      0 0 30px rgba(0, 255, 204, 0.4),
+      0 0 50px rgba(0, 255, 204, 0.2);
+    border-color: var(--neon-cyan, #00ffcc);
+  }
+  100% {
+    box-shadow:
+      0 0 5px rgba(0, 255, 204, 0.2),
+      0 0 10px rgba(0, 255, 204, 0.1);
+    border-color: rgba(0, 255, 204, 0.3);
+  }
+}
+
+.welcome-space__world-card--new {
+  animation: neon-pulse 1.5s ease-in-out 3;
+  border-color: rgba(0, 255, 204, 0.5);
+}
+
+.welcome-space__world-card--image-loaded {
+  animation: neon-flash 0.8s ease-out;
+}
+
+.welcome-space__world-card--pending-image {
+  position: relative;
+}
+
+.welcome-space__world-card--pending-image::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(0, 255, 204, 0.3);
+  border-top-color: var(--neon-cyan, #00ffcc);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================================================
    RESPONSIVE
    ============================================================================ */
 

@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import type { Story, World } from "../../../types/dsf";
 import { ActionBar, Hero, ScrollSection } from "../experience";
 import { type ElementType, InteractiveElement } from "../interaction";
@@ -15,6 +16,10 @@ export interface WelcomeSpaceProps {
     elementType: ElementType,
     elementData?: any,
   ) => void;
+  // World card UX tracking
+  newWorldIds?: Set<string>;
+  pendingImageWorldIds?: Set<string>;
+  recentImageWorldIds?: Set<string>;
 }
 
 // Helper to derive world title
@@ -36,14 +41,100 @@ function getWorldEra(world: World): string {
   );
 }
 
-// Helper to get world ID
+// Helper to get world ID - must match getWorldCheckpointName in app.tsx
 function getWorldId(world: World): string {
+  // Use server-provided checkpoint name if available
+  if ((world as any).checkpoint_name) {
+    return (world as any).checkpoint_name;
+  }
+
+  // Fallback: derive checkpoint name from world data
   const premise = world.foundation?.core_premise || "";
   return (
     premise
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "_")
-      .substring(0, 30) || "world"
+      .replace(/^_|_$/g, "")
+      .substring(0, 30) || "unnamed_world"
+  );
+}
+
+// World card with image loading state
+function WorldCard({
+  world,
+  worldId,
+  isNew,
+  hasPendingImage,
+  hasRecentImage,
+  onClick,
+}: {
+  world: World;
+  worldId: string;
+  isNew: boolean;
+  hasPendingImage: boolean;
+  hasRecentImage: boolean;
+  onClick: () => void;
+}) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const handleImageLoad = useCallback(() => {
+    setImageLoaded(true);
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+  }, []);
+
+  // Build class names
+  const classNames = ["welcome-space__world-card"];
+  if (isNew) classNames.push("welcome-space__world-card--new");
+  if (hasPendingImage)
+    classNames.push("welcome-space__world-card--pending-image");
+  if (hasRecentImage)
+    classNames.push("welcome-space__world-card--image-loaded");
+
+  const hasImage = world.asset?.path && !imageError;
+
+  return (
+    <button type="button" className={classNames.join(" ")} onClick={onClick}>
+      {/* Image container - always show if world has asset path */}
+      {world.asset?.path && (
+        <div className="welcome-space__world-image-container">
+          {/* Placeholder diamond while loading or on error */}
+          {(!imageLoaded || imageError) && (
+            <div className="welcome-space__world-image-placeholder">◇</div>
+          )}
+          {/* Loading spinner overlay when pending */}
+          {hasPendingImage && !imageLoaded && !imageError && (
+            <div className="welcome-space__world-image-loading">
+              <div className="welcome-space__world-image-spinner" />
+            </div>
+          )}
+          {/* Actual image */}
+          {!imageError && (
+            <img
+              src={`/api/assets/${world.asset.path}`}
+              alt={world.asset.description || "World cover"}
+              className={`welcome-space__world-image ${imageLoaded ? "welcome-space__world-image--loaded" : ""}`}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          )}
+        </div>
+      )}
+      <div className="welcome-space__world-header">
+        <span className="welcome-space__world-badge">{getWorldEra(world)}</span>
+      </div>
+      <h3 className="welcome-space__world-name">{getWorldTitle(world)}</h3>
+      <p className="welcome-space__world-premise">
+        {world.foundation?.core_premise || ""}
+      </p>
+      <div className="welcome-space__world-stats">
+        <span>{world.surface?.visible_elements?.length || 0} elements</span>
+        <span>v{world.development?.version || 0}</span>
+      </div>
+    </button>
   );
 }
 
@@ -54,6 +145,9 @@ export function WelcomeSpace({
   onSelectStory,
   onStartNewWorld,
   onElementAction,
+  newWorldIds = new Set(),
+  pendingImageWorldIds = new Set(),
+  recentImageWorldIds = new Set(),
 }: WelcomeSpaceProps) {
   // Default action handler
   const handleAction = (
@@ -150,45 +244,36 @@ export function WelcomeSpace({
               Your Worlds
             </h2>
             <div className="welcome-space__worlds-grid">
-              {worlds.map((world, i) => (
-                <ScrollSection
-                  key={getWorldId(world) + i}
-                  animation="scale"
-                  delay={i * 100}
-                >
-                  <InteractiveElement
-                    elementType="world_card"
-                    elementId={getWorldId(world)}
-                    elementData={world}
-                    onAction={handleAction}
+              {worlds.map((world, i) => {
+                const worldId = getWorldId(world);
+                const isNew = newWorldIds.has(worldId);
+                const hasPendingImage = pendingImageWorldIds.has(worldId);
+                const hasRecentImage = recentImageWorldIds.has(worldId);
+
+                return (
+                  <ScrollSection
+                    key={worldId + i}
+                    animation="scale"
+                    delay={i * 100}
                   >
-                    <button
-                      type="button"
-                      className="welcome-space__world-card"
-                      onClick={() => onSelectWorld(world)}
+                    <InteractiveElement
+                      elementType="world_card"
+                      elementId={worldId}
+                      elementData={world}
+                      onAction={handleAction}
                     >
-                      <div className="welcome-space__world-header">
-                        <span className="welcome-space__world-badge">
-                          {getWorldEra(world)}
-                        </span>
-                      </div>
-                      <h3 className="welcome-space__world-name">
-                        {getWorldTitle(world)}
-                      </h3>
-                      <p className="welcome-space__world-premise">
-                        {world.foundation?.core_premise || ""}
-                      </p>
-                      <div className="welcome-space__world-stats">
-                        <span>
-                          {world.surface?.visible_elements?.length || 0}{" "}
-                          elements
-                        </span>
-                        <span>v{world.development?.version || 0}</span>
-                      </div>
-                    </button>
-                  </InteractiveElement>
-                </ScrollSection>
-              ))}
+                      <WorldCard
+                        world={world}
+                        worldId={worldId}
+                        isNew={isNew}
+                        hasPendingImage={hasPendingImage}
+                        hasRecentImage={hasRecentImage}
+                        onClick={() => onSelectWorld(world)}
+                      />
+                    </InteractiveElement>
+                  </ScrollSection>
+                );
+              })}
             </div>
           </ScrollSection>
         </section>
