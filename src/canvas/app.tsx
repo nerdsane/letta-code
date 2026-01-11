@@ -20,6 +20,13 @@ import { mockStory } from "./components/story/mockStory";
 import { WelcomeSpace } from "./components/welcome";
 import { WorldSpace } from "./components/world";
 import { FeedbackProvider, useFeedbackSafe } from "./context/FeedbackContext";
+// Immersive Experience Components
+import {
+  AudioControls,
+  AudioManagerProvider,
+  ImmersiveBackground,
+  useAudio,
+} from "./immersive";
 
 // ============================================================================
 // ASCII Art Logo
@@ -655,6 +662,17 @@ function App() {
 
   return (
     <div className="app">
+      {/* Immersive Background - shader + particles */}
+      <ImmersiveBackground
+        theme={state.view === "world" ? "cosmic" : "default"}
+        enableParticles={true}
+        enableShader={true}
+        cursorAttraction={true}
+      />
+
+      {/* Audio Controls */}
+      <AudioControls />
+
       <Header
         view={state.view}
         selectedWorld={state.selectedWorld}
@@ -879,11 +897,13 @@ function FloatingInputWrapper({
   );
 }
 
-// Wrapper to provide FeedbackContext
+// Wrapper to provide FeedbackContext and AudioManager
 function AppWithFeedback() {
   return (
     <FeedbackProvider>
-      <App />
+      <AudioManagerProvider defaultVolume={0.5}>
+        <App />
+      </AudioManagerProvider>
     </FeedbackProvider>
   );
 }
