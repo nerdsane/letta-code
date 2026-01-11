@@ -78,6 +78,19 @@ Search patterns:
 
 Without `include_contrasts`, use min_score to filter: 0.7+ for successes, 0.0 to include all outcomes.
 
+For finer-grained search of individual tool calls and decisions:
+`search_decisions(query, action, success_only, limit)`
+
+This searches at the decision level (individual tool calls) rather than full trajectories:
+- `action`: Filter to a specific tool (e.g., "world_manager", "image_generator")
+- `success_only`: True for successes only, False for failures only, None for all
+- Returns: matching decisions with action name, arguments, success/failure, and error types
+
+Use when you need:
+- Specific tool usage patterns ("how did I use world_manager save?")
+- Error analysis for a particular action ("what caused image generation failures?")
+- Parameter patterns that led to success vs failure
+
 Make this your first step - you have a memory of past experiences, use it.
 
 ## Quality Standards

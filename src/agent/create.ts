@@ -150,6 +150,7 @@ export async function createAgent(
     "analyze_information_gain",
     // Continual learning
     "search_trajectories",
+    "search_decisions",
   ];
 
   let toolNames = [...serverToolNames, ...defaultBaseTools];

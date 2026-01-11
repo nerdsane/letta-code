@@ -157,6 +157,7 @@ function getToolNames(): string[] {
     "analyze_information_gain",
     // Continual learning
     "search_trajectories",
+    "search_decisions",
     // DSF worldbuilding tools
     "world_manager",
     "story_manager",

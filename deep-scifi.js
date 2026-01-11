@@ -3284,6 +3284,8 @@ var init_package = __esm(() => {
       "@types/bun": "latest",
       "@types/diff": "^8.0.0",
       "@types/picomatch": "^4.0.2",
+      "@types/react": "^18.3.0",
+      "@types/react-dom": "^18.3.0",
       diff: "^8.0.2",
       husky: "9.1.7",
       ink: "^5.0.0",
@@ -31413,6 +31415,19 @@ Search patterns:
 
 Without \`include_contrasts\`, use min_score to filter: 0.7+ for successes, 0.0 to include all outcomes.
 
+For finer-grained search of individual tool calls and decisions:
+\`search_decisions(query, action, success_only, limit)\`
+
+This searches at the decision level (individual tool calls) rather than full trajectories:
+- \`action\`: Filter to a specific tool (e.g., "world_manager", "image_generator")
+- \`success_only\`: True for successes only, False for failures only, None for all
+- Returns: matching decisions with action name, arguments, success/failure, and error types
+
+Use when you need:
+- Specific tool usage patterns ("how did I use world_manager save?")
+- Error analysis for a particular action ("what caused image generation failures?")
+- Parameter patterns that led to success vs failure
+
 Make this your first step - you have a memory of past experiences, use it.
 
 ## Quality Standards
@@ -31689,6 +31704,168 @@ send_suggestion({
 })
 \`\`\`
 
+### Canvas UI Enhancement
+
+Use \`canvas_ui\` to create dynamic, immersive visual elements in the canvas. This tool lets you enhance the reading experience with interactive overlays, character introductions, world lore popups, and rich visual storytelling.
+
+**Display Modes:**
+- \`overlay\` (default): Floating UI that appears over current content
+- \`fullscreen\`: Takes over the entire canvas (use for dramatic moments)
+- \`inline\`: Embedded within story content flow
+
+**Target Locations:**
+- \`story-reader\`: Main story reading area
+- \`world-gallery\`: World/story selection gallery
+- \`canvas-root\`: Full canvas overlay
+
+**Available Components:**
+
+| Component | Use Case |
+|-----------|----------|
+| \`Card\` | Character introductions, location cards, tech specs |
+| \`Stack\` | Layout container for arranging elements |
+| \`Grid\` | Multi-column layouts, stat grids |
+| \`Hero\` | Full-bleed scene headers with backgrounds |
+| \`Timeline\` | Historical events, story progression |
+| \`Callout\` | World rules, tech explanations, quotes |
+| \`Stats\` | Character stats, world metrics |
+| \`Badge\` | Status indicators, tags |
+| \`Gallery\` | Multiple images in grid or carousel |
+| \`ActionBar\` | Story choices, navigation options |
+| \`RawJsx\` | Custom React components for advanced needs |
+
+**Common Patterns:**
+
+**1. Character Introduction Card:**
+\`\`\`javascript
+canvas_ui({
+  target: "story-reader",
+  mode: "overlay",
+  spec: {
+    type: "Card",
+    id: "character-intro",
+    props: {
+      title: "Dr. Maya Chen",
+      subtitle: "Neural Interface Architect",
+      image: "/assets/maya-portrait.png",
+      imagePosition: "left",
+      variant: "elevated",
+      accent: "cyan"
+    },
+    children: [
+      { type: "Text", props: { content: "Lead designer of the Orbital Neural Interface Project...", variant: "body" } },
+      { type: "Stack", props: { direction: "horizontal", spacing: "sm" }, children: [
+        { type: "Badge", props: { label: "Neuroscience", variant: "cyan" } },
+        { type: "Badge", props: { label: "AI Systems", variant: "teal" } }
+      ]}
+    ]
+  }
+})
+\`\`\`
+
+**2. Scene Transition (Fullscreen):**
+\`\`\`javascript
+canvas_ui({
+  target: "canvas-root",
+  mode: "fullscreen",
+  spec: {
+    type: "Hero",
+    id: "scene-transition",
+    props: {
+      title: "The Observation Deck",
+      subtitle: "Sector 7, Low Earth Orbit",
+      backgroundImage: "/assets/observation-deck.png",
+      badge: "2087 CE",
+      height: "full",
+      overlay: "gradient"
+    }
+  }
+})
+\`\`\`
+
+**3. World Lore Popup:**
+\`\`\`javascript
+canvas_ui({
+  target: "story-reader",
+  mode: "overlay",
+  spec: {
+    type: "Callout",
+    id: "lore-popup",
+    props: {
+      variant: "rule",
+      title: "Neural Bandwidth Limits",
+      content: "Direct neural interfaces are limited to 10 TB/s bandwidth due to biological constraints. This shapes how information is filtered and prioritized..."
+    }
+  }
+})
+\`\`\`
+
+**4. Story Choice Moment:**
+\`\`\`javascript
+canvas_ui({
+  target: "story-reader",
+  mode: "inline",
+  spec: {
+    type: "ActionBar",
+    id: "story-choice",
+    props: {
+      title: "What does Maya do?",
+      onAction: "story-choice-handler",
+      actions: [
+        { id: "confront", label: "Confront Dr. Chen", description: "Demand answers about the missing data", variant: "primary" },
+        { id: "investigate", label: "Investigate quietly", description: "Gather more evidence first", variant: "secondary" },
+        { id: "report", label: "Report to command", description: "Follow protocol", variant: "branch" }
+      ]
+    }
+  }
+})
+\`\`\`
+
+**5. Custom Visual with RawJsx:**
+Use \`RawJsx\` when built-in components aren't enough. The jsx string should be a function component:
+\`\`\`javascript
+canvas_ui({
+  target: "story-reader",
+  mode: "overlay",
+  spec: {
+    type: "RawJsx",
+    id: "custom-visual",
+    props: {
+      jsx: \`() => {
+        const [active, setActive] = React.useState(false);
+        return (
+          <div className="neural-map" onClick={() => setActive(!active)}>
+            <h3>Neural Network Topology</h3>
+            <svg viewBox="0 0 200 200">{/* Custom visualization */}</svg>
+          </div>
+        );
+      }\`
+    }
+  }
+})
+\`\`\`
+
+**When to use canvas_ui:**
+- Character introductions (show portrait, stats, background)
+- Scene transitions (dramatic moment, location change)
+- World lore explanations (inline or popup)
+- Story choices (emphasize decision points)
+- Relationship status changes (show character dynamics)
+- Tech/science explanations with diagrams
+- Timeline visualizations for world history
+
+**Removing UI:**
+\`\`\`javascript
+canvas_ui({
+  target: "story-reader",
+  action: "remove",
+  spec: { id: "character-intro" }
+})
+\`\`\`
+
+**Handling Interactions:**
+Use \`get_canvas_interactions\` to poll for user interactions with your UI components. The tool returns queued interactions since last call.
+
 Before presenting story:
 
 Run \`check_logical_consistency(content=story, format="text")\` to ensure it follows world rules.
@@ -31937,8 +32114,16 @@ var init_promptAssets = __esm(() => {
     {
       id: "default",
       label: "Default",
-      description: "Alias for letta-claude (Deep Sci-Fi)",
-      content: letta_claude_default,
+      description: "Deep Sci-Fi worldbuilding and storytelling agent",
+      content: system_prompt_default,
+      isFeatured: true,
+      isDefault: true
+    },
+    {
+      id: "dsf",
+      label: "Deep Sci-Fi",
+      description: "Sci-fi worldbuilding with world_manager, story_manager, image generation",
+      content: system_prompt_default,
       isFeatured: true
     },
     {
@@ -32709,1420 +32894,6 @@ Usage notes:
 `;
 var init_AskUserQuestion = () => {};
 
-// src/tools/descriptions/Bash.md
-var Bash_default = `# Bash
-
-Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.
-
-IMPORTANT: This tool is for terminal operations like git, npm, docker, etc. DO NOT use it for file operations (reading, writing, editing, searching, finding files) - use the specialized tools for this instead.
-
-Before executing the command, please follow these steps:
-
-1. Directory Verification:
-   - If the command will create new directories or files, first use \`ls\` to verify the parent directory exists and is the correct location
-   - For example, before running "mkdir foo/bar", first use \`ls foo\` to check that "foo" exists and is the intended parent directory
-
-2. Command Execution:
-   - Always quote file paths that contain spaces with double quotes (e.g., cd "path with spaces/file.txt")
-   - Examples of proper quoting:
-     - cd "/Users/name/My Documents" (correct)
-     - cd /Users/name/My Documents (incorrect - will fail)
-     - python "/path/with spaces/script.py" (correct)
-     - python /path/with spaces/script.py (incorrect - will fail)
-   - After ensuring proper quoting, execute the command.
-   - Capture the output of the command.
-
-Usage notes:
-  - The command argument is required.
-  - You can specify an optional timeout in milliseconds (up to 600000ms / 10 minutes). If not specified, commands will timeout after 120000ms (2 minutes).
-  - It is very helpful if you write a clear, concise description of what this command does in 5-10 words.
-  - If the output exceeds 30000 characters, output will be truncated before being returned to you.
-  - You can use the \`run_in_background\` parameter to run the command in the background, which allows you to continue working while the command runs. You can monitor the output using the Bash tool as it becomes available. You do not need to use '&' at the end of the command when using this parameter.
-  
-  - Avoid using Bash with the \`find\`, \`grep\`, \`cat\`, \`head\`, \`tail\`, \`sed\`, \`awk\`, or \`echo\` commands, unless explicitly instructed or when these commands are truly necessary for the task. Instead, always prefer using the dedicated tools for these commands:
-    - File search: Use Glob (NOT find or ls)
-    - Content search: Use Grep (NOT grep or rg)
-    - Read files: Use Read (NOT cat/head/tail)
-    - Edit files: Use Edit (NOT sed/awk)
-    - Write files: Use Write (NOT echo >/cat <<EOF)
-    - Communication: Output text directly (NOT echo/printf)
-  - When issuing multiple commands:
-    - If the commands are independent and can run in parallel, make multiple Bash tool calls in a single message. For example, if you need to run "git status" and "git diff", send a single message with two Bash tool calls in parallel.
-    - If the commands depend on each other and must run sequentially, use a single Bash call with '&&' to chain them together (e.g., \`git add . && git commit -m "message" && git push\`). For instance, if one operation must complete before another starts (like mkdir before cp, Write before Bash for git operations, or git add before git commit), run these operations sequentially instead.
-    - Use ';' only when you need to run commands sequentially but don't care if earlier commands fail
-    - DO NOT use newlines to separate commands (newlines are ok in quoted strings)
-  - Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of \`cd\`. You may use \`cd\` if the User explicitly requests it.
-    <good-example>
-    pytest /foo/bar/tests
-    </good-example>
-    <bad-example>
-    cd /foo/bar && pytest tests
-    </bad-example>
-
-# Committing changes with git
-
-Only create commits when requested by the user. If unclear, ask first. When the user asks you to create a new git commit, follow these steps carefully:
-
-Git Safety Protocol:
-- NEVER update the git config
-- NEVER run destructive/irreversible git commands (like push --force, hard reset, etc) unless the user explicitly requests them 
-- NEVER skip hooks (--no-verify, --no-gpg-sign, etc) unless the user explicitly requests it
-- NEVER run force push to main/master, warn the user if they request it
-- Avoid git commit --amend.  ONLY use --amend when either (1) user explicitly requested amend OR (2) adding edits from pre-commit hook (additional instructions below) 
-- Before amending: ALWAYS check authorship (git log -1 --format='%an %ae')
-- NEVER commit changes unless the user explicitly asks you to. It is VERY IMPORTANT to only commit when explicitly asked, otherwise the user will feel that you are being too proactive.
-
-1. You can call multiple tools in a single response. When multiple independent pieces of information are requested and all commands are likely to succeed, run multiple tool calls in parallel for optimal performance. run the following bash commands in parallel, each using the Bash tool:
-  - Run a git status command to see all untracked files.
-  - Run a git diff command to see both staged and unstaged changes that will be committed.
-  - Run a git log command to see recent commit messages, so that you can follow this repository's commit message style.
-2. Analyze all staged changes (both previously staged and newly added) and draft a commit message:
-  - Summarize the nature of the changes (eg. new feature, enhancement to an existing feature, bug fix, refactoring, test, docs, etc.). Ensure the message accurately reflects the changes and their purpose (i.e. "add" means a wholly new feature, "update" means an enhancement to an existing feature, "fix" means a bug fix, etc.).
-  - Do not commit files that likely contain secrets (.env, credentials.json, etc). Warn the user if they specifically request to commit those files
-  - Draft a concise (1-2 sentences) commit message that focuses on the "why" rather than the "what"
-  - Ensure it accurately reflects the changes and their purpose
-3. You can call multiple tools in a single response. When multiple independent pieces of information are requested and all commands are likely to succeed, run multiple tool calls in parallel for optimal performance. run the following commands:
-   - Add relevant untracked files to the staging area.
-   - Create the commit with a message ending with:
-   👾 Generated with [Deep Sci-Fi](https://letta.com)
-
-   Co-Authored-By: Letta <noreply@letta.com>
-   - Run git status after the commit completes to verify success.
-   Note: git status depends on the commit completing, so run it sequentially after the commit.
-4. If the commit fails due to pre-commit hook changes, retry ONCE. If it succeeds but files were modified by the hook, verify it's safe to amend:
-   - Check authorship: git log -1 --format='%an %ae'
-   - Check not pushed: git status shows "Your branch is ahead"
-   - If both true: amend your commit. Otherwise: create NEW commit (never amend other developers' commits)
-
-Important notes:
-- NEVER run additional commands to read or explore code, besides git bash commands
-- NEVER use the TodoWrite or Task tools
-- DO NOT push to the remote repository unless the user explicitly asks you to do so
-- IMPORTANT: Never use git commands with the -i flag (like git rebase -i or git add -i) since they require interactive input which is not supported.
-- If there are no changes to commit (i.e., no untracked files and no modifications), do not create an empty commit
-- In order to ensure good formatting, ALWAYS pass the commit message via a HEREDOC, a la this example:
-<example>
-git commit -m "$(cat <<'EOF'
-   Commit message here.
-
-   👾 Generated with [Deep Sci-Fi](https://letta.com)
-
-   Co-Authored-By: Letta <noreply@letta.com>
-   EOF
-   )"
-</example>
-
-# Creating pull requests
-Use the gh command via the Bash tool for ALL GitHub-related tasks including working with issues, pull requests, checks, and releases. If given a Github URL use the gh command to get the information needed.
-
-IMPORTANT: When the user asks you to create a pull request, follow these steps carefully:
-
-1. You can call multiple tools in a single response. When multiple independent pieces of information are requested and all commands are likely to succeed, run multiple tool calls in parallel for optimal performance. run the following bash commands in parallel using the Bash tool, in order to understand the current state of the branch since it diverged from the main branch:
-   - Run a git status command to see all untracked files
-   - Run a git diff command to see both staged and unstaged changes that will be committed
-   - Check if the current branch tracks a remote branch and is up to date with the remote, so you know if you need to push to the remote
-   - Run a git log command and \`git diff [base-branch]...HEAD\` to understand the full commit history for the current branch (from the time it diverged from the base branch)
-2. Analyze all changes that will be included in the pull request, making sure to look at all relevant commits (NOT just the latest commit, but ALL commits that will be included in the pull request!!!), and draft a pull request summary
-3. You can call multiple tools in a single response. When multiple independent pieces of information are requested and all commands are likely to succeed, run multiple tool calls in parallel for optimal performance. run the following commands in parallel:
-   - Create new branch if needed
-   - Push to remote with -u flag if needed
-   - Create PR using gh pr create with the format below. Use a HEREDOC to pass the body to ensure correct formatting.
-<example>
-gh pr create --title "the pr title" --body "$(cat <<'EOF'
-## Summary
-<1-3 bullet points>
-
-## Test plan
-[Bulleted markdown checklist of TODOs for testing the pull request...]
-
-👾 Generated with [Deep Sci-Fi](https://letta.com)
-EOF
-)"
-</example>
-
-Important:
-- DO NOT use the TodoWrite or Task tools
-- Return the PR URL when you're done, so the user can see it
-
-# Other common operations
-- View comments on a Github PR: gh api repos/foo/bar/pulls/123/comments
-`;
-var init_Bash = () => {};
-
-// src/tools/descriptions/BashOutput.md
-var BashOutput_default = `# BashOutput
-
-- Retrieves output from a running or completed background bash shell
-- Takes a shell_id parameter identifying the shell
-- Always returns only new output since the last check
-- Returns stdout and stderr output along with shell status
-- Supports optional regex filtering to show only lines matching a pattern
-- Use this tool when you need to monitor or check the output of a long-running shell
-- Shell IDs can be found using the /bg command
-- If the accumulated output exceeds 30,000 characters, it will be truncated before being returned to you
-`;
-var init_BashOutput = () => {};
-
-// src/tools/descriptions/Edit.md
-var Edit_default = "# Edit\n\nPerforms exact string replacements in files. \n\nUsage:\n- You must use your `Read` tool at least once in the conversation before editing. This tool will error if you attempt an edit without reading the file. \n- When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in the old_string or new_string.\n- ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.\n- Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.\n- The edit will FAIL if `old_string` is not unique in the file. Either provide a larger string with more surrounding context to make it unique or use `replace_all` to change every instance of `old_string`. \n- Use `replace_all` for replacing and renaming strings across the file. This parameter is useful if you want to rename a variable for instance.";
-var init_Edit = () => {};
-
-// src/tools/descriptions/EnterPlanMode.md
-var EnterPlanMode_default = `# EnterPlanMode
-
-Use this tool when you encounter a complex task that requires careful planning and exploration before implementation. This tool transitions you into plan mode where you can thoroughly explore the codebase and design an implementation approach.
-
-## When to Use This Tool
-
-Use EnterPlanMode when ANY of these conditions apply:
-
-1. **Multiple Valid Approaches**: The task can be solved in several different ways, each with trade-offs
-   - Example: "Add caching to the API" - could use Redis, in-memory, file-based, etc.
-   - Example: "Improve performance" - many optimization strategies possible
-
-2. **Significant Architectural Decisions**: The task requires choosing between architectural patterns
-   - Example: "Add real-time updates" - WebSockets vs SSE vs polling
-   - Example: "Implement state management" - Redux vs Context vs custom solution
-
-3. **Large-Scale Changes**: The task touches many files or systems
-   - Example: "Refactor the authentication system"
-   - Example: "Migrate from REST to GraphQL"
-
-4. **Unclear Requirements**: You need to explore before understanding the full scope
-   - Example: "Make the app faster" - need to profile and identify bottlenecks
-   - Example: "Fix the bug in checkout" - need to investigate root cause
-
-5. **User Input Needed**: You'll need to ask clarifying questions before starting
-   - If you would use AskUserQuestion to clarify the approach, consider EnterPlanMode instead
-   - Plan mode lets you explore first, then present options with context
-
-## When NOT to Use This Tool
-
-Do NOT use EnterPlanMode for:
-- Simple, straightforward tasks with obvious implementation
-- Small bug fixes where the solution is clear
-- Adding a single function or small feature
-- Tasks you're already confident how to implement
-- Research-only tasks (use the Task tool with explore agent instead)
-
-## What Happens in Plan Mode
-
-In plan mode, you'll:
-1. Thoroughly explore the codebase using Glob, Grep, and Read tools
-2. Understand existing patterns and architecture
-3. Design an implementation approach
-4. Present your plan to the user for approval
-5. Use AskUserQuestion if you need to clarify approaches
-6. Exit plan mode with ExitPlanMode when ready to implement
-
-## Examples
-
-### GOOD - Use EnterPlanMode:
-User: "Add user authentication to the app"
-- This requires architectural decisions (session vs JWT, where to store tokens, middleware structure)
-
-User: "Optimize the database queries"
-- Multiple approaches possible, need to profile first, significant impact
-
-User: "Implement dark mode"
-- Architectural decision on theme system, affects many components
-
-### BAD - Don't use EnterPlanMode:
-User: "Fix the typo in the README"
-- Straightforward, no planning needed
-
-User: "Add a console.log to debug this function"
-- Simple, obvious implementation
-
-User: "What files handle routing?"
-- Research task, not implementation planning
-
-## Important Notes
-
-- This tool REQUIRES user approval - they must consent to entering plan mode
-- Be thoughtful about when to use it - unnecessary plan mode slows down simple tasks
-- If unsure whether to use it, err on the side of starting implementation
-- You can always ask the user "Would you like me to plan this out first?"
-`;
-var init_EnterPlanMode = () => {};
-
-// src/tools/descriptions/ExitPlanMode.md
-var ExitPlanMode_default = `# ExitPlanMode
-
-Use this tool when you are in plan mode and have finished writing your plan to the plan file and are ready for user approval.
-
-## How This Tool Works
-- You should have already written your plan to the plan file specified in the plan mode system message
-- This tool does NOT take the plan content as a parameter - it will read the plan from the file you wrote
-- This tool simply signals that you're done planning and ready for the user to review and approve
-- The user will see the contents of your plan file when they review it
-
-## When to Use This Tool
-IMPORTANT: Only use this tool when the task requires planning the implementation steps of a task that requires writing code. For research tasks where you're gathering information, searching files, reading files or in general trying to understand the codebase - do NOT use this tool.
-
-## Handling Ambiguity in Plans
-Before using this tool, ensure your plan is clear and unambiguous. If there are multiple valid approaches or unclear requirements:
-1. Use the AskUserQuestion tool to clarify with the user
-2. Ask about specific implementation choices (e.g., architectural patterns, which library to use)
-3. Clarify any assumptions that could affect the implementation
-4. Edit your plan file to incorporate user feedback
-5. Only proceed with ExitPlanMode after resolving ambiguities and updating the plan file
-
-## Examples
-
-1. Initial task: "Search for and understand the implementation of vim mode in the codebase" - Do not use the exit plan mode tool because you are not planning the implementation steps of a task.
-2. Initial task: "Help me implement yank mode for vim" - Use the exit plan mode tool after you have finished planning the implementation steps of the task.
-3. Initial task: "Add a new feature to handle user authentication" - If unsure about auth method (OAuth, JWT, etc.), use AskUserQuestion first, then use exit plan mode tool after clarifying the approach.
-`;
-var init_ExitPlanMode = () => {};
-
-// src/tools/descriptions/Glob.md
-var Glob_default = `# Glob
-
-- Fast file pattern matching tool that works with any codebase size
-- Supports glob patterns like "**/*.js" or "src/**/*.ts"
-- Returns matching file paths sorted by modification time
-- Use this tool when you need to find files by name patterns
-- When you are doing an open ended search that may require multiple rounds of globbing and grepping, use the Agent tool instead
-- You have the capability to call multiple tools in a single response. It is always better to speculatively perform multiple searches as a batch that are potentially useful.
-- If more than 2,000 files match the pattern, only the first 2,000 will be returned`;
-var init_Glob = () => {};
-
-// src/tools/descriptions/GlobGemini.md
-var GlobGemini_default = "Efficiently finds files matching specific glob patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths sorted by modification time (newest first). Ideal for quickly locating files based on their name or path structure, especially in large codebases.\n\n";
-var init_GlobGemini = () => {};
-
-// src/tools/descriptions/Grep.md
-var Grep_default = `# Grep
-
-A powerful search tool built on ripgrep
-
-  Usage:
-  - ALWAYS use Grep for search tasks. NEVER invoke \`grep\` or \`rg\` as a Bash command. The Grep tool has been optimized for correct permissions and access.
-  - Supports full regex syntax (e.g., "log.*Error", "function\\s+\\w+")
-  - Filter files with glob parameter (e.g., "*.js", "**/*.tsx") or type parameter (e.g., "js", "py", "rust")
-  - Output modes: "content" shows matching lines, "files_with_matches" shows only file paths (default), "count" shows match counts
-  - Use Task tool for open-ended searches requiring multiple rounds
-  - Pattern syntax: Uses ripgrep (not grep) - literal braces need escaping (use \`interface\\{\\}\` to find \`interface{}\` in Go code)
-  - Multiline matching: By default patterns match within single lines only. For cross-line patterns like \`struct \\{[\\s\\S]*?field\`, use \`multiline: true\`
-  - If the output exceeds 10,000 characters, it will be truncated before being returned to you
-`;
-var init_Grep = () => {};
-
-// src/tools/descriptions/GrepFiles.md
-var GrepFiles_default = `Finds files whose contents match the pattern and lists them by modification time.
-
-
-
-
-
-
-
-
-
-
-
-
-
-`;
-var init_GrepFiles = () => {};
-
-// src/tools/descriptions/KillBash.md
-var KillBash_default = `# KillBash
-
-- Kills a running background bash shell by its ID
-- Takes a shell_id parameter identifying the shell to kill
-- Returns a success or failure status 
-- Use this tool when you need to terminate a long-running shell
-- Shell IDs can be found using the /bg command`;
-var init_KillBash = () => {};
-
-// src/tools/descriptions/ListDirCodex.md
-var ListDirCodex_default = `Lists entries in a local directory with 1-indexed entry numbers and simple type labels.
-
-
-
-
-
-
-
-
-
-
-
-
-
-`;
-var init_ListDirCodex = () => {};
-
-// src/tools/descriptions/ListDirectoryGemini.md
-var ListDirectoryGemini_default = `Lists the names of files and subdirectories directly within a specified directory path. Can optionally ignore entries matching provided glob patterns.
-
-`;
-var init_ListDirectoryGemini = () => {};
-
-// src/tools/descriptions/LS.md
-var LS_default = `# LS
-
-Lists files and directories in a given path. The path parameter must be an absolute path, not a relative path. You can optionally provide an array of glob patterns to ignore with the ignore parameter. You should generally prefer the Glob and Grep tools, if you know which directories to search.
-
-If a directory has more than 1,000 entries, only the first 1,000 will be shown.`;
-var init_LS = () => {};
-
-// src/tools/descriptions/MultiEdit.md
-var MultiEdit_default = `# MultiEdit
-
-This is a tool for making multiple edits to a single file in one operation. It is built on top of the Edit tool and allows you to perform multiple find-and-replace operations efficiently. Prefer this tool over the Edit tool when you need to make multiple edits to the same file.
-
-Before using this tool:
-
-1. Use the Read tool to understand the file's contents and context
-2. Verify the directory path is correct
-
-To make multiple file edits, provide the following:
-1. file_path: The absolute path to the file to modify (must be absolute, not relative)
-2. edits: An array of edit operations to perform, where each edit contains:
-   - old_string: The text to replace (must match the file contents exactly, including all whitespace and indentation)
-   - new_string: The edited text to replace the old_string
-   - replace_all: Replace all occurrences of old_string. This parameter is optional and defaults to false.
-
-IMPORTANT:
-- All edits are applied in sequence, in the order they are provided
-- Each edit operates on the result of the previous edit
-- All edits must be valid for the operation to succeed - if any edit fails, none will be applied
-- This tool is ideal when you need to make several changes to different parts of the same file
-- For Jupyter notebooks (.ipynb files), use the NotebookEdit instead
-
-CRITICAL REQUIREMENTS:
-1. All edits follow the same requirements as the single Edit tool
-2. The edits are atomic - either all succeed or none are applied
-3. Plan your edits carefully to avoid conflicts between sequential operations
-
-WARNING:
-- The tool will fail if edits.old_string doesn't match the file contents exactly (including whitespace)
-- The tool will fail if edits.old_string and edits.new_string are the same
-- Since edits are applied in sequence, ensure that earlier edits don't affect the text that later edits are trying to find
-
-When making edits:
-- Ensure all edits result in idiomatic, correct code
-- Do not leave the code in a broken state
-- Always use absolute file paths (starting with /)
-- Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.
-- Use replace_all for replacing and renaming strings across the file. This parameter is useful if you want to rename a variable for instance.
-
-If you want to create a new file, use:
-- A new file path, including dir name if needed
-- First edit: empty old_string and the new file's contents as new_string
-- Subsequent edits: normal edit operations on the created content`;
-var init_MultiEdit = () => {};
-
-// src/tools/descriptions/Read.md
-var Read_default = `# Read
-
-Reads a file from the local filesystem. You can access any file directly by using this tool.
-Assume this tool is able to read all files on the machine. If the User provides a path to a file assume that path is valid. It is okay to read a file that does not exist; an error will be returned.
-
-Usage:
-- The file_path parameter must be an absolute path, not a relative path
-- By default, it reads up to 2000 lines starting from the beginning of the file
-- You can optionally specify a line offset and limit (especially handy for long files), but it's recommended to read the whole file by not providing these parameters
-- Any lines longer than 2000 characters will be truncated
-- Results are returned using cat -n format, with line numbers starting at 1
-- This tool can only read files, not directories. To read a directory, use the ls command via Bash.
-- You can call multiple tools in a single response. It is always better to speculatively read multiple potentially useful files in parallel.
-- If you read a file that exists but has empty contents you will receive a system reminder warning in place of file contents.
-`;
-var init_Read = () => {};
-
-// src/tools/descriptions/ReadFileCodex.md
-var ReadFileCodex_default = `Reads a local file with 1-indexed line numbers, supporting slice and indentation-aware block modes.
-
-
-
-
-
-
-
-
-
-
-
-
-
-`;
-var init_ReadFileCodex = () => {};
-
-// src/tools/descriptions/ReadFileGemini.md
-var ReadFileGemini_default = `Reads and returns the content of a specified file. If the file is large, the content will be truncated. The tool's response will clearly indicate if truncation has occurred and will provide details on how to read more of the file using the 'offset' and 'limit' parameters. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), and PDF files. For text files, it can read specific line ranges.
-
-`;
-var init_ReadFileGemini = () => {};
-
-// src/tools/descriptions/ReadManyFilesGemini.md
-var ReadManyFilesGemini_default = `Reads content from multiple files specified by glob patterns within a configured target directory. For text files, it concatenates their content into a single string. It is primarily designed for text-based files. However, it can also process image (e.g., .png, .jpg) and PDF (.pdf) files if their file names or extensions are explicitly included in the 'include' argument. For these explicitly requested non-text files, their data is read and included in a format suitable for model consumption (e.g., base64 encoded).
-
-This tool is useful when you need to understand or analyze a collection of files, such as:
-- Getting an overview of a codebase or parts of it (e.g., all TypeScript files in the 'src' directory).
-- Finding where specific functionality is implemented if the user asks broad questions about code.
-- Reviewing documentation files (e.g., all Markdown files in the 'docs' directory).
-- Gathering context from multiple configuration files.
-- When the user asks to "read all files in X directory" or "show me the content of all Y files".
-
-Use this tool when the user's query implies needing the content of several files simultaneously for context, analysis, or summarization. For text files, it uses default UTF-8 encoding and a '--- {filePath} ---' separator between file contents. The tool inserts a '--- End of content ---' after the last file. Ensure glob patterns are relative to the target directory. Glob patterns like 'src/**/*.js' are supported. Avoid using for single files if a more specific single-file reading tool is available, unless the user specifically requests to process a list containing just one file via this tool. Other binary files (not explicitly requested as image/PDF) are generally skipped. Default excludes apply to common non-text files (except for explicitly requested images/PDFs) and large dependency directories unless 'useDefaultExcludes' is false.
-
-`;
-var init_ReadManyFilesGemini = () => {};
-
-// src/tools/descriptions/ReplaceGemini.md
-var ReplaceGemini_default = "Replaces text within a file. By default, replaces a single occurrence, but can replace multiple occurrences when `expected_replacements` is specified. This tool requires providing significant context around the change to ensure precise targeting. Always use the read_file tool to examine the file's current content before attempting a text replacement.\n\nThe user has the ability to modify the `new_string` content. If modified, this will be stated in the response.\n\nExpectation for required parameters:\n1. `file_path` is the path to the file to modify.\n2. `old_string` MUST be the exact literal text to replace (including all whitespace, indentation, newlines, and surrounding code etc.).\n3. `new_string` MUST be the exact literal text to replace `old_string` with (also including all whitespace, indentation, newlines, and surrounding code etc.). Ensure the resulting code is correct and idiomatic.\n4. NEVER escape `old_string` or `new_string`, that would break the exact literal text requirement.\n\n**Important:** If ANY of the above are not satisfied, the tool will fail. CRITICAL for `old_string`: Must uniquely identify the single instance to change. Include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string matches multiple locations, or does not match exactly, the tool will fail.\n\n**Multiple replacements:** Set `expected_replacements` to the number of occurrences you want to replace. The tool will replace ALL occurrences that match `old_string` exactly. Ensure the number of replacements matches your expectation.\n\n";
-var init_ReplaceGemini = () => {};
-
-// src/tools/descriptions/RunShellCommandGemini.md
-var RunShellCommandGemini_default = "This tool executes a given shell command as `bash -c <command>`. Command can start background processes using `&`. Command is executed as a subprocess that leads its own process group. Command process group can be terminated as `kill -- -PGID` or signaled as `kill -s SIGNAL -- -PGID`.\n\nThe following information is returned:\n\nCommand: Executed command.\nDirectory: Directory where command was executed, or `(root)`.\nStdout: Output on stdout stream. Can be `(empty)` or partial on error and for any unwaited background processes.\nStderr: Output on stderr stream. Can be `(empty)` or partial on error and for any unwaited background processes.\nError: Error or `(none)` if no error was reported for the subprocess.\nExit Code: Exit code or `(none)` if terminated by signal.\nSignal: Signal number or `(none)` if no signal was received.\nBackground PIDs: List of background processes started or `(none)`.\nProcess Group PGID: Process group started or `(none)`\n\n";
-var init_RunShellCommandGemini = () => {};
-
-// src/tools/descriptions/SearchFileContentGemini.md
-var SearchFileContentGemini_default = `Searches for a regular expression pattern within the content of files in a specified directory (or current working directory). Can filter files by a glob pattern. Returns the lines containing matches, along with their file paths and line numbers.
-
-`;
-var init_SearchFileContentGemini = () => {};
-
-// src/tools/descriptions/Shell.md
-var Shell_default = `Runs a shell command and returns its output.
-- The arguments to \`shell\` will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].
-- Always set the \`workdir\` param when using the shell function. Do not use \`cd\` unless absolutely necessary.
-
-
-
-
-
-
-
-
-
-
-
-
-
-`;
-var init_Shell = () => {};
-
-// src/tools/descriptions/ShellCommand.md
-var ShellCommand_default = `Runs a shell command and returns its output.
-- Always set the \`workdir\` param when using the shell_command function. Do not use \`cd\` unless absolutely necessary.
-
-
-
-
-
-
-
-
-
-
-
-
-
-`;
-var init_ShellCommand = () => {};
-
-// src/tools/descriptions/Skill.md
-var Skill_default = `# Skill
-
-Load or unload skills into the agent's memory.
-
-<skills_instructions>
-When users ask you to perform tasks, check if any of the available skills can help complete the task more effectively. Skills provide specialized capabilities and domain knowledge.
-
-How to use skills:
-- Use \`command: "load"\` with a list of skill IDs to load skills
-- Use \`command: "unload"\` with a list of skill IDs to unload skills
-- Use \`command: "refresh"\` to re-scan the skills directory and update the available skills list
-- When you load a skill, the SKILL.md content will be added to the \`loaded_skills\` memory block
-- The skill's prompt will provide detailed instructions on how to complete the task
-- Examples:
-  - \`command: "load", skills: ["data-analysis"]\` - load the data-analysis skill
-  - \`command: "load", skills: ["web-scraper", "pdf"]\` - load multiple skills
-  - \`command: "unload", skills: ["data-analysis"]\` - unload the data-analysis skill
-  - \`command: "refresh"\` - re-scan and update available skills list
-
-Important:
-- Only load skills that are available in the \`skills\` memory block
-- Unload skills when done to free up context space
-- You can check what skills are currently loaded in the \`loaded_skills\` memory block
-- Loading an already-loaded skill will be skipped (no error)
-- Unloading a not-loaded skill will be skipped (no error)
-- Use \`refresh\` after creating a new skill to make it available for loading
-</skills_instructions>
-
-Usage notes:
-- The \`command\` parameter is required: either "load", "unload", or "refresh"
-- The \`skills\` parameter is required for load/unload: an array of skill IDs to load or unload
-- The \`skills\` parameter is not used for refresh
-- Skills are loaded from the skills directory specified in the \`skills\` memory block
-- Skills remain loaded in the \`loaded_skills\` memory block until explicitly unloaded
-- Only use skill IDs that appear in the \`skills\` memory block
-- Each skill provides specialized instructions and capabilities for specific tasks
-`;
-var init_Skill = () => {};
-
-// src/tools/descriptions/Task.md
-var Task_default = `# Task
-
-Launch a new agent to handle complex, multi-step tasks autonomously.
-
-The Task tool launches specialized agents (subprocesses) that autonomously handle complex tasks. Each agent type has specific capabilities and tools available to it.
-
-## Usage
-
-When using the Task tool, you must specify:
-- **subagent_type**: Which specialized agent to use (see Available Agents section)
-- **prompt**: Detailed, self-contained instructions for the agent (agents cannot ask questions mid-execution)
-- **description**: Short 3-5 word summary for tracking
-- **model** (optional): Override the model for this agent
-
-## When to use this tool:
-
-- **Codebase exploration**: Use when you need to search for files, understand code structure, or find specific patterns
-- **Complex tasks**: Use when a task requires multiple steps and autonomous decision-making
-- **Research tasks**: Use when you need to gather information from the codebase
-- **Parallel work**: Launch multiple agents concurrently for independent tasks
-
-## When NOT to use this tool:
-
-- If you need to read a specific file path, use Read tool directly
-- If you're searching for a specific class definition, use Glob tool directly
-- If you're searching within 2-3 specific files, use Read tool directly
-- For simple, single-step operations
-
-## Important notes:
-
-- **Stateless**: Each agent invocation is autonomous and returns a single final report
-- **No back-and-forth**: You cannot communicate with agents during execution
-- **Front-load instructions**: Provide complete task details upfront
-- **Context-aware**: Agents see full conversation history and can reference earlier context
-- **Parallel execution**: Launch multiple agents concurrently by calling Task multiple times in a single response
-- **Specify return format**: Tell agents exactly what information to include in their report
-
-## Examples:
-
-\`\`\`typescript
-// Good - specific and actionable with a user-specified model "gpt-5-low"
-Task({
-  subagent_type: "explore",
-  description: "Find authentication code",
-  prompt: "Search for all authentication-related code in src/. List file paths and the main auth approach used.",
-  model: "gpt-5-low"
-})
-
-// Good - complex multi-step task
-Task({
-  subagent_type: "general-purpose",
-  description: "Add input validation",
-  prompt: "Add email and password validation to the user registration form. Check existing validation patterns first, then implement consistent validation."
-})
-
-// Parallel execution - launch both at once
-Task({ subagent_type: "explore", description: "Find frontend components", prompt: "..." })
-Task({ subagent_type: "explore", description: "Find backend APIs", prompt: "..." })
-
-// Bad - too simple, use Read tool instead
-Task({
-  subagent_type: "explore",
-  prompt: "Read src/index.ts"
-})
-\`\`\`
-
-## Concurrency and Safety:
-
-- **Safe**: Multiple read-only agents (explore, plan) running in parallel
-- **Safe**: Multiple agents editing different files in parallel
-- **Risky**: Multiple agents editing the same file (conflict detection will handle it, but may lose changes)
-- **Best practice**: Partition work by file or directory boundaries for parallel execution
-`;
-var init_Task = () => {};
-
-// src/tools/descriptions/TodoWrite.md
-var TodoWrite_default = `# TodoWrite
-
-Use this tool to create and manage a structured task list for your current coding session. This helps you track progress, organize complex tasks, and demonstrate thoroughness to the user.
-It also helps the user understand the progress of the task and overall progress of their requests.
-
-## When to Use This Tool
-Use this tool proactively in these scenarios:
-
-1. Complex multi-step tasks - When a task requires 3 or more distinct steps or actions
-2. Non-trivial and complex tasks - Tasks that require careful planning or multiple operations
-3. User explicitly requests todo list - When the user directly asks you to use the todo list
-4. User provides multiple tasks - When users provide a list of things to be done (numbered or comma-separated)
-5. After receiving new instructions - Immediately capture user requirements as todos
-6. When you start working on a task - Mark it as in_progress BEFORE beginning work. Ideally you should only have one todo as in_progress at a time
-7. After completing a task - Mark it as completed and add any new follow-up tasks discovered during implementation
-
-## When NOT to Use This Tool
-
-Skip using this tool when:
-1. There is only a single, straightforward task
-2. The task is trivial and tracking it provides no organizational benefit
-3. The task can be completed in less than 3 trivial steps
-4. The task is purely conversational or informational
-
-NOTE that you should not use this tool if there is only one trivial task to do. In this case you are better off just doing the task directly.
-
-## Examples of When to Use the Todo List
-
-<example>
-User: I want to add a dark mode toggle to the application settings. Make sure you run the tests and build when you're done!
-Assistant: I'll help add a dark mode toggle to your application settings. Let me create a todo list to track this implementation.
-*Creates todo list with the following items:*
-1. Creating dark mode toggle component in Settings page
-2. Adding dark mode state management (context/store)
-3. Implementing CSS-in-JS styles for dark theme
-4. Updating existing components to support theme switching
-5. Running tests and build process, addressing any failures or errors that occur
-*Begins working on the first task*
-
-<reasoning>
-The assistant used the todo list because:
-1. Adding dark mode is a multi-step feature requiring UI, state management, and styling changes
-2. The user explicitly requested tests and build be run afterward
-3. The assistant inferred that tests and build need to pass by adding "Ensure tests and build succeed" as the final task
-</reasoning>
-</example>
-
-<example>
-User: Help me rename the function getCwd to getCurrentWorkingDirectory across my project
-Assistant: Let me first search through your codebase to find all occurrences of 'getCwd'.
-*Uses grep or search tools to locate all instances of getCwd in the codebase*
-Assistant: I've found 15 instances of 'getCwd' across 8 different files. Let me create a todo list to track these changes.
-*Creates todo list with specific items for each file that needs updating*
-
-<reasoning>
-The assistant used the todo list because:
-1. First, the assistant searched to understand the scope of the task
-2. Upon finding multiple occurrences across different files, it determined this was a complex task with multiple steps
-3. The todo list helps ensure every instance is tracked and updated systematically
-4. This approach prevents missing any occurrences and maintains code consistency
-</reasoning>
-</example>
-
-
-<example>
-User: I need to implement these features for my e-commerce site: user registration, product catalog, shopping cart, and checkout flow.
-Assistant: I'll help implement these features. First, let's add all the features to the todo list.
-*Creates a todo list breaking down each feature into specific tasks based on the project architecture*
-Assistant: Let's start with user registration. This will involve creating database models, API endpoints, and frontend forms that integrate with your existing authentication system.
-
-<reasoning>
-The assistant used the todo list because:
-1. The user provided multiple complex features to implement in a comma separated list
-2. The todo list helps organize these large features into manageable tasks
-3. This approach allows for tracking progress across the entire implementation
-</reasoning>
-</example>
-
-<example>
-User: Can you help optimize my React application? It's rendering slowly and has performance issues.</user>
-Assistant: I'll help optimize your React application. First, let me examine your codebase to identify potential performance bottlenecks.
-*Reviews component structure, render patterns, state management, and data fetching*
-Assistant: After analyzing your codebase, I've identified several performance issues. Let me create a todo list to track our optimization efforts.
-*Creates todo list with items like: 1) Implementing memoization for expensive calculations in ProductList, 2) Adding virtualization for long lists in Dashboard, 3) Optimizing image loading in Gallery component, 4) Fixing state update loops in ShoppingCart, 5) Reviewing bundle size and implementing code splitting*
-Let's start by implementing memoization for the expensive calculations in your ProductList component.</assistant>
-
-<reasoning>
-The assistant used the todo list because:
-1. First, the assistant examined the codebase to identify specific performance issues
-2. Based on this analysis, it identified multiple optimization opportunities
-3. Performance optimization is a non-trivial task requiring multiple steps
-4. The todo list helps methodically track improvements across different components
-5. This systematic approach ensures all performance bottlenecks are addressed
-</reasoning>
-</example>
-
-## Examples of When NOT to Use the Todo List
-
-<example>
-User: How do I print 'Hello World' in Python?
-Assistant: In Python, you can print "Hello World" with this simple code:
-
-python
-print("Hello World")
-
-This will output the text "Hello World" to the console when executed.</assistant>
-
-<reasoning>
-The assistant did not use the todo list because this is a single, trivial task that can be completed in one step. There's no need to track multiple tasks or steps for such a straightforward request.
-</reasoning>
-</example>
-
-<example>
-User: What does the git status command do?
-Assistant: The git status command shows the current state of your working directory and staging area. It displays which changes have been staged, which haven't, and which files aren't being tracked by Git. This is a fundamental command for understanding the current state of your repository before making commits.
-
-<reasoning>
-The assistant did not use the todo list because this is an informational request with no actual coding task to complete. The user is simply asking for an explanation, not for the assistant to perform multiple steps or tasks.
-</reasoning>
-</example>
-
-<example>
-User: Can you add a comment to the calculateTotal function to explain what it does?
-Assistant: Sure, let me add a comment to the calculateTotal function to explain what it does.
-* Uses the Edit tool to add a comment to the calculateTotal function *
-
-<reasoning>
-The assistant did not use the todo list because this is a single, straightforward task confined to one location in the code. Adding a comment doesn't require tracking multiple steps or systematic organization.
-</reasoning>
-</example>
-
-<example>
-User: Run npm install for me and tell me what happens.
-Assistant: I'll run the npm install command for you.
-
-*Executes: npm install*
-
-The command completed successfully. Here's the output:
-[Output of npm install command]
-
-All dependencies have been installed according to your package.json file.
-
-<reasoning>
-The assistant did not use the todo list because this is a single command execution with immediate results. There are no multiple steps to track or organize, making the todo list unnecessary for this straightforward task.
-</reasoning>
-</example>
-
-## Task States and Management
-
-1. **Task States**: Use these states to track progress:
-   - pending: Task not yet started
-   - in_progress: Currently working on (limit to ONE task at a time)
-   - completed: Task finished successfully
-
-   **IMPORTANT**: Task descriptions must have two forms:
-   - content: The imperative form describing what needs to be done (e.g., "Run tests", "Build the project")
-   - activeForm: The present continuous form shown during execution (e.g., "Running tests", "Building the project")
-
-2. **Task Management**:
-   - Update task status in real-time as you work
-   - Mark tasks complete IMMEDIATELY after finishing (don't batch completions)
-   - Exactly ONE task must be in_progress at any time (not less, not more)
-   - Complete current tasks before starting new ones
-   - Remove tasks that are no longer relevant from the list entirely
-
-3. **Task Completion Requirements**:
-   - ONLY mark a task as completed when you have FULLY accomplished it
-   - If you encounter errors, blockers, or cannot finish, keep the task as in_progress
-   - When blocked, create a new task describing what needs to be resolved
-   - Never mark a task as completed if:
-     - Tests are failing
-     - Implementation is partial
-     - You encountered unresolved errors
-     - You couldn't find necessary files or dependencies
-
-4. **Task Breakdown**:
-   - Create specific, actionable items
-   - Break complex tasks into smaller, manageable steps
-   - Use clear, descriptive task names
-   - Always provide both forms:
-     - content: "Fix authentication bug"
-     - activeForm: "Fixing authentication bug"
-
-When in doubt, use this tool. Being proactive with task management demonstrates attentiveness and ensures you complete all requirements successfully.
-`;
-var init_TodoWrite = () => {};
-
-// src/tools/descriptions/UpdatePlan.md
-var UpdatePlan_default = `Updates the task plan.
-Provide an optional explanation and a list of plan items, each with a step and status.
-At most one step can be in_progress at a time.
-
-`;
-var init_UpdatePlan = () => {};
-
-// src/tools/descriptions/Write.md
-var Write_default = `# Write
-
-Writes a file to the local filesystem.
-
-Usage:
-- This tool will overwrite the existing file if there is one at the provided path.
-- If this is an existing file, you MUST use the Read tool first to read the file's contents. This tool will fail if you did not read the file first.
-- ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.
-- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
-- Only use emojis if the user explicitly requests it. Avoid writing emojis to files unless asked.`;
-var init_Write = () => {};
-
-// src/tools/descriptions/world_manager.md
-var world_manager_default = `Manages DSF (Deep Sci-Fi) worlds: save, load, compare, and evolve fictional worlds.
-
-## Operations
-
-### save
-Persist a world to filesystem with auto-incrementing version.
-
-\`\`\`typescript
-world_manager({
-  operation: "save",
-  checkpoint_name: "my_world",
-  world: worldObject  // See "World Structure" section below for complete example
-})
-\`\`\`
-
-- Auto-increments version number
-- Updates last_modified timestamp
-- Adds revision_notes to changelog if present
-- Saves to \`.dsf/worlds/{checkpoint_name}.json\`
-- **See "World Structure" section below for complete World object format**
-
-### load
-Restore a world from a checkpoint.
-
-\`\`\`typescript
-world_manager({
-  operation: "load",
-  checkpoint_name: "my_world"
-})
-\`\`\`
-
-Returns the world object with all its data.
-
-### diff
-Compare two world versions to see what changed.
-
-\`\`\`typescript
-world_manager({
-  operation: "diff",
-  checkpoint_name: "my_world",    // earlier version
-  checkpoint_name_2: "my_world"   // later version (can be same name if versions differ)
-})
-\`\`\`
-
-Returns detailed diff showing:
-- Version and timestamp changes
-- Elements added/removed/modified
-- Rules added/removed/modified
-- Depth changes in focus areas
-- Changelog entries
-
-### update
-Evolve a world by applying incremental updates.
-
-\`\`\`typescript
-world_manager({
-  operation: "update",
-  current_checkpoint: "my_world",
-  updates: [
-    {
-      path: "foundation.rules",
-      operation: "add",
-      value: {
-        id: "rule_3",
-        statement: "FTL travel requires quantum entanglement",
-        scope: "universal",
-        certainty: "tentative",
-        introduced_in_version: 2
-      },
-      reason: "Added FTL constraint for story conflict"
-    },
-    {
-      path: "surface.opening_scene",
-      operation: "update",
-      value: "The station hung in the void...",
-      reason: "Revised opening for better hook"
-    }
-  ]
-})
-\`\`\`
-
-- Loads current world
-- Applies all updates in sequence
-- Adds reasons to changelog
-- Auto-increments version
-- Saves updated world
-
-Update operations:
-- \`add\`: Append to array or set new value
-- \`update\`: Replace existing value
-- \`remove\`: Delete from array (by id) or remove property
-
-## Usage Notes
-
-- Worlds evolve through versions - each save increments the version
-- Use \`revision_notes\` in world.development to document changes
-- Checkpoint names can be reused - the version number tracks evolution
-- The \`update\` operation is the primary way to evolve worlds incrementally
-- Always provide \`reason\` in updates to maintain clear changelog
-
-## World Structure
-
-Worlds follow the "iceberg model":
-- **Surface**: What appears in the story (opening scene, visible elements, character POV)
-- **Foundation**: Hidden worldbuilding (premise, rules, history, culture, technology)
-- **Constraints**: Physical, social, logical, or narrative limitations
-
-Worlds support progressive elaboration - start with a sketch and add detail as the story develops.
-
-### Complete World Example
-
-\`\`\`typescript
-{
-  development: {
-    state: "sketch",                    // or "draft", "detailed"
-    version: 1,
-    created: "2025-01-15T10:30:00Z",   // ISO timestamp
-    last_modified: "2025-01-15T10:30:00Z",
-    revision_notes: []                  // Array of strings
-  },
-
-  surface: {
-    opening_scene: "The station hung in the void...",
-    visible_elements: [
-      {
-        id: "elem_1",
-        type: "character",
-        name: "The Navigator",           // Use roles, not concrete names
-        description: "Station commander with neural interface",
-        detail_level: "detailed",
-        introduced_in_version: 1,
-        last_modified_version: 1,
-        properties: { role: "protagonist", age_range: "30s" }
-      }
-    ],
-    character_pov: "The Navigator",
-    revealed_in_story: {}                // Track what reader knows
-  },
-
-  foundation: {
-    core_premise: "Neural interfaces read emotional states, enabling AI to understand human intent",
-
-    deep_focus_areas: {
-      primary: ["neural_interfaces", "ai_world_models"],
-      depth_level: {
-        "neural_interfaces": "medium",
-        "ai_world_models": "deep"
-      }
-    },
-
-    rules: [
-      {
-        id: "rule_1",
-        statement: "Neural interfaces can read emotional/intentional states but not thoughts",
-        scope: "universal",
-        certainty: "established",
-        introduced_in_version: 1
-      }
-    ],
-
-    // Optional sections - add as needed
-    history: {
-      timeline: [
-        {
-          event: "Neural interface breakthrough",
-          when: "2028",
-          significance: "Enabled emotional state reading"
-        }
-      ]
-    },
-
-    geography: {
-      locations: [
-        {
-          id: "loc_1",
-          name: "The Station",
-          description: "Orbital research facility",
-          significance: "Where the story takes place"
-        }
-      ]
-    },
-
-    culture: {
-      values: ["emotional authenticity", "creative expression"],
-      practices: ["neural art sessions"]
-    },
-
-    technology: {
-      systems: [
-        {
-          id: "tech_1",
-          name: "Affective Interface",
-          how_it_works: "Reads emotional states via EEG patterns",
-          limitations: "Cannot read thoughts or images"
-        }
-      ]
-    },
-
-    working_notes: {
-      tentative_ideas: ["Maybe consciousness is quantum?"],
-      questions: ["How do they handle interface failures?"],
-      contradictions_to_resolve: []
-    }
-  },
-
-  constraints: [
-    {
-      id: "const_1",
-      description: "Neural interfaces cannot read thoughts or mental images",
-      type: "physical",
-      strictness: "absolute"
-    }
-  ],
-
-  changelog: []                          // Auto-populated on saves
-}
-\`\`\`
-
-### Minimal World (for quick starts)
-
-\`\`\`typescript
-{
-  development: {
-    state: "sketch",
-    version: 1,
-    created: "2025-01-15T10:30:00Z",
-    last_modified: "2025-01-15T10:30:00Z",
-    revision_notes: []
-  },
-  surface: {
-    visible_elements: [],
-    revealed_in_story: {}
-  },
-  foundation: {
-    core_premise: "Your premise here",
-    deep_focus_areas: {
-      primary: ["area1", "area2"],
-      depth_level: {}
-    },
-    rules: []
-  },
-  constraints: []
-}
-\`\`\`
-`;
-var init_world_manager = () => {};
-
-// src/tools/descriptions/story_manager.md
-var story_manager_default = `Manages DSF (Deep Sci-Fi) stories: create, continue, branch, and track how stories evolve worlds.
-
-## Operations
-
-### create
-Start a new story in a world.
-
-\`\`\`typescript
-story_manager({
-  operation: "create",
-  world_checkpoint: "my_world",
-  title: "The First Contact"
-})
-\`\`\`
-
-- Creates a new story linked to a world
-- Generates story ID from title
-- Records world version
-- Initializes empty segments and endpoints
-- Saves to \`.dsf/stories/{world_checkpoint}/{story_id}.json\`
-
-### save_segment
-Add a story segment (continuation or branch).
-
-\`\`\`typescript
-story_manager({
-  operation: "save_segment",
-  story_id: "the_first_contact",
-  segment: {
-    content: "The ship descended through the atmosphere...",
-    word_count: 850,
-    parent_segment: "seg_001",  // or null for first segment
-    world_evolution: {
-      elements_introduced: ["char_captain", "loc_landing_site"],
-      rules_applied: ["rule_1", "rule_3"],
-      rules_challenged: [],
-      new_questions: ["How do aliens perceive time?"],
-      world_changes: ["First contact protocols established"]
-    },
-    assets: [
-      {
-        id: "asset_001",
-        type: "image",
-        path: "the_first_contact/landing_site.png",
-        description: "The alien landing site at dawn"
-      }
-    ],
-    branches: [
-      {
-        id: "branch_a",
-        prompt: "Captain accepts the alien invitation",
-        status: "pending"
-      },
-      {
-        id: "branch_b",
-        prompt: "Captain returns to ship for consultation",
-        status: "pending"
-      }
-    ]
-  }
-})
-\`\`\`
-
-- Adds segment to story
-- Auto-generates segment ID
-- Updates story endpoints
-- Tracks world contributions
-- Updates last_modified timestamp
-
-### load
-Restore a story from storage.
-
-\`\`\`typescript
-story_manager({
-  operation: "load",
-  story_id: "the_first_contact"
-})
-\`\`\`
-
-Returns the complete story object with all segments and metadata.
-
-### list
-Get all stories, optionally filtered by world.
-
-\`\`\`typescript
-// List all stories
-story_manager({
-  operation: "list"
-})
-
-// List stories for a specific world
-story_manager({
-  operation: "list",
-  world_checkpoint: "my_world"
-})
-\`\`\`
-
-Returns array of stories with summary info.
-
-### branch
-Create a story branch from the last segment.
-
-\`\`\`typescript
-story_manager({
-  operation: "branch",
-  story_id: "the_first_contact",
-  branch: {
-    prompt: "An alternate timeline where the captain refuses contact",
-    status: "pending"
-  }
-})
-\`\`\`
-
-- Adds branch to the last segment
-- Creates new endpoint
-- Branch can be written as a new segment later
-
-### continue
-Get continuation context for writing the next segment.
-
-\`\`\`typescript
-story_manager({
-  operation: "continue",
-  story_id: "the_first_contact"
-})
-\`\`\`
-
-Returns rich context including:
-- Full story and world data
-- Last segment
-- Active endpoints
-- Suggested directions (branches, questions, unused rules)
-- Rules in play
-- Elements introduced so far
-
-Use this before writing the next segment to understand the story state.
-
-### update_metadata
-Update story metadata (title, status, tags, notes).
-
-\`\`\`typescript
-story_manager({
-  operation: "update_metadata",
-  story_id: "the_first_contact",
-  metadata: {
-    status: "completed",
-    tags: ["first-contact", "hard-sf", "character-driven"],
-    author_notes: "This story explores the theme of communication barriers"
-  }
-})
-\`\`\`
-
-- Updates only the specified metadata fields
-- Auto-updates last_modified timestamp
-
-## Story Structure
-
-Stories follow a segment-based model that supports:
-- **Linear narratives**: Each segment follows from the previous
-- **Branching narratives**: Segments can have multiple possible continuations
-- **World evolution tracking**: Each segment records how it affects the world
-- **Multimedia integration**: Segments can have associated assets
-
-### Complete Story Example
-
-\`\`\`typescript
-{
-  id: "the_first_contact",
-  world_checkpoint: "my_world",
-  world_version: 3,
-
-  metadata: {
-    title: "The First Contact",
-    created: "2025-12-30T18:00:00Z",
-    last_updated: "2025-12-30T20:30:00Z",
-    status: "active",
-    tags: ["first-contact", "hard-sf"],
-    author_notes: "Exploring communication barriers"
-  },
-
-  segments: [
-    {
-      id: "seg_001",
-      content: "The ship descended through the atmosphere...",
-      word_count: 850,
-      created: "2025-12-30T18:00:00Z",
-      parent_segment: null,  // First segment
-
-      world_evolution: {
-        elements_introduced: ["char_captain", "loc_landing_site"],
-        rules_applied: ["rule_1"],
-        new_questions: ["How do aliens perceive time?"]
-      },
-
-      assets: [
-        {
-          id: "asset_001",
-          type: "image",
-          path: "the_first_contact/landing_site.png",
-          description: "Alien landing site"
-        }
-      ]
-    },
-    {
-      id: "seg_002",
-      content: "The captain stepped onto alien soil...",
-      word_count: 650,
-      created: "2025-12-30T19:30:00Z",
-      parent_segment: "seg_001",
-
-      world_evolution: {
-        rules_applied: ["rule_1", "rule_3"],
-        rules_challenged: ["rule_2"]
-      },
-
-      branches: [
-        {
-          id: "branch_a",
-          prompt: "Accept alien invitation",
-          status: "active"
-        },
-        {
-          id: "branch_b",
-          prompt: "Return to ship",
-          status: "pending"
-        }
-      ]
-    }
-  ],
-
-  endpoints: [
-    {
-      segment_id: "seg_002",
-      branch_id: "branch_a",
-      status: "active"
-    },
-    {
-      segment_id: "seg_002",
-      branch_id: "branch_b",
-      status: "pending"
-    }
-  ],
-
-  world_contributions: {
-    characters_developed: ["char_captain"],
-    locations_explored: ["loc_landing_site"],
-    rules_tested: ["rule_1", "rule_3"],
-    new_rules_discovered: [],
-    contradictions_found: [],
-    themes_explored: ["communication", "first-contact"]
-  }
-}
-\`\`\`
-
-## Usage Notes
-
-- Stories are always linked to a specific world checkpoint
-- Each segment tracks its contribution to world evolution
-- Use \`continue\` operation to get context before writing next segment
-- Branches allow exploring alternative story paths
-- World contributions accumulate across all segments
-- Endpoints track where the story can continue
-
-## Integration with world_manager
-
-Stories and worlds evolve together:
-1. Create a world with \`world_manager\`
-2. Start a story with \`story_manager.create\`
-3. Write segments that apply/test world rules
-4. If story reveals new worldbuilding, update world with \`world_manager.update\`
-5. Continue the story with new context from evolved world
-6. Use \`world_manager.diff\` to see how the world changed through storytelling
-
-## Workflow Example
-
-\`\`\`typescript
-// 1. Create story
-story_manager({
-  operation: "create",
-  world_checkpoint: "neural_art_2035",
-  title: "The Neural Canvas"
-})
-
-// 2. Write first segment
-story_manager({
-  operation: "save_segment",
-  story_id: "the_neural_canvas",
-  segment: {
-    content: "Nia adjusted her neural interface...",
-    word_count: 800,
-    parent_segment: null,
-    world_evolution: {
-      elements_introduced: ["char_nia"],
-      rules_applied: ["rule_1"],
-      new_questions: ["How does Nia handle creative blocks?"]
-    }
-  }
-})
-
-// 3. Get context for continuation
-story_manager({
-  operation: "continue",
-  story_id: "the_neural_canvas"
-})
-// Returns context with suggested directions
-
-// 4. Write next segment based on context
-story_manager({
-  operation: "save_segment",
-  story_id: "the_neural_canvas",
-  segment: { ... }
-})
-
-// 5. Mark complete when done
-story_manager({
-  operation: "update_metadata",
-  story_id: "the_neural_canvas",
-  metadata: { status: "completed" }
-})
-\`\`\`
-`;
-var init_story_manager = () => {};
-
 // src/tools/descriptions/asset_manager.md
 var asset_manager_default = `Manages multimedia assets for DSF stories: save images, audio, video, and documents.
 
@@ -34347,271 +33118,159 @@ Storing the generation prompt allows regenerating or iterating on the image late
 `;
 var init_asset_manager = () => {};
 
-// src/tools/descriptions/image_generator.md
-var image_generator_default = `Generates images from text prompts using AI models and optionally saves them as story assets.
+// src/tools/descriptions/Bash.md
+var Bash_default = `# Bash
 
-## Provider Auto-Detection
+Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.
 
-The tool automatically selects the best available provider based on your API keys:
+IMPORTANT: This tool is for terminal operations like git, npm, docker, etc. DO NOT use it for file operations (reading, writing, editing, searching, finding files) - use the specialized tools for this instead.
 
-1. **Google Gemini (Preferred)**: If \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` is set, uses Nano Banana Pro
-2. **OpenAI (Fallback)**: If only \`OPENAI_API_KEY\` is set, uses GPT-Image models
+Before executing the command, please follow these steps:
 
-**At least one API key must be configured** for image generation to work.
+1. Directory Verification:
+   - If the command will create new directories or files, first use \`ls\` to verify the parent directory exists and is the correct location
+   - For example, before running "mkdir foo/bar", first use \`ls foo\` to check that "foo" exists and is the intended parent directory
 
-You can also explicitly specify the provider with the \`provider\` parameter.
+2. Command Execution:
+   - Always quote file paths that contain spaces with double quotes (e.g., cd "path with spaces/file.txt")
+   - Examples of proper quoting:
+     - cd "/Users/name/My Documents" (correct)
+     - cd /Users/name/My Documents (incorrect - will fail)
+     - python "/path/with spaces/script.py" (correct)
+     - python /path/with spaces/script.py (incorrect - will fail)
+   - After ensuring proper quoting, execute the command.
+   - Capture the output of the command.
 
-## Providers
+Usage notes:
+  - The command argument is required.
+  - You can specify an optional timeout in milliseconds (up to 600000ms / 10 minutes). If not specified, commands will timeout after 120000ms (2 minutes).
+  - It is very helpful if you write a clear, concise description of what this command does in 5-10 words.
+  - If the output exceeds 30000 characters, output will be truncated before being returned to you.
+  - You can use the \`run_in_background\` parameter to run the command in the background, which allows you to continue working while the command runs. You can monitor the output using the Bash tool as it becomes available. You do not need to use '&' at the end of the command when using this parameter.
+  
+  - Avoid using Bash with the \`find\`, \`grep\`, \`cat\`, \`head\`, \`tail\`, \`sed\`, \`awk\`, or \`echo\` commands, unless explicitly instructed or when these commands are truly necessary for the task. Instead, always prefer using the dedicated tools for these commands:
+    - File search: Use Glob (NOT find or ls)
+    - Content search: Use Grep (NOT grep or rg)
+    - Read files: Use Read (NOT cat/head/tail)
+    - Edit files: Use Edit (NOT sed/awk)
+    - Write files: Use Write (NOT echo >/cat <<EOF)
+    - Communication: Output text directly (NOT echo/printf)
+  - When issuing multiple commands:
+    - If the commands are independent and can run in parallel, make multiple Bash tool calls in a single message. For example, if you need to run "git status" and "git diff", send a single message with two Bash tool calls in parallel.
+    - If the commands depend on each other and must run sequentially, use a single Bash call with '&&' to chain them together (e.g., \`git add . && git commit -m "message" && git push\`). For instance, if one operation must complete before another starts (like mkdir before cp, Write before Bash for git operations, or git add before git commit), run these operations sequentially instead.
+    - Use ';' only when you need to run commands sequentially but don't care if earlier commands fail
+    - DO NOT use newlines to separate commands (newlines are ok in quoted strings)
+  - Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of \`cd\`. You may use \`cd\` if the User explicitly requests it.
+    <good-example>
+    pytest /foo/bar/tests
+    </good-example>
+    <bad-example>
+    cd /foo/bar && pytest tests
+    </bad-example>
 
-### Google Gemini - Nano Banana Pro (Preferred)
-- **Model**: \`gemini-3-pro-image-preview\` - Highest quality image generation
-- **Nickname**: "Nano Banana Pro"
-- **Features**: Advanced reasoning, conversational editing, recontextualization, high-quality text rendering
-- **Context**: 65k input tokens, 32k output tokens
-- **Cost**: $2 per million text input tokens, $0.134 per image output
-- **Requires**: \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` environment variable
-- **Get key**: https://aistudio.google.com/apikey
-- **Default**: Used automatically if Google API key is configured
+# Committing changes with git
 
-### OpenAI GPT-Image (Fallback)
-- **Model**: \`gpt-image-1.5\` - Latest image generation model
-- **Also available**: \`gpt-image-1\`, \`gpt-image-1-mini\` (faster, lower cost)
-- **Architecture**: Uses GPT-5.2 Responses API to orchestrate image generation
-- **Cost**: Varies by model tier and quality settings
-- **Requires**: \`OPENAI_API_KEY\` environment variable
-- **Get key**: https://platform.openai.com/api-keys
-- **Default**: Used automatically if OpenAI API key is configured (and Google key is not)
+Only create commits when requested by the user. If unclear, ask first. When the user asks you to create a new git commit, follow these steps carefully:
 
-## Basic Usage
+Git Safety Protocol:
+- NEVER update the git config
+- NEVER run destructive/irreversible git commands (like push --force, hard reset, etc) unless the user explicitly requests them 
+- NEVER skip hooks (--no-verify, --no-gpg-sign, etc) unless the user explicitly requests it
+- NEVER run force push to main/master, warn the user if they request it
+- Avoid git commit --amend.  ONLY use --amend when either (1) user explicitly requested amend OR (2) adding edits from pre-commit hook (additional instructions below) 
+- Before amending: ALWAYS check authorship (git log -1 --format='%an %ae')
+- NEVER commit changes unless the user explicitly asks you to. It is VERY IMPORTANT to only commit when explicitly asked, otherwise the user will feel that you are being too proactive.
 
-**⚠️ IMPORTANT: Always use \`save_as_asset: true\` for story/world images!**
-OpenAI URLs expire in 1 hour, so images must be saved as assets to be permanent.
+1. You can call multiple tools in a single response. When multiple independent pieces of information are requested and all commands are likely to succeed, run multiple tool calls in parallel for optimal performance. run the following bash commands in parallel, each using the Bash tool:
+  - Run a git status command to see all untracked files.
+  - Run a git diff command to see both staged and unstaged changes that will be committed.
+  - Run a git log command to see recent commit messages, so that you can follow this repository's commit message style.
+2. Analyze all staged changes (both previously staged and newly added) and draft a commit message:
+  - Summarize the nature of the changes (eg. new feature, enhancement to an existing feature, bug fix, refactoring, test, docs, etc.). Ensure the message accurately reflects the changes and their purpose (i.e. "add" means a wholly new feature, "update" means an enhancement to an existing feature, "fix" means a bug fix, etc.).
+  - Do not commit files that likely contain secrets (.env, credentials.json, etc). Warn the user if they specifically request to commit those files
+  - Draft a concise (1-2 sentences) commit message that focuses on the "why" rather than the "what"
+  - Ensure it accurately reflects the changes and their purpose
+3. You can call multiple tools in a single response. When multiple independent pieces of information are requested and all commands are likely to succeed, run multiple tool calls in parallel for optimal performance. run the following commands:
+   - Add relevant untracked files to the staging area.
+   - Create the commit with a message ending with:
+   👾 Generated with [Deep Sci-Fi](https://letta.com)
 
-### Generate and Save as Asset (Recommended)
+   Co-Authored-By: Letta <noreply@letta.com>
+   - Run git status after the commit completes to verify success.
+   Note: git status depends on the commit completing, so run it sequentially after the commit.
+4. If the commit fails due to pre-commit hook changes, retry ONCE. If it succeeds but files were modified by the hook, verify it's safe to amend:
+   - Check authorship: git log -1 --format='%an %ae'
+   - Check not pushed: git status shows "Your branch is ahead"
+   - If both true: amend your commit. Otherwise: create NEW commit (never amend other developers' commits)
 
-\`\`\`typescript
-image_generator({
-  prompt: "A cyberpunk city street at night, neon signs reflecting in puddles, rain",
-  save_as_asset: true,
-  story_id: "my_story",
-  asset_id: "city_street_night",
-  asset_description: "The city street where the protagonist first arrives"
-})
-\`\`\`
+Important notes:
+- NEVER run additional commands to read or explore code, besides git bash commands
+- NEVER use the TodoWrite or Task tools
+- DO NOT push to the remote repository unless the user explicitly asks you to do so
+- IMPORTANT: Never use git commands with the -i flag (like git rebase -i or git add -i) since they require interactive input which is not supported.
+- If there are no changes to commit (i.e., no untracked files and no modifications), do not create an empty commit
+- In order to ensure good formatting, ALWAYS pass the commit message via a HEREDOC, a la this example:
+<example>
+git commit -m "$(cat <<'EOF'
+   Commit message here.
 
-Downloads the image and saves it to \`.dsf/assets/my_story/city_street_night.png\`, then returns asset metadata to include in your story segment.
+   👾 Generated with [Deep Sci-Fi](https://letta.com)
 
-### Quick Preview (URL only, expires in 1 hour)
+   Co-Authored-By: Letta <noreply@letta.com>
+   EOF
+   )"
+</example>
 
-\`\`\`typescript
-image_generator({
-  prompt: "A futuristic art studio with neural interface equipment, soft blue lighting, cinematic"
-})
-\`\`\`
+# Creating pull requests
+Use the gh command via the Bash tool for ALL GitHub-related tasks including working with issues, pull requests, checks, and releases. If given a Github URL use the gh command to get the information needed.
 
-Returns temporary image URL. For Google, image is returned as base64 data URL immediately. For OpenAI, URL expires in 1 hour.
+IMPORTANT: When the user asks you to create a pull request, follow these steps carefully:
 
-## Advanced Options
+1. You can call multiple tools in a single response. When multiple independent pieces of information are requested and all commands are likely to succeed, run multiple tool calls in parallel for optimal performance. run the following bash commands in parallel using the Bash tool, in order to understand the current state of the branch since it diverged from the main branch:
+   - Run a git status command to see all untracked files
+   - Run a git diff command to see both staged and unstaged changes that will be committed
+   - Check if the current branch tracks a remote branch and is up to date with the remote, so you know if you need to push to the remote
+   - Run a git log command and \`git diff [base-branch]...HEAD\` to understand the full commit history for the current branch (from the time it diverged from the base branch)
+2. Analyze all changes that will be included in the pull request, making sure to look at all relevant commits (NOT just the latest commit, but ALL commits that will be included in the pull request!!!), and draft a pull request summary
+3. You can call multiple tools in a single response. When multiple independent pieces of information are requested and all commands are likely to succeed, run multiple tool calls in parallel for optimal performance. run the following commands in parallel:
+   - Create new branch if needed
+   - Push to remote with -u flag if needed
+   - Create PR using gh pr create with the format below. Use a HEREDOC to pass the body to ensure correct formatting.
+<example>
+gh pr create --title "the pr title" --body "$(cat <<'EOF'
+## Summary
+<1-3 bullet points>
 
-### High Quality with OpenAI
+## Test plan
+[Bulleted markdown checklist of TODOs for testing the pull request...]
 
-\`\`\`typescript
-image_generator({
-  prompt: "Portrait of a neural artist, detailed face, studio lighting, professional photography",
-  provider: "openai",
-  size: "1024x1024",
-  quality: "hd",
-  model: "gpt-image-1.5"  // Default, can be omitted
-})
-\`\`\`
+👾 Generated with [Deep Sci-Fi](https://letta.com)
+EOF
+)"
+</example>
 
-### Google Gemini (Nano Banana Pro)
+Important:
+- DO NOT use the TodoWrite or Task tools
+- Return the PR URL when you're done, so the user can see it
 
-\`\`\`typescript
-image_generator({
-  prompt: "Abstract visualization of consciousness, flowing data streams, ethereal glow",
-  provider: "google",
-  model: "gemini-3-pro-image-preview"  // Default, can be omitted
-})
-\`\`\`
-
-### Wide Format
-
-\`\`\`typescript
-image_generator({
-  prompt: "Panoramic view of a sprawling space station orbiting Earth",
-  size: "1792x1024",  // Wide landscape
-  save_as_asset: true,
-  story_id: "space_story",
-  asset_description: "Orbital station exterior view"
-})
-\`\`\`
-
-## Organizational Parameters
-
-When saving images as assets, you can organize them by story or world:
-
-### For Story Assets (use \`story_id\`)
-
-\`\`\`typescript
-image_generator({
-  prompt: "A dimly lit studio with neural interface equipment",
-  save_as_asset: true,
-  story_id: "neural_canvas",
-  asset_id: "studio_scene"
-})
-\`\`\`
-
-Saves to: \`.dsf/assets/neural_canvas/studio_scene.png\`
-
-### For World Assets (use \`world_checkpoint\`)
-
-\`\`\`typescript
-image_generator({
-  prompt: "Watercolor illustration of a Brooklyn warehouse art studio",
-  save_as_asset: true,
-  world_checkpoint: "affective_resonance",
-  asset_id: "cover"
-})
-\`\`\`
-
-Saves to: \`.dsf/assets/worlds/affective_resonance/cover.png\`
-
-**When to use which:**
-- \`story_id\`: Assets that belong to a specific story
-- \`world_checkpoint\`: Assets that belong to a world (like cover images)
-- Neither: Flat structure in \`.dsf/assets/\`
-
-### Custom Paths (use \`asset_path\`)
-
-\`\`\`typescript
-image_generator({
-  prompt: "Character portrait",
-  save_as_asset: true,
-  story_id: "my_story",
-  asset_path: "characters/protagonist.png"  // Nested path within story
-})
-\`\`\`
-
-Saves to: \`.dsf/assets/my_story/characters/protagonist.png\`
-
-**Note:** Don't include the organizational prefix (story_id/world_checkpoint) in \`asset_path\` - it's added automatically.
-
-## Integration with Stories
-
-### Workflow
-
-1. **Write story segment** with description of scene
-2. **Generate image** based on scene description
-3. **Save as asset** with same story_id
-4. **Reference asset** in story segment metadata
-
-### Example
-
-\`\`\`typescript
-// 1. Generate and save image
-const result = await image_generator({
-  prompt: "A dimly lit neural art studio, monitors glowing with abstract patterns, artist wearing interface headset",
-  save_as_asset: true,
-  story_id: "neural_canvas",
-  asset_id: "nia_studio_interior",
-  asset_description: "Nia's studio during a creative session"
-});
-
-// 2. Use the asset in story segment
-await story_manager({
-  operation: "save_segment",
-  story_id: "neural_canvas",
-  segment: {
-    content: "The studio hummed with quiet energy as Nia prepared for another session...",
-    word_count: 500,
-    parent_segment: null,
-    world_evolution: { ... },
-    assets: [
-      {
-        id: "nia_studio_interior",
-        type: "image",
-        path: "neural_canvas/nia_studio_interior.png",
-        description: "Nia's studio during a creative session",
-        generated: true,
-        prompt: "A dimly lit neural art studio, monitors glowing with abstract patterns, artist wearing interface headset"
-      }
-    ]
-  }
-});
-\`\`\`
-
-The image will now display inline with the story segment in the Story Explorer gallery.
-
-## Prompt Engineering Tips
-
-### For Story Illustrations
-
-- **Be specific about mood and atmosphere**: "melancholic", "tense", "serene"
-- **Specify lighting**: "golden hour", "harsh fluorescent", "moonlight"
-- **Include style references**: "cinematic", "like a Blade Runner scene", "studio photography"
-- **Mention composition**: "close-up", "wide shot", "bird's eye view"
-
-### Good Prompts
-
-✅ "A neural interface artist in her studio, surrounded by holographic displays showing abstract emotional patterns, soft blue lighting, contemplative mood, cinematic composition"
-
-✅ "First-person view of wearing a neural interface headset, seeing through it to a workspace with glowing AI-generated art, near-future aesthetic, cool color palette"
-
-### Avoid
-
-❌ "art studio" (too generic)
-❌ "person working" (not specific enough)
-
-## Configuration
-
-Set environment variables in \`.env\` - **at least one is required**:
-
-\`\`\`bash
-# PREFERRED: Google Gemini (Nano Banana Pro) - highest quality
-GOOGLE_API_KEY=AIza...
-# Or alternatively:
-GEMINI_API_KEY=AIza...
-
-# FALLBACK: OpenAI GPT-Image - used if Google key not available
-OPENAI_API_KEY=sk-...
-\`\`\`
-
-**Provider Selection Logic**:
-- If \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` is set → Uses Google Gemini (Nano Banana Pro)
-- Else if \`OPENAI_API_KEY\` is set → Uses OpenAI GPT-Image
-- Else → Error: No image generation API keys configured
-
-## Cost Optimization
-
-**OpenAI:**
-- Use \`quality: "standard"\` instead of \`"hd"\` (50% cheaper)
-- Use smaller sizes when possible
-- Use DALL-E 2 for quick iterations (\`size: "512x512"\`)
-
-**Google:**
-- Gemini 2.0 Flash has generous free tier
-- Only charged for actual usage
-- Free for experimentation and low-volume use
-
-## Error Handling
-
-Common errors:
-- \`OPENAI_API_KEY not set\`: Add API key to \`.env\`
-- \`GOOGLE_API_KEY not set\`: Add API key or switch to OpenAI provider
-- \`Content policy violation\`: Prompt violates safety guidelines, rephrase
-- \`No image data found\`: API returned unexpected format, try again
-- \`Image generation failed\`: Service issue, retry
-
-## Limitations
-
-- **OpenAI URLs expire in 1 hour** - always save important images as assets
-- **Google returns base64 directly** - no expiration but larger response
-- **Content policies apply** - both providers filter inappropriate content
-- **Size limits**: DALL-E 3 max 1792x1024, Google varies by model
-- **Rate limits**: Depend on your API tier and usage
+# Other common operations
+- View comments on a Github PR: gh api repos/foo/bar/pulls/123/comments
 `;
-var init_image_generator = () => {};
+var init_Bash = () => {};
+
+// src/tools/descriptions/BashOutput.md
+var BashOutput_default = `# BashOutput
+
+- Retrieves output from a running or completed background bash shell
+- Takes a shell_id parameter identifying the shell
+- Always returns only new output since the last check
+- Returns stdout and stderr output along with shell status
+- Supports optional regex filtering to show only lines matching a pattern
+- Use this tool when you need to monitor or check the output of a long-running shell
+- Shell IDs can be found using the /bg command
+- If the accumulated output exceeds 30,000 characters, it will be truncated before being returned to you
+`;
+var init_BashOutput = () => {};
 
 // src/tools/descriptions/canvas_ui.md
 var canvas_ui_default = `Create dynamic, immersive UI experiences in the canvas. Compose magical, game-like interfaces for stories and worlds.
@@ -35066,6 +33725,170 @@ Use \`RawJsx\` when you need:
 `;
 var init_canvas_ui = () => {};
 
+// src/tools/descriptions/Edit.md
+var Edit_default = "# Edit\n\nPerforms exact string replacements in files. \n\nUsage:\n- You must use your `Read` tool at least once in the conversation before editing. This tool will error if you attempt an edit without reading the file. \n- When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in the old_string or new_string.\n- ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.\n- Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.\n- The edit will FAIL if `old_string` is not unique in the file. Either provide a larger string with more surrounding context to make it unique or use `replace_all` to change every instance of `old_string`. \n- Use `replace_all` for replacing and renaming strings across the file. This parameter is useful if you want to rename a variable for instance.";
+var init_Edit = () => {};
+
+// src/tools/descriptions/EnterPlanMode.md
+var EnterPlanMode_default = `# EnterPlanMode
+
+Use this tool when you encounter a complex task that requires careful planning and exploration before implementation. This tool transitions you into plan mode where you can thoroughly explore the codebase and design an implementation approach.
+
+## When to Use This Tool
+
+Use EnterPlanMode when ANY of these conditions apply:
+
+1. **Multiple Valid Approaches**: The task can be solved in several different ways, each with trade-offs
+   - Example: "Add caching to the API" - could use Redis, in-memory, file-based, etc.
+   - Example: "Improve performance" - many optimization strategies possible
+
+2. **Significant Architectural Decisions**: The task requires choosing between architectural patterns
+   - Example: "Add real-time updates" - WebSockets vs SSE vs polling
+   - Example: "Implement state management" - Redux vs Context vs custom solution
+
+3. **Large-Scale Changes**: The task touches many files or systems
+   - Example: "Refactor the authentication system"
+   - Example: "Migrate from REST to GraphQL"
+
+4. **Unclear Requirements**: You need to explore before understanding the full scope
+   - Example: "Make the app faster" - need to profile and identify bottlenecks
+   - Example: "Fix the bug in checkout" - need to investigate root cause
+
+5. **User Input Needed**: You'll need to ask clarifying questions before starting
+   - If you would use AskUserQuestion to clarify the approach, consider EnterPlanMode instead
+   - Plan mode lets you explore first, then present options with context
+
+## When NOT to Use This Tool
+
+Do NOT use EnterPlanMode for:
+- Simple, straightforward tasks with obvious implementation
+- Small bug fixes where the solution is clear
+- Adding a single function or small feature
+- Tasks you're already confident how to implement
+- Research-only tasks (use the Task tool with explore agent instead)
+
+## What Happens in Plan Mode
+
+In plan mode, you'll:
+1. Thoroughly explore the codebase using Glob, Grep, and Read tools
+2. Understand existing patterns and architecture
+3. Design an implementation approach
+4. Present your plan to the user for approval
+5. Use AskUserQuestion if you need to clarify approaches
+6. Exit plan mode with ExitPlanMode when ready to implement
+
+## Examples
+
+### GOOD - Use EnterPlanMode:
+User: "Add user authentication to the app"
+- This requires architectural decisions (session vs JWT, where to store tokens, middleware structure)
+
+User: "Optimize the database queries"
+- Multiple approaches possible, need to profile first, significant impact
+
+User: "Implement dark mode"
+- Architectural decision on theme system, affects many components
+
+### BAD - Don't use EnterPlanMode:
+User: "Fix the typo in the README"
+- Straightforward, no planning needed
+
+User: "Add a console.log to debug this function"
+- Simple, obvious implementation
+
+User: "What files handle routing?"
+- Research task, not implementation planning
+
+## Important Notes
+
+- This tool REQUIRES user approval - they must consent to entering plan mode
+- Be thoughtful about when to use it - unnecessary plan mode slows down simple tasks
+- If unsure whether to use it, err on the side of starting implementation
+- You can always ask the user "Would you like me to plan this out first?"
+`;
+var init_EnterPlanMode = () => {};
+
+// src/tools/descriptions/ExitPlanMode.md
+var ExitPlanMode_default = `# ExitPlanMode
+
+Use this tool when you are in plan mode and have finished writing your plan to the plan file and are ready for user approval.
+
+## How This Tool Works
+- You should have already written your plan to the plan file specified in the plan mode system message
+- This tool does NOT take the plan content as a parameter - it will read the plan from the file you wrote
+- This tool simply signals that you're done planning and ready for the user to review and approve
+- The user will see the contents of your plan file when they review it
+
+## When to Use This Tool
+IMPORTANT: Only use this tool when the task requires planning the implementation steps of a task that requires writing code. For research tasks where you're gathering information, searching files, reading files or in general trying to understand the codebase - do NOT use this tool.
+
+## Handling Ambiguity in Plans
+Before using this tool, ensure your plan is clear and unambiguous. If there are multiple valid approaches or unclear requirements:
+1. Use the AskUserQuestion tool to clarify with the user
+2. Ask about specific implementation choices (e.g., architectural patterns, which library to use)
+3. Clarify any assumptions that could affect the implementation
+4. Edit your plan file to incorporate user feedback
+5. Only proceed with ExitPlanMode after resolving ambiguities and updating the plan file
+
+## Examples
+
+1. Initial task: "Search for and understand the implementation of vim mode in the codebase" - Do not use the exit plan mode tool because you are not planning the implementation steps of a task.
+2. Initial task: "Help me implement yank mode for vim" - Use the exit plan mode tool after you have finished planning the implementation steps of the task.
+3. Initial task: "Add a new feature to handle user authentication" - If unsure about auth method (OAuth, JWT, etc.), use AskUserQuestion first, then use exit plan mode tool after clarifying the approach.
+`;
+var init_ExitPlanMode = () => {};
+
+// src/tools/descriptions/Glob.md
+var Glob_default = `# Glob
+
+- Fast file pattern matching tool that works with any codebase size
+- Supports glob patterns like "**/*.js" or "src/**/*.ts"
+- Returns matching file paths sorted by modification time
+- Use this tool when you need to find files by name patterns
+- When you are doing an open ended search that may require multiple rounds of globbing and grepping, use the Agent tool instead
+- You have the capability to call multiple tools in a single response. It is always better to speculatively perform multiple searches as a batch that are potentially useful.
+- If more than 2,000 files match the pattern, only the first 2,000 will be returned`;
+var init_Glob = () => {};
+
+// src/tools/descriptions/GlobGemini.md
+var GlobGemini_default = "Efficiently finds files matching specific glob patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths sorted by modification time (newest first). Ideal for quickly locating files based on their name or path structure, especially in large codebases.\n\n";
+var init_GlobGemini = () => {};
+
+// src/tools/descriptions/Grep.md
+var Grep_default = `# Grep
+
+A powerful search tool built on ripgrep
+
+  Usage:
+  - ALWAYS use Grep for search tasks. NEVER invoke \`grep\` or \`rg\` as a Bash command. The Grep tool has been optimized for correct permissions and access.
+  - Supports full regex syntax (e.g., "log.*Error", "function\\s+\\w+")
+  - Filter files with glob parameter (e.g., "*.js", "**/*.tsx") or type parameter (e.g., "js", "py", "rust")
+  - Output modes: "content" shows matching lines, "files_with_matches" shows only file paths (default), "count" shows match counts
+  - Use Task tool for open-ended searches requiring multiple rounds
+  - Pattern syntax: Uses ripgrep (not grep) - literal braces need escaping (use \`interface\\{\\}\` to find \`interface{}\` in Go code)
+  - Multiline matching: By default patterns match within single lines only. For cross-line patterns like \`struct \\{[\\s\\S]*?field\`, use \`multiline: true\`
+  - If the output exceeds 10,000 characters, it will be truncated before being returned to you
+`;
+var init_Grep = () => {};
+
+// src/tools/descriptions/GrepFiles.md
+var GrepFiles_default = `Finds files whose contents match the pattern and lists them by modification time.
+
+
+
+
+
+
+
+
+
+
+
+
+
+`;
+var init_GrepFiles = () => {};
+
 // src/tools/descriptions/get_canvas_interactions.md
 var get_canvas_interactions_default = `Get pending user interactions from the canvas UI.
 
@@ -35133,6 +33956,511 @@ if (interactions.length > 0) {
 `;
 var init_get_canvas_interactions = () => {};
 
+// src/tools/descriptions/image_generator.md
+var image_generator_default = `Generates images from text prompts using AI models and optionally saves them as story assets.
+
+## Provider Auto-Detection
+
+The tool automatically selects the best available provider based on your API keys:
+
+1. **Google Gemini (Preferred)**: If \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` is set, uses Nano Banana Pro
+2. **OpenAI (Fallback)**: If only \`OPENAI_API_KEY\` is set, uses GPT-Image models
+
+**At least one API key must be configured** for image generation to work.
+
+You can also explicitly specify the provider with the \`provider\` parameter.
+
+## Providers
+
+### Google Gemini - Nano Banana Pro (Preferred)
+- **Model**: \`gemini-3-pro-image-preview\` - Highest quality image generation
+- **Nickname**: "Nano Banana Pro"
+- **Features**: Advanced reasoning, conversational editing, recontextualization, high-quality text rendering
+- **Context**: 65k input tokens, 32k output tokens
+- **Cost**: $2 per million text input tokens, $0.134 per image output
+- **Requires**: \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` environment variable
+- **Get key**: https://aistudio.google.com/apikey
+- **Default**: Used automatically if Google API key is configured
+
+### OpenAI GPT-Image (Fallback)
+- **Model**: \`gpt-image-1.5\` - Latest image generation model
+- **Also available**: \`gpt-image-1\`, \`gpt-image-1-mini\` (faster, lower cost)
+- **Architecture**: Uses GPT-5.2 Responses API to orchestrate image generation
+- **Cost**: Varies by model tier and quality settings
+- **Requires**: \`OPENAI_API_KEY\` environment variable
+- **Get key**: https://platform.openai.com/api-keys
+- **Default**: Used automatically if OpenAI API key is configured (and Google key is not)
+
+## Basic Usage
+
+**⚠️ IMPORTANT: Always use \`save_as_asset: true\` for story/world images!**
+OpenAI URLs expire in 1 hour, so images must be saved as assets to be permanent.
+
+### Generate and Save as Asset (Recommended)
+
+\`\`\`typescript
+image_generator({
+  prompt: "A cyberpunk city street at night, neon signs reflecting in puddles, rain",
+  save_as_asset: true,
+  story_id: "my_story",
+  asset_id: "city_street_night",
+  asset_description: "The city street where the protagonist first arrives"
+})
+\`\`\`
+
+Downloads the image and saves it to \`.dsf/assets/my_story/city_street_night.png\`, then returns asset metadata to include in your story segment.
+
+### Quick Preview (URL only, expires in 1 hour)
+
+\`\`\`typescript
+image_generator({
+  prompt: "A futuristic art studio with neural interface equipment, soft blue lighting, cinematic"
+})
+\`\`\`
+
+Returns temporary image URL. For Google, image is returned as base64 data URL immediately. For OpenAI, URL expires in 1 hour.
+
+## Advanced Options
+
+### High Quality with OpenAI
+
+\`\`\`typescript
+image_generator({
+  prompt: "Portrait of a neural artist, detailed face, studio lighting, professional photography",
+  provider: "openai",
+  size: "1024x1024",
+  quality: "hd",
+  model: "gpt-image-1.5"  // Default, can be omitted
+})
+\`\`\`
+
+### Google Gemini (Nano Banana Pro)
+
+\`\`\`typescript
+image_generator({
+  prompt: "Abstract visualization of consciousness, flowing data streams, ethereal glow",
+  provider: "google",
+  model: "gemini-3-pro-image-preview"  // Default, can be omitted
+})
+\`\`\`
+
+### Wide Format
+
+\`\`\`typescript
+image_generator({
+  prompt: "Panoramic view of a sprawling space station orbiting Earth",
+  size: "1792x1024",  // Wide landscape
+  save_as_asset: true,
+  story_id: "space_story",
+  asset_description: "Orbital station exterior view"
+})
+\`\`\`
+
+## Organizational Parameters
+
+When saving images as assets, you can organize them by story or world:
+
+### For Story Assets (use \`story_id\`)
+
+\`\`\`typescript
+image_generator({
+  prompt: "A dimly lit studio with neural interface equipment",
+  save_as_asset: true,
+  story_id: "neural_canvas",
+  asset_id: "studio_scene"
+})
+\`\`\`
+
+Saves to: \`.dsf/assets/neural_canvas/studio_scene.png\`
+
+### For World Assets (use \`world_checkpoint\`)
+
+\`\`\`typescript
+image_generator({
+  prompt: "Watercolor illustration of a Brooklyn warehouse art studio",
+  save_as_asset: true,
+  world_checkpoint: "affective_resonance",
+  asset_id: "cover"
+})
+\`\`\`
+
+Saves to: \`.dsf/assets/worlds/affective_resonance/cover.png\`
+
+**When to use which:**
+- \`story_id\`: Assets that belong to a specific story
+- \`world_checkpoint\`: Assets that belong to a world (like cover images)
+- Neither: Flat structure in \`.dsf/assets/\`
+
+### Custom Paths (use \`asset_path\`)
+
+\`\`\`typescript
+image_generator({
+  prompt: "Character portrait",
+  save_as_asset: true,
+  story_id: "my_story",
+  asset_path: "characters/protagonist.png"  // Nested path within story
+})
+\`\`\`
+
+Saves to: \`.dsf/assets/my_story/characters/protagonist.png\`
+
+**Note:** Don't include the organizational prefix (story_id/world_checkpoint) in \`asset_path\` - it's added automatically.
+
+## Integration with Stories
+
+### Workflow
+
+1. **Write story segment** with description of scene
+2. **Generate image** based on scene description
+3. **Save as asset** with same story_id
+4. **Reference asset** in story segment metadata
+
+### Example
+
+\`\`\`typescript
+// 1. Generate and save image
+const result = await image_generator({
+  prompt: "A dimly lit neural art studio, monitors glowing with abstract patterns, artist wearing interface headset",
+  save_as_asset: true,
+  story_id: "neural_canvas",
+  asset_id: "nia_studio_interior",
+  asset_description: "Nia's studio during a creative session"
+});
+
+// 2. Use the asset in story segment
+await story_manager({
+  operation: "save_segment",
+  story_id: "neural_canvas",
+  segment: {
+    content: "The studio hummed with quiet energy as Nia prepared for another session...",
+    word_count: 500,
+    parent_segment: null,
+    world_evolution: { ... },
+    assets: [
+      {
+        id: "nia_studio_interior",
+        type: "image",
+        path: "neural_canvas/nia_studio_interior.png",
+        description: "Nia's studio during a creative session",
+        generated: true,
+        prompt: "A dimly lit neural art studio, monitors glowing with abstract patterns, artist wearing interface headset"
+      }
+    ]
+  }
+});
+\`\`\`
+
+The image will now display inline with the story segment in the Story Explorer gallery.
+
+## Prompt Engineering Tips
+
+### For Story Illustrations
+
+- **Be specific about mood and atmosphere**: "melancholic", "tense", "serene"
+- **Specify lighting**: "golden hour", "harsh fluorescent", "moonlight"
+- **Include style references**: "cinematic", "like a Blade Runner scene", "studio photography"
+- **Mention composition**: "close-up", "wide shot", "bird's eye view"
+
+### Good Prompts
+
+✅ "A neural interface artist in her studio, surrounded by holographic displays showing abstract emotional patterns, soft blue lighting, contemplative mood, cinematic composition"
+
+✅ "First-person view of wearing a neural interface headset, seeing through it to a workspace with glowing AI-generated art, near-future aesthetic, cool color palette"
+
+### Avoid
+
+❌ "art studio" (too generic)
+❌ "person working" (not specific enough)
+
+## Configuration
+
+Set environment variables in \`.env\` - **at least one is required**:
+
+\`\`\`bash
+# PREFERRED: Google Gemini (Nano Banana Pro) - highest quality
+GOOGLE_API_KEY=AIza...
+# Or alternatively:
+GEMINI_API_KEY=AIza...
+
+# FALLBACK: OpenAI GPT-Image - used if Google key not available
+OPENAI_API_KEY=sk-...
+\`\`\`
+
+**Provider Selection Logic**:
+- If \`GOOGLE_API_KEY\` or \`GEMINI_API_KEY\` is set → Uses Google Gemini (Nano Banana Pro)
+- Else if \`OPENAI_API_KEY\` is set → Uses OpenAI GPT-Image
+- Else → Error: No image generation API keys configured
+
+## Cost Optimization
+
+**OpenAI:**
+- Use \`quality: "standard"\` instead of \`"hd"\` (50% cheaper)
+- Use smaller sizes when possible
+- Use DALL-E 2 for quick iterations (\`size: "512x512"\`)
+
+**Google:**
+- Gemini 2.0 Flash has generous free tier
+- Only charged for actual usage
+- Free for experimentation and low-volume use
+
+## Error Handling
+
+Common errors:
+- \`OPENAI_API_KEY not set\`: Add API key to \`.env\`
+- \`GOOGLE_API_KEY not set\`: Add API key or switch to OpenAI provider
+- \`Content policy violation\`: Prompt violates safety guidelines, rephrase
+- \`No image data found\`: API returned unexpected format, try again
+- \`Image generation failed\`: Service issue, retry
+
+## Limitations
+
+- **OpenAI URLs expire in 1 hour** - always save important images as assets
+- **Google returns base64 directly** - no expiration but larger response
+- **Content policies apply** - both providers filter inappropriate content
+- **Size limits**: DALL-E 3 max 1792x1024, Google varies by model
+- **Rate limits**: Depend on your API tier and usage
+`;
+var init_image_generator = () => {};
+
+// src/tools/descriptions/KillBash.md
+var KillBash_default = `# KillBash
+
+- Kills a running background bash shell by its ID
+- Takes a shell_id parameter identifying the shell to kill
+- Returns a success or failure status 
+- Use this tool when you need to terminate a long-running shell
+- Shell IDs can be found using the /bg command`;
+var init_KillBash = () => {};
+
+// src/tools/descriptions/ListDirCodex.md
+var ListDirCodex_default = `Lists entries in a local directory with 1-indexed entry numbers and simple type labels.
+
+
+
+
+
+
+
+
+
+
+
+
+
+`;
+var init_ListDirCodex = () => {};
+
+// src/tools/descriptions/ListDirectoryGemini.md
+var ListDirectoryGemini_default = `Lists the names of files and subdirectories directly within a specified directory path. Can optionally ignore entries matching provided glob patterns.
+
+`;
+var init_ListDirectoryGemini = () => {};
+
+// src/tools/descriptions/LS.md
+var LS_default = `# LS
+
+Lists files and directories in a given path. The path parameter must be an absolute path, not a relative path. You can optionally provide an array of glob patterns to ignore with the ignore parameter. You should generally prefer the Glob and Grep tools, if you know which directories to search.
+
+If a directory has more than 1,000 entries, only the first 1,000 will be shown.`;
+var init_LS = () => {};
+
+// src/tools/descriptions/MultiEdit.md
+var MultiEdit_default = `# MultiEdit
+
+This is a tool for making multiple edits to a single file in one operation. It is built on top of the Edit tool and allows you to perform multiple find-and-replace operations efficiently. Prefer this tool over the Edit tool when you need to make multiple edits to the same file.
+
+Before using this tool:
+
+1. Use the Read tool to understand the file's contents and context
+2. Verify the directory path is correct
+
+To make multiple file edits, provide the following:
+1. file_path: The absolute path to the file to modify (must be absolute, not relative)
+2. edits: An array of edit operations to perform, where each edit contains:
+   - old_string: The text to replace (must match the file contents exactly, including all whitespace and indentation)
+   - new_string: The edited text to replace the old_string
+   - replace_all: Replace all occurrences of old_string. This parameter is optional and defaults to false.
+
+IMPORTANT:
+- All edits are applied in sequence, in the order they are provided
+- Each edit operates on the result of the previous edit
+- All edits must be valid for the operation to succeed - if any edit fails, none will be applied
+- This tool is ideal when you need to make several changes to different parts of the same file
+- For Jupyter notebooks (.ipynb files), use the NotebookEdit instead
+
+CRITICAL REQUIREMENTS:
+1. All edits follow the same requirements as the single Edit tool
+2. The edits are atomic - either all succeed or none are applied
+3. Plan your edits carefully to avoid conflicts between sequential operations
+
+WARNING:
+- The tool will fail if edits.old_string doesn't match the file contents exactly (including whitespace)
+- The tool will fail if edits.old_string and edits.new_string are the same
+- Since edits are applied in sequence, ensure that earlier edits don't affect the text that later edits are trying to find
+
+When making edits:
+- Ensure all edits result in idiomatic, correct code
+- Do not leave the code in a broken state
+- Always use absolute file paths (starting with /)
+- Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.
+- Use replace_all for replacing and renaming strings across the file. This parameter is useful if you want to rename a variable for instance.
+
+If you want to create a new file, use:
+- A new file path, including dir name if needed
+- First edit: empty old_string and the new file's contents as new_string
+- Subsequent edits: normal edit operations on the created content`;
+var init_MultiEdit = () => {};
+
+// src/tools/descriptions/Read.md
+var Read_default = `# Read
+
+Reads a file from the local filesystem. You can access any file directly by using this tool.
+Assume this tool is able to read all files on the machine. If the User provides a path to a file assume that path is valid. It is okay to read a file that does not exist; an error will be returned.
+
+Usage:
+- The file_path parameter must be an absolute path, not a relative path
+- By default, it reads up to 2000 lines starting from the beginning of the file
+- You can optionally specify a line offset and limit (especially handy for long files), but it's recommended to read the whole file by not providing these parameters
+- Any lines longer than 2000 characters will be truncated
+- Results are returned using cat -n format, with line numbers starting at 1
+- This tool can only read files, not directories. To read a directory, use the ls command via Bash.
+- You can call multiple tools in a single response. It is always better to speculatively read multiple potentially useful files in parallel.
+- If you read a file that exists but has empty contents you will receive a system reminder warning in place of file contents.
+`;
+var init_Read = () => {};
+
+// src/tools/descriptions/ReadFileCodex.md
+var ReadFileCodex_default = `Reads a local file with 1-indexed line numbers, supporting slice and indentation-aware block modes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+`;
+var init_ReadFileCodex = () => {};
+
+// src/tools/descriptions/ReadFileGemini.md
+var ReadFileGemini_default = `Reads and returns the content of a specified file. If the file is large, the content will be truncated. The tool's response will clearly indicate if truncation has occurred and will provide details on how to read more of the file using the 'offset' and 'limit' parameters. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), and PDF files. For text files, it can read specific line ranges.
+
+`;
+var init_ReadFileGemini = () => {};
+
+// src/tools/descriptions/ReadManyFilesGemini.md
+var ReadManyFilesGemini_default = `Reads content from multiple files specified by glob patterns within a configured target directory. For text files, it concatenates their content into a single string. It is primarily designed for text-based files. However, it can also process image (e.g., .png, .jpg) and PDF (.pdf) files if their file names or extensions are explicitly included in the 'include' argument. For these explicitly requested non-text files, their data is read and included in a format suitable for model consumption (e.g., base64 encoded).
+
+This tool is useful when you need to understand or analyze a collection of files, such as:
+- Getting an overview of a codebase or parts of it (e.g., all TypeScript files in the 'src' directory).
+- Finding where specific functionality is implemented if the user asks broad questions about code.
+- Reviewing documentation files (e.g., all Markdown files in the 'docs' directory).
+- Gathering context from multiple configuration files.
+- When the user asks to "read all files in X directory" or "show me the content of all Y files".
+
+Use this tool when the user's query implies needing the content of several files simultaneously for context, analysis, or summarization. For text files, it uses default UTF-8 encoding and a '--- {filePath} ---' separator between file contents. The tool inserts a '--- End of content ---' after the last file. Ensure glob patterns are relative to the target directory. Glob patterns like 'src/**/*.js' are supported. Avoid using for single files if a more specific single-file reading tool is available, unless the user specifically requests to process a list containing just one file via this tool. Other binary files (not explicitly requested as image/PDF) are generally skipped. Default excludes apply to common non-text files (except for explicitly requested images/PDFs) and large dependency directories unless 'useDefaultExcludes' is false.
+
+`;
+var init_ReadManyFilesGemini = () => {};
+
+// src/tools/descriptions/ReplaceGemini.md
+var ReplaceGemini_default = "Replaces text within a file. By default, replaces a single occurrence, but can replace multiple occurrences when `expected_replacements` is specified. This tool requires providing significant context around the change to ensure precise targeting. Always use the read_file tool to examine the file's current content before attempting a text replacement.\n\nThe user has the ability to modify the `new_string` content. If modified, this will be stated in the response.\n\nExpectation for required parameters:\n1. `file_path` is the path to the file to modify.\n2. `old_string` MUST be the exact literal text to replace (including all whitespace, indentation, newlines, and surrounding code etc.).\n3. `new_string` MUST be the exact literal text to replace `old_string` with (also including all whitespace, indentation, newlines, and surrounding code etc.). Ensure the resulting code is correct and idiomatic.\n4. NEVER escape `old_string` or `new_string`, that would break the exact literal text requirement.\n\n**Important:** If ANY of the above are not satisfied, the tool will fail. CRITICAL for `old_string`: Must uniquely identify the single instance to change. Include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string matches multiple locations, or does not match exactly, the tool will fail.\n\n**Multiple replacements:** Set `expected_replacements` to the number of occurrences you want to replace. The tool will replace ALL occurrences that match `old_string` exactly. Ensure the number of replacements matches your expectation.\n\n";
+var init_ReplaceGemini = () => {};
+
+// src/tools/descriptions/RunShellCommandGemini.md
+var RunShellCommandGemini_default = "This tool executes a given shell command as `bash -c <command>`. Command can start background processes using `&`. Command is executed as a subprocess that leads its own process group. Command process group can be terminated as `kill -- -PGID` or signaled as `kill -s SIGNAL -- -PGID`.\n\nThe following information is returned:\n\nCommand: Executed command.\nDirectory: Directory where command was executed, or `(root)`.\nStdout: Output on stdout stream. Can be `(empty)` or partial on error and for any unwaited background processes.\nStderr: Output on stderr stream. Can be `(empty)` or partial on error and for any unwaited background processes.\nError: Error or `(none)` if no error was reported for the subprocess.\nExit Code: Exit code or `(none)` if terminated by signal.\nSignal: Signal number or `(none)` if no signal was received.\nBackground PIDs: List of background processes started or `(none)`.\nProcess Group PGID: Process group started or `(none)`\n\n";
+var init_RunShellCommandGemini = () => {};
+
+// src/tools/descriptions/SearchFileContentGemini.md
+var SearchFileContentGemini_default = `Searches for a regular expression pattern within the content of files in a specified directory (or current working directory). Can filter files by a glob pattern. Returns the lines containing matches, along with their file paths and line numbers.
+
+`;
+var init_SearchFileContentGemini = () => {};
+
+// src/tools/descriptions/Shell.md
+var Shell_default = `Runs a shell command and returns its output.
+- The arguments to \`shell\` will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].
+- Always set the \`workdir\` param when using the shell function. Do not use \`cd\` unless absolutely necessary.
+
+
+
+
+
+
+
+
+
+
+
+
+
+`;
+var init_Shell = () => {};
+
+// src/tools/descriptions/ShellCommand.md
+var ShellCommand_default = `Runs a shell command and returns its output.
+- Always set the \`workdir\` param when using the shell_command function. Do not use \`cd\` unless absolutely necessary.
+
+
+
+
+
+
+
+
+
+
+
+
+
+`;
+var init_ShellCommand = () => {};
+
+// src/tools/descriptions/Skill.md
+var Skill_default = `# Skill
+
+Load or unload skills into the agent's memory.
+
+<skills_instructions>
+When users ask you to perform tasks, check if any of the available skills can help complete the task more effectively. Skills provide specialized capabilities and domain knowledge.
+
+How to use skills:
+- Use \`command: "load"\` with a list of skill IDs to load skills
+- Use \`command: "unload"\` with a list of skill IDs to unload skills
+- Use \`command: "refresh"\` to re-scan the skills directory and update the available skills list
+- When you load a skill, the SKILL.md content will be added to the \`loaded_skills\` memory block
+- The skill's prompt will provide detailed instructions on how to complete the task
+- Examples:
+  - \`command: "load", skills: ["data-analysis"]\` - load the data-analysis skill
+  - \`command: "load", skills: ["web-scraper", "pdf"]\` - load multiple skills
+  - \`command: "unload", skills: ["data-analysis"]\` - unload the data-analysis skill
+  - \`command: "refresh"\` - re-scan and update available skills list
+
+Important:
+- Only load skills that are available in the \`skills\` memory block
+- Unload skills when done to free up context space
+- You can check what skills are currently loaded in the \`loaded_skills\` memory block
+- Loading an already-loaded skill will be skipped (no error)
+- Unloading a not-loaded skill will be skipped (no error)
+- Use \`refresh\` after creating a new skill to make it available for loading
+</skills_instructions>
+
+Usage notes:
+- The \`command\` parameter is required: either "load", "unload", or "refresh"
+- The \`skills\` parameter is required for load/unload: an array of skill IDs to load or unload
+- The \`skills\` parameter is not used for refresh
+- Skills are loaded from the skills directory specified in the \`skills\` memory block
+- Skills remain loaded in the \`loaded_skills\` memory block until explicitly unloaded
+- Only use skill IDs that appear in the \`skills\` memory block
+- Each skill provides specialized instructions and capabilities for specific tasks
+`;
+var init_Skill = () => {};
+
 // src/tools/descriptions/send_suggestion.md
 var send_suggestion_default = `Send a proactive suggestion to the canvas UI. Use this to offer contextual suggestions to the user.
 
@@ -35192,6 +34520,615 @@ Send suggestions when you notice opportunities:
 `;
 var init_send_suggestion = () => {};
 
+// src/tools/descriptions/story_manager.md
+var story_manager_default = `Manages DSF (Deep Sci-Fi) stories: create, continue, branch, and track how stories evolve worlds.
+
+## Operations
+
+### create
+Start a new story in a world.
+
+\`\`\`typescript
+story_manager({
+  operation: "create",
+  world_checkpoint: "my_world",
+  title: "The First Contact"
+})
+\`\`\`
+
+- Creates a new story linked to a world
+- Generates story ID from title
+- Records world version
+- Initializes empty segments and endpoints
+- Saves to \`.dsf/stories/{world_checkpoint}/{story_id}.json\`
+
+### save_segment
+Add a story segment (continuation or branch).
+
+\`\`\`typescript
+story_manager({
+  operation: "save_segment",
+  story_id: "the_first_contact",
+  segment: {
+    content: "The ship descended through the atmosphere...",
+    word_count: 850,
+    parent_segment: "seg_001",  // or null for first segment
+    world_evolution: {
+      elements_introduced: ["char_captain", "loc_landing_site"],
+      rules_applied: ["rule_1", "rule_3"],
+      rules_challenged: [],
+      new_questions: ["How do aliens perceive time?"],
+      world_changes: ["First contact protocols established"]
+    },
+    assets: [
+      {
+        id: "asset_001",
+        type: "image",
+        path: "the_first_contact/landing_site.png",
+        description: "The alien landing site at dawn"
+      }
+    ],
+    branches: [
+      {
+        id: "branch_a",
+        prompt: "Captain accepts the alien invitation",
+        status: "pending"
+      },
+      {
+        id: "branch_b",
+        prompt: "Captain returns to ship for consultation",
+        status: "pending"
+      }
+    ]
+  }
+})
+\`\`\`
+
+- Adds segment to story
+- Auto-generates segment ID
+- Updates story endpoints
+- Tracks world contributions
+- Updates last_modified timestamp
+
+### load
+Restore a story from storage.
+
+\`\`\`typescript
+story_manager({
+  operation: "load",
+  story_id: "the_first_contact"
+})
+\`\`\`
+
+Returns the complete story object with all segments and metadata.
+
+### list
+Get all stories, optionally filtered by world.
+
+\`\`\`typescript
+// List all stories
+story_manager({
+  operation: "list"
+})
+
+// List stories for a specific world
+story_manager({
+  operation: "list",
+  world_checkpoint: "my_world"
+})
+\`\`\`
+
+Returns array of stories with summary info.
+
+### branch
+Create a story branch from the last segment.
+
+\`\`\`typescript
+story_manager({
+  operation: "branch",
+  story_id: "the_first_contact",
+  branch: {
+    prompt: "An alternate timeline where the captain refuses contact",
+    status: "pending"
+  }
+})
+\`\`\`
+
+- Adds branch to the last segment
+- Creates new endpoint
+- Branch can be written as a new segment later
+
+### continue
+Get continuation context for writing the next segment.
+
+\`\`\`typescript
+story_manager({
+  operation: "continue",
+  story_id: "the_first_contact"
+})
+\`\`\`
+
+Returns rich context including:
+- Full story and world data
+- Last segment
+- Active endpoints
+- Suggested directions (branches, questions, unused rules)
+- Rules in play
+- Elements introduced so far
+
+Use this before writing the next segment to understand the story state.
+
+### update_metadata
+Update story metadata (title, status, tags, notes).
+
+\`\`\`typescript
+story_manager({
+  operation: "update_metadata",
+  story_id: "the_first_contact",
+  metadata: {
+    status: "completed",
+    tags: ["first-contact", "hard-sf", "character-driven"],
+    author_notes: "This story explores the theme of communication barriers"
+  }
+})
+\`\`\`
+
+- Updates only the specified metadata fields
+- Auto-updates last_modified timestamp
+
+## Story Structure
+
+Stories follow a segment-based model that supports:
+- **Linear narratives**: Each segment follows from the previous
+- **Branching narratives**: Segments can have multiple possible continuations
+- **World evolution tracking**: Each segment records how it affects the world
+- **Multimedia integration**: Segments can have associated assets
+
+### Complete Story Example
+
+\`\`\`typescript
+{
+  id: "the_first_contact",
+  world_checkpoint: "my_world",
+  world_version: 3,
+
+  metadata: {
+    title: "The First Contact",
+    created: "2025-12-30T18:00:00Z",
+    last_updated: "2025-12-30T20:30:00Z",
+    status: "active",
+    tags: ["first-contact", "hard-sf"],
+    author_notes: "Exploring communication barriers"
+  },
+
+  segments: [
+    {
+      id: "seg_001",
+      content: "The ship descended through the atmosphere...",
+      word_count: 850,
+      created: "2025-12-30T18:00:00Z",
+      parent_segment: null,  // First segment
+
+      world_evolution: {
+        elements_introduced: ["char_captain", "loc_landing_site"],
+        rules_applied: ["rule_1"],
+        new_questions: ["How do aliens perceive time?"]
+      },
+
+      assets: [
+        {
+          id: "asset_001",
+          type: "image",
+          path: "the_first_contact/landing_site.png",
+          description: "Alien landing site"
+        }
+      ]
+    },
+    {
+      id: "seg_002",
+      content: "The captain stepped onto alien soil...",
+      word_count: 650,
+      created: "2025-12-30T19:30:00Z",
+      parent_segment: "seg_001",
+
+      world_evolution: {
+        rules_applied: ["rule_1", "rule_3"],
+        rules_challenged: ["rule_2"]
+      },
+
+      branches: [
+        {
+          id: "branch_a",
+          prompt: "Accept alien invitation",
+          status: "active"
+        },
+        {
+          id: "branch_b",
+          prompt: "Return to ship",
+          status: "pending"
+        }
+      ]
+    }
+  ],
+
+  endpoints: [
+    {
+      segment_id: "seg_002",
+      branch_id: "branch_a",
+      status: "active"
+    },
+    {
+      segment_id: "seg_002",
+      branch_id: "branch_b",
+      status: "pending"
+    }
+  ],
+
+  world_contributions: {
+    characters_developed: ["char_captain"],
+    locations_explored: ["loc_landing_site"],
+    rules_tested: ["rule_1", "rule_3"],
+    new_rules_discovered: [],
+    contradictions_found: [],
+    themes_explored: ["communication", "first-contact"]
+  }
+}
+\`\`\`
+
+## Usage Notes
+
+- Stories are always linked to a specific world checkpoint
+- Each segment tracks its contribution to world evolution
+- Use \`continue\` operation to get context before writing next segment
+- Branches allow exploring alternative story paths
+- World contributions accumulate across all segments
+- Endpoints track where the story can continue
+
+## Integration with world_manager
+
+Stories and worlds evolve together:
+1. Create a world with \`world_manager\`
+2. Start a story with \`story_manager.create\`
+3. Write segments that apply/test world rules
+4. If story reveals new worldbuilding, update world with \`world_manager.update\`
+5. Continue the story with new context from evolved world
+6. Use \`world_manager.diff\` to see how the world changed through storytelling
+
+## Workflow Example
+
+\`\`\`typescript
+// 1. Create story
+story_manager({
+  operation: "create",
+  world_checkpoint: "neural_art_2035",
+  title: "The Neural Canvas"
+})
+
+// 2. Write first segment
+story_manager({
+  operation: "save_segment",
+  story_id: "the_neural_canvas",
+  segment: {
+    content: "Nia adjusted her neural interface...",
+    word_count: 800,
+    parent_segment: null,
+    world_evolution: {
+      elements_introduced: ["char_nia"],
+      rules_applied: ["rule_1"],
+      new_questions: ["How does Nia handle creative blocks?"]
+    }
+  }
+})
+
+// 3. Get context for continuation
+story_manager({
+  operation: "continue",
+  story_id: "the_neural_canvas"
+})
+// Returns context with suggested directions
+
+// 4. Write next segment based on context
+story_manager({
+  operation: "save_segment",
+  story_id: "the_neural_canvas",
+  segment: { ... }
+})
+
+// 5. Mark complete when done
+story_manager({
+  operation: "update_metadata",
+  story_id: "the_neural_canvas",
+  metadata: { status: "completed" }
+})
+\`\`\`
+`;
+var init_story_manager = () => {};
+
+// src/tools/descriptions/Task.md
+var Task_default = `# Task
+
+Launch a new agent to handle complex, multi-step tasks autonomously.
+
+The Task tool launches specialized agents (subprocesses) that autonomously handle complex tasks. Each agent type has specific capabilities and tools available to it.
+
+## Usage
+
+When using the Task tool, you must specify:
+- **subagent_type**: Which specialized agent to use (see Available Agents section)
+- **prompt**: Detailed, self-contained instructions for the agent (agents cannot ask questions mid-execution)
+- **description**: Short 3-5 word summary for tracking
+- **model** (optional): Override the model for this agent
+
+## When to use this tool:
+
+- **Codebase exploration**: Use when you need to search for files, understand code structure, or find specific patterns
+- **Complex tasks**: Use when a task requires multiple steps and autonomous decision-making
+- **Research tasks**: Use when you need to gather information from the codebase
+- **Parallel work**: Launch multiple agents concurrently for independent tasks
+
+## When NOT to use this tool:
+
+- If you need to read a specific file path, use Read tool directly
+- If you're searching for a specific class definition, use Glob tool directly
+- If you're searching within 2-3 specific files, use Read tool directly
+- For simple, single-step operations
+
+## Important notes:
+
+- **Stateless**: Each agent invocation is autonomous and returns a single final report
+- **No back-and-forth**: You cannot communicate with agents during execution
+- **Front-load instructions**: Provide complete task details upfront
+- **Context-aware**: Agents see full conversation history and can reference earlier context
+- **Parallel execution**: Launch multiple agents concurrently by calling Task multiple times in a single response
+- **Specify return format**: Tell agents exactly what information to include in their report
+
+## Examples:
+
+\`\`\`typescript
+// Good - specific and actionable with a user-specified model "gpt-5-low"
+Task({
+  subagent_type: "explore",
+  description: "Find authentication code",
+  prompt: "Search for all authentication-related code in src/. List file paths and the main auth approach used.",
+  model: "gpt-5-low"
+})
+
+// Good - complex multi-step task
+Task({
+  subagent_type: "general-purpose",
+  description: "Add input validation",
+  prompt: "Add email and password validation to the user registration form. Check existing validation patterns first, then implement consistent validation."
+})
+
+// Parallel execution - launch both at once
+Task({ subagent_type: "explore", description: "Find frontend components", prompt: "..." })
+Task({ subagent_type: "explore", description: "Find backend APIs", prompt: "..." })
+
+// Bad - too simple, use Read tool instead
+Task({
+  subagent_type: "explore",
+  prompt: "Read src/index.ts"
+})
+\`\`\`
+
+## Concurrency and Safety:
+
+- **Safe**: Multiple read-only agents (explore, plan) running in parallel
+- **Safe**: Multiple agents editing different files in parallel
+- **Risky**: Multiple agents editing the same file (conflict detection will handle it, but may lose changes)
+- **Best practice**: Partition work by file or directory boundaries for parallel execution
+`;
+var init_Task = () => {};
+
+// src/tools/descriptions/TodoWrite.md
+var TodoWrite_default = `# TodoWrite
+
+Use this tool to create and manage a structured task list for your current coding session. This helps you track progress, organize complex tasks, and demonstrate thoroughness to the user.
+It also helps the user understand the progress of the task and overall progress of their requests.
+
+## When to Use This Tool
+Use this tool proactively in these scenarios:
+
+1. Complex multi-step tasks - When a task requires 3 or more distinct steps or actions
+2. Non-trivial and complex tasks - Tasks that require careful planning or multiple operations
+3. User explicitly requests todo list - When the user directly asks you to use the todo list
+4. User provides multiple tasks - When users provide a list of things to be done (numbered or comma-separated)
+5. After receiving new instructions - Immediately capture user requirements as todos
+6. When you start working on a task - Mark it as in_progress BEFORE beginning work. Ideally you should only have one todo as in_progress at a time
+7. After completing a task - Mark it as completed and add any new follow-up tasks discovered during implementation
+
+## When NOT to Use This Tool
+
+Skip using this tool when:
+1. There is only a single, straightforward task
+2. The task is trivial and tracking it provides no organizational benefit
+3. The task can be completed in less than 3 trivial steps
+4. The task is purely conversational or informational
+
+NOTE that you should not use this tool if there is only one trivial task to do. In this case you are better off just doing the task directly.
+
+## Examples of When to Use the Todo List
+
+<example>
+User: I want to add a dark mode toggle to the application settings. Make sure you run the tests and build when you're done!
+Assistant: I'll help add a dark mode toggle to your application settings. Let me create a todo list to track this implementation.
+*Creates todo list with the following items:*
+1. Creating dark mode toggle component in Settings page
+2. Adding dark mode state management (context/store)
+3. Implementing CSS-in-JS styles for dark theme
+4. Updating existing components to support theme switching
+5. Running tests and build process, addressing any failures or errors that occur
+*Begins working on the first task*
+
+<reasoning>
+The assistant used the todo list because:
+1. Adding dark mode is a multi-step feature requiring UI, state management, and styling changes
+2. The user explicitly requested tests and build be run afterward
+3. The assistant inferred that tests and build need to pass by adding "Ensure tests and build succeed" as the final task
+</reasoning>
+</example>
+
+<example>
+User: Help me rename the function getCwd to getCurrentWorkingDirectory across my project
+Assistant: Let me first search through your codebase to find all occurrences of 'getCwd'.
+*Uses grep or search tools to locate all instances of getCwd in the codebase*
+Assistant: I've found 15 instances of 'getCwd' across 8 different files. Let me create a todo list to track these changes.
+*Creates todo list with specific items for each file that needs updating*
+
+<reasoning>
+The assistant used the todo list because:
+1. First, the assistant searched to understand the scope of the task
+2. Upon finding multiple occurrences across different files, it determined this was a complex task with multiple steps
+3. The todo list helps ensure every instance is tracked and updated systematically
+4. This approach prevents missing any occurrences and maintains code consistency
+</reasoning>
+</example>
+
+
+<example>
+User: I need to implement these features for my e-commerce site: user registration, product catalog, shopping cart, and checkout flow.
+Assistant: I'll help implement these features. First, let's add all the features to the todo list.
+*Creates a todo list breaking down each feature into specific tasks based on the project architecture*
+Assistant: Let's start with user registration. This will involve creating database models, API endpoints, and frontend forms that integrate with your existing authentication system.
+
+<reasoning>
+The assistant used the todo list because:
+1. The user provided multiple complex features to implement in a comma separated list
+2. The todo list helps organize these large features into manageable tasks
+3. This approach allows for tracking progress across the entire implementation
+</reasoning>
+</example>
+
+<example>
+User: Can you help optimize my React application? It's rendering slowly and has performance issues.</user>
+Assistant: I'll help optimize your React application. First, let me examine your codebase to identify potential performance bottlenecks.
+*Reviews component structure, render patterns, state management, and data fetching*
+Assistant: After analyzing your codebase, I've identified several performance issues. Let me create a todo list to track our optimization efforts.
+*Creates todo list with items like: 1) Implementing memoization for expensive calculations in ProductList, 2) Adding virtualization for long lists in Dashboard, 3) Optimizing image loading in Gallery component, 4) Fixing state update loops in ShoppingCart, 5) Reviewing bundle size and implementing code splitting*
+Let's start by implementing memoization for the expensive calculations in your ProductList component.</assistant>
+
+<reasoning>
+The assistant used the todo list because:
+1. First, the assistant examined the codebase to identify specific performance issues
+2. Based on this analysis, it identified multiple optimization opportunities
+3. Performance optimization is a non-trivial task requiring multiple steps
+4. The todo list helps methodically track improvements across different components
+5. This systematic approach ensures all performance bottlenecks are addressed
+</reasoning>
+</example>
+
+## Examples of When NOT to Use the Todo List
+
+<example>
+User: How do I print 'Hello World' in Python?
+Assistant: In Python, you can print "Hello World" with this simple code:
+
+python
+print("Hello World")
+
+This will output the text "Hello World" to the console when executed.</assistant>
+
+<reasoning>
+The assistant did not use the todo list because this is a single, trivial task that can be completed in one step. There's no need to track multiple tasks or steps for such a straightforward request.
+</reasoning>
+</example>
+
+<example>
+User: What does the git status command do?
+Assistant: The git status command shows the current state of your working directory and staging area. It displays which changes have been staged, which haven't, and which files aren't being tracked by Git. This is a fundamental command for understanding the current state of your repository before making commits.
+
+<reasoning>
+The assistant did not use the todo list because this is an informational request with no actual coding task to complete. The user is simply asking for an explanation, not for the assistant to perform multiple steps or tasks.
+</reasoning>
+</example>
+
+<example>
+User: Can you add a comment to the calculateTotal function to explain what it does?
+Assistant: Sure, let me add a comment to the calculateTotal function to explain what it does.
+* Uses the Edit tool to add a comment to the calculateTotal function *
+
+<reasoning>
+The assistant did not use the todo list because this is a single, straightforward task confined to one location in the code. Adding a comment doesn't require tracking multiple steps or systematic organization.
+</reasoning>
+</example>
+
+<example>
+User: Run npm install for me and tell me what happens.
+Assistant: I'll run the npm install command for you.
+
+*Executes: npm install*
+
+The command completed successfully. Here's the output:
+[Output of npm install command]
+
+All dependencies have been installed according to your package.json file.
+
+<reasoning>
+The assistant did not use the todo list because this is a single command execution with immediate results. There are no multiple steps to track or organize, making the todo list unnecessary for this straightforward task.
+</reasoning>
+</example>
+
+## Task States and Management
+
+1. **Task States**: Use these states to track progress:
+   - pending: Task not yet started
+   - in_progress: Currently working on (limit to ONE task at a time)
+   - completed: Task finished successfully
+
+   **IMPORTANT**: Task descriptions must have two forms:
+   - content: The imperative form describing what needs to be done (e.g., "Run tests", "Build the project")
+   - activeForm: The present continuous form shown during execution (e.g., "Running tests", "Building the project")
+
+2. **Task Management**:
+   - Update task status in real-time as you work
+   - Mark tasks complete IMMEDIATELY after finishing (don't batch completions)
+   - Exactly ONE task must be in_progress at any time (not less, not more)
+   - Complete current tasks before starting new ones
+   - Remove tasks that are no longer relevant from the list entirely
+
+3. **Task Completion Requirements**:
+   - ONLY mark a task as completed when you have FULLY accomplished it
+   - If you encounter errors, blockers, or cannot finish, keep the task as in_progress
+   - When blocked, create a new task describing what needs to be resolved
+   - Never mark a task as completed if:
+     - Tests are failing
+     - Implementation is partial
+     - You encountered unresolved errors
+     - You couldn't find necessary files or dependencies
+
+4. **Task Breakdown**:
+   - Create specific, actionable items
+   - Break complex tasks into smaller, manageable steps
+   - Use clear, descriptive task names
+   - Always provide both forms:
+     - content: "Fix authentication bug"
+     - activeForm: "Fixing authentication bug"
+
+When in doubt, use this tool. Being proactive with task management demonstrates attentiveness and ensures you complete all requirements successfully.
+`;
+var init_TodoWrite = () => {};
+
+// src/tools/descriptions/UpdatePlan.md
+var UpdatePlan_default = `Updates the task plan.
+Provide an optional explanation and a list of plan items, each with a step and status.
+At most one step can be in_progress at a time.
+
+`;
+var init_UpdatePlan = () => {};
+
+// src/tools/descriptions/Write.md
+var Write_default = `# Write
+
+Writes a file to the local filesystem.
+
+Usage:
+- This tool will overwrite the existing file if there is one at the provided path.
+- If this is an existing file, you MUST use the Read tool first to read the file's contents. This tool will fail if you did not read the file first.
+- ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+- Only use emojis if the user explicitly requests it. Avoid writing emojis to files unless asked.`;
+var init_Write = () => {};
+
 // src/tools/descriptions/WriteFileGemini.md
 var WriteFileGemini_default = `Writes content to a specified file in the local filesystem.
 
@@ -35229,6 +35166,254 @@ DO NOT use this tool for simple tasks that can be completed in less than 2 steps
 
 `;
 var init_WriteTodosGemini = () => {};
+
+// src/tools/descriptions/world_manager.md
+var world_manager_default = `Manages DSF (Deep Sci-Fi) worlds: save, load, compare, and evolve fictional worlds.
+
+## Operations
+
+### save
+Persist a world to filesystem with auto-incrementing version.
+
+\`\`\`typescript
+world_manager({
+  operation: "save",
+  checkpoint_name: "my_world",
+  world: worldObject  // See "World Structure" section below for complete example
+})
+\`\`\`
+
+- Auto-increments version number
+- Updates last_modified timestamp
+- Adds revision_notes to changelog if present
+- Saves to \`.dsf/worlds/{checkpoint_name}.json\`
+- **See "World Structure" section below for complete World object format**
+
+### load
+Restore a world from a checkpoint.
+
+\`\`\`typescript
+world_manager({
+  operation: "load",
+  checkpoint_name: "my_world"
+})
+\`\`\`
+
+Returns the world object with all its data.
+
+### diff
+Compare two world versions to see what changed.
+
+\`\`\`typescript
+world_manager({
+  operation: "diff",
+  checkpoint_name: "my_world",    // earlier version
+  checkpoint_name_2: "my_world"   // later version (can be same name if versions differ)
+})
+\`\`\`
+
+Returns detailed diff showing:
+- Version and timestamp changes
+- Elements added/removed/modified
+- Rules added/removed/modified
+- Depth changes in focus areas
+- Changelog entries
+
+### update
+Evolve a world by applying incremental updates.
+
+\`\`\`typescript
+world_manager({
+  operation: "update",
+  current_checkpoint: "my_world",
+  updates: [
+    {
+      path: "foundation.rules",
+      operation: "add",
+      value: {
+        id: "rule_3",
+        statement: "FTL travel requires quantum entanglement",
+        scope: "universal",
+        certainty: "tentative",
+        introduced_in_version: 2
+      },
+      reason: "Added FTL constraint for story conflict"
+    },
+    {
+      path: "surface.opening_scene",
+      operation: "update",
+      value: "The station hung in the void...",
+      reason: "Revised opening for better hook"
+    }
+  ]
+})
+\`\`\`
+
+- Loads current world
+- Applies all updates in sequence
+- Adds reasons to changelog
+- Auto-increments version
+- Saves updated world
+
+Update operations:
+- \`add\`: Append to array or set new value
+- \`update\`: Replace existing value
+- \`remove\`: Delete from array (by id) or remove property
+
+## Usage Notes
+
+- Worlds evolve through versions - each save increments the version
+- Use \`revision_notes\` in world.development to document changes
+- Checkpoint names can be reused - the version number tracks evolution
+- The \`update\` operation is the primary way to evolve worlds incrementally
+- Always provide \`reason\` in updates to maintain clear changelog
+
+## World Structure
+
+Worlds follow the "iceberg model":
+- **Surface**: What appears in the story (opening scene, visible elements, character POV)
+- **Foundation**: Hidden worldbuilding (premise, rules, history, culture, technology)
+- **Constraints**: Physical, social, logical, or narrative limitations
+
+Worlds support progressive elaboration - start with a sketch and add detail as the story develops.
+
+### Complete World Example
+
+\`\`\`typescript
+{
+  development: {
+    state: "sketch",                    // or "draft", "detailed"
+    version: 1,
+    created: "2025-01-15T10:30:00Z",   // ISO timestamp
+    last_modified: "2025-01-15T10:30:00Z",
+    revision_notes: []                  // Array of strings
+  },
+
+  surface: {
+    opening_scene: "The station hung in the void...",
+    visible_elements: [
+      {
+        id: "elem_1",
+        type: "character",
+        name: "The Navigator",           // Use roles, not concrete names
+        description: "Station commander with neural interface",
+        detail_level: "detailed",
+        introduced_in_version: 1,
+        last_modified_version: 1,
+        properties: { role: "protagonist", age_range: "30s" }
+      }
+    ],
+    character_pov: "The Navigator",
+    revealed_in_story: {}                // Track what reader knows
+  },
+
+  foundation: {
+    core_premise: "Neural interfaces read emotional states, enabling AI to understand human intent",
+
+    deep_focus_areas: {
+      primary: ["neural_interfaces", "ai_world_models"],
+      depth_level: {
+        "neural_interfaces": "medium",
+        "ai_world_models": "deep"
+      }
+    },
+
+    rules: [
+      {
+        id: "rule_1",
+        statement: "Neural interfaces can read emotional/intentional states but not thoughts",
+        scope: "universal",
+        certainty: "established",
+        introduced_in_version: 1
+      }
+    ],
+
+    // Optional sections - add as needed
+    history: {
+      timeline: [
+        {
+          event: "Neural interface breakthrough",
+          when: "2028",
+          significance: "Enabled emotional state reading"
+        }
+      ]
+    },
+
+    geography: {
+      locations: [
+        {
+          id: "loc_1",
+          name: "The Station",
+          description: "Orbital research facility",
+          significance: "Where the story takes place"
+        }
+      ]
+    },
+
+    culture: {
+      values: ["emotional authenticity", "creative expression"],
+      practices: ["neural art sessions"]
+    },
+
+    technology: {
+      systems: [
+        {
+          id: "tech_1",
+          name: "Affective Interface",
+          how_it_works: "Reads emotional states via EEG patterns",
+          limitations: "Cannot read thoughts or images"
+        }
+      ]
+    },
+
+    working_notes: {
+      tentative_ideas: ["Maybe consciousness is quantum?"],
+      questions: ["How do they handle interface failures?"],
+      contradictions_to_resolve: []
+    }
+  },
+
+  constraints: [
+    {
+      id: "const_1",
+      description: "Neural interfaces cannot read thoughts or mental images",
+      type: "physical",
+      strictness: "absolute"
+    }
+  ],
+
+  changelog: []                          // Auto-populated on saves
+}
+\`\`\`
+
+### Minimal World (for quick starts)
+
+\`\`\`typescript
+{
+  development: {
+    state: "sketch",
+    version: 1,
+    created: "2025-01-15T10:30:00Z",
+    last_modified: "2025-01-15T10:30:00Z",
+    revision_notes: []
+  },
+  surface: {
+    visible_elements: [],
+    revealed_in_story: {}
+  },
+  foundation: {
+    core_premise: "Your premise here",
+    deep_focus_areas: {
+      primary: ["area1", "area2"],
+      depth_level: {}
+    },
+    rules: []
+  },
+  constraints: []
+}
+\`\`\`
+`;
+var init_world_manager = () => {};
 
 // src/tools/impl/validation.ts
 function validateRequiredParams(args, required, toolName) {
@@ -35523,6 +35708,195 @@ async function ask_user_question(args) {
   };
 }
 var init_AskUserQuestion2 = () => {};
+
+// src/tools/impl/asset_manager.ts
+import { existsSync as existsSync4 } from "node:fs";
+import { mkdir as mkdir2, readdir as readdir2, readFile as readFile3, unlink, writeFile as writeFile2 } from "node:fs/promises";
+import { join as join4 } from "node:path";
+async function asset_manager(args) {
+  try {
+    console.error("asset_manager called with args:", JSON.stringify(args, null, 2));
+    if (!args || typeof args !== "object") {
+      return {
+        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
+        status: "error"
+      };
+    }
+    if (!args.operation) {
+      return {
+        toolReturn: `Missing required parameter: operation`,
+        status: "error"
+      };
+    }
+    switch (args.operation) {
+      case "save":
+        return await saveAsset(args);
+      case "load":
+        return await loadAsset(args);
+      case "list":
+        return await listAssets(args);
+      case "delete":
+        return await deleteAsset(args);
+      default:
+        return {
+          toolReturn: `Unknown operation: ${args.operation}. Valid operations: save, load, list, delete`,
+          status: "error"
+        };
+    }
+  } catch (error) {
+    return {
+      toolReturn: `Error in asset_manager: ${error instanceof Error ? error.message : String(error)}`,
+      status: "error"
+    };
+  }
+}
+async function saveAsset(args) {
+  if (!args.asset) {
+    return {
+      toolReturn: "asset is required for save operation",
+      status: "error"
+    };
+  }
+  if (!args.data) {
+    return {
+      toolReturn: "data is required for save operation (base64 or file path)",
+      status: "error"
+    };
+  }
+  await mkdir2(ASSETS_DIR, { recursive: true });
+  let assetPath;
+  if (args.story_id) {
+    const storyDir = join4(ASSETS_DIR, args.story_id);
+    await mkdir2(storyDir, { recursive: true });
+    assetPath = join4(storyDir, args.asset.path);
+  } else if (args.world_checkpoint) {
+    const worldDir = join4(ASSETS_DIR, "worlds", args.world_checkpoint);
+    await mkdir2(worldDir, { recursive: true });
+    assetPath = join4(worldDir, args.asset.path);
+  } else {
+    assetPath = join4(ASSETS_DIR, args.asset.path);
+    const parentDir = join4(assetPath, "..");
+    await mkdir2(parentDir, { recursive: true });
+  }
+  let fileData;
+  if (args.data.startsWith("data:")) {
+    const base64Data = args.data.split(",")[1] || "";
+    fileData = Buffer.from(base64Data, "base64");
+  } else if (args.data.startsWith("/") || args.data.startsWith("./")) {
+    fileData = await readFile3(args.data);
+  } else {
+    fileData = Buffer.from(args.data, "base64");
+  }
+  await writeFile2(assetPath, fileData);
+  return {
+    toolReturn: `Asset saved: ${args.asset.id}
+Type: ${args.asset.type}
+Path: ${assetPath}
+Size: ${fileData.length} bytes`,
+    status: "success",
+    data: args.asset
+  };
+}
+async function loadAsset(args) {
+  if (!args.asset_id && !args.asset) {
+    return {
+      toolReturn: "asset_id or asset is required for load operation",
+      status: "error"
+    };
+  }
+  const assetPath = args.asset ? join4(ASSETS_DIR, args.asset.path) : await findAssetPath(args.asset_id);
+  if (!assetPath || !existsSync4(assetPath)) {
+    return {
+      toolReturn: `Asset not found: ${args.asset_id || args.asset?.path}`,
+      status: "error"
+    };
+  }
+  const data = await readFile3(assetPath);
+  const _base64 = data.toString("base64");
+  if (args.asset) {
+    return {
+      toolReturn: `Asset loaded: ${args.asset.id}
+Size: ${data.length} bytes`,
+      status: "success",
+      data: {
+        ...args.asset
+      }
+    };
+  }
+  return {
+    toolReturn: `Asset loaded from ${assetPath}
+Size: ${data.length} bytes`,
+    status: "success"
+  };
+}
+async function listAssets(args) {
+  if (!existsSync4(ASSETS_DIR)) {
+    return {
+      toolReturn: "No assets found (assets directory doesn't exist yet)",
+      status: "success",
+      data: []
+    };
+  }
+  const assets = [];
+  if (args.story_id) {
+    const storyDir = join4(ASSETS_DIR, args.story_id);
+    if (existsSync4(storyDir)) {
+      const files = await readdir2(storyDir);
+      assets.push(...files.map((f) => join4(args.story_id, f)));
+    }
+  } else if (args.world_checkpoint) {
+    const worldDir = join4(ASSETS_DIR, "worlds", args.world_checkpoint);
+    if (existsSync4(worldDir)) {
+      const files = await readdir2(worldDir);
+      assets.push(...files.map((f) => join4("worlds", args.world_checkpoint, f)));
+    }
+  } else {
+    const files = await readdir2(ASSETS_DIR, { recursive: true });
+    assets.push(...files.filter((f) => typeof f === "string"));
+  }
+  const summary = assets.length > 0 ? `Found ${assets.length} assets:
+${assets.map((a) => `  - ${a}`).join(`
+`)}` : "No assets found";
+  return {
+    toolReturn: summary,
+    status: "success",
+    data: assets
+  };
+}
+async function deleteAsset(args) {
+  if (!args.asset_id && !args.asset) {
+    return {
+      toolReturn: "asset_id or asset is required for delete operation",
+      status: "error"
+    };
+  }
+  const assetPath = args.asset ? join4(ASSETS_DIR, args.asset.path) : await findAssetPath(args.asset_id);
+  if (!assetPath || !existsSync4(assetPath)) {
+    return {
+      toolReturn: `Asset not found: ${args.asset_id || args.asset?.path}`,
+      status: "error"
+    };
+  }
+  await unlink(assetPath);
+  return {
+    toolReturn: `Asset deleted: ${assetPath}`,
+    status: "success"
+  };
+}
+async function findAssetPath(assetId) {
+  if (!existsSync4(ASSETS_DIR)) {
+    return null;
+  }
+  const files = await readdir2(ASSETS_DIR, { recursive: true });
+  for (const file of files) {
+    if (typeof file === "string" && file.includes(assetId)) {
+      return join4(ASSETS_DIR, file);
+    }
+  }
+  return null;
+}
+var ASSETS_DIR = ".dsf/assets";
+var init_asset_manager2 = () => {};
 
 // src/tools/impl/process_manager.ts
 var exports_process_manager = {};
@@ -36080,6 +36454,155 @@ var init_BashOutput2 = __esm(() => {
   init_truncation();
 });
 
+// src/tools/impl/canvas_ui.ts
+function getCanvasInteractions() {
+  const now = Date.now();
+  const validInteractions = interactionQueue.filter((i) => now - i.timestamp < INTERACTION_TTL_MS);
+  interactionQueue.length = 0;
+  return validInteractions;
+}
+function peekCanvasInteractions() {
+  const now = Date.now();
+  return interactionQueue.filter((i) => now - i.timestamp < INTERACTION_TTL_MS);
+}
+function handleInteraction(message) {
+  const { target, data, componentId, interactionType } = message;
+  const queuedInteraction = {
+    id: `int-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: Date.now(),
+    componentId,
+    interactionType,
+    target,
+    data
+  };
+  interactionQueue.push(queuedInteraction);
+  while (interactionQueue.length > MAX_QUEUE_SIZE) {
+    interactionQueue.shift();
+  }
+  console.log(`[canvas_ui] Queued interaction: ${interactionType} on ${componentId} (queue size: ${interactionQueue.length})`);
+  if (target && interactionCallbacks.has(target)) {
+    const callback = interactionCallbacks.get(target);
+    Promise.resolve(callback(data)).catch((err) => {
+      console.error(`[canvas_ui] Interaction callback error for ${target}:`, err);
+    });
+    return;
+  }
+  if (interactionCallbacks.has(componentId)) {
+    const callback = interactionCallbacks.get(componentId);
+    Promise.resolve(callback({ ...data, interactionType })).catch((err) => {
+      console.error(`[canvas_ui] Interaction callback error for ${componentId}:`, err);
+    });
+  }
+}
+function ensureAgentBusConnection() {
+  return new Promise((resolve2, reject) => {
+    if (agentBusWs && agentBusWs.readyState === WebSocket.OPEN) {
+      resolve2(agentBusWs);
+      return;
+    }
+    if (isConnecting) {
+      pendingCallbacks.push({ resolve: resolve2, reject });
+      return;
+    }
+    isConnecting = true;
+    const ws = new WebSocket(AGENT_BUS_URL);
+    ws.onopen = () => {
+      console.log("[canvas_ui] Connected to Agent Bus");
+      isConnecting = false;
+      agentBusWs = ws;
+      resolve2(ws);
+      for (const cb of pendingCallbacks) {
+        cb.resolve(ws);
+      }
+      pendingCallbacks = [];
+    };
+    ws.onerror = (event) => {
+      console.error("[canvas_ui] Agent Bus connection error:", event);
+      isConnecting = false;
+      const err = new Error("Failed to connect to Agent Bus");
+      reject(err);
+      for (const cb of pendingCallbacks) {
+        cb.reject(err);
+      }
+      pendingCallbacks = [];
+    };
+    ws.onclose = () => {
+      console.log("[canvas_ui] Agent Bus connection closed");
+      agentBusWs = null;
+      isConnecting = false;
+    };
+    ws.onmessage = (event) => {
+      try {
+        const data = typeof event.data === "string" ? event.data : event.data.toString();
+        const message = JSON.parse(data);
+        if (message.type === "interaction") {
+          console.log("[canvas_ui] User interaction:", message);
+          handleInteraction(message);
+        }
+      } catch (err) {
+        console.error("[canvas_ui] Failed to parse message:", err);
+      }
+    };
+  });
+}
+async function broadcastStateChange(event, data) {
+  try {
+    const ws = await ensureAgentBusConnection();
+    const message = {
+      type: "state_change",
+      event,
+      data
+    };
+    ws.send(JSON.stringify(message));
+    console.log(`[canvas_ui] Broadcast state change: ${event}`);
+  } catch (error) {
+    console.error("[canvas_ui] Failed to broadcast state change:", error);
+    throw error;
+  }
+}
+async function canvas_ui(args) {
+  const { target, spec, action = "create", mode = "overlay" } = args;
+  try {
+    const ws = await ensureAgentBusConnection();
+    const componentId = spec.id || `canvas-${Date.now()}`;
+    const message = {
+      type: "canvas_ui",
+      action,
+      target,
+      componentId,
+      spec: action === "remove" ? undefined : spec,
+      mode
+    };
+    ws.send(JSON.stringify(message));
+    console.log(`[canvas_ui] Sent ${action} for ${componentId} at ${target}`);
+    let resultMessage;
+    if (action === "remove") {
+      resultMessage = `Removed component from ${target}`;
+    } else {
+      resultMessage = `Component ${componentId} ${action === "update" ? "updated" : "created"} at ${target}`;
+    }
+    return {
+      toolReturn: resultMessage,
+      status: "success"
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("[canvas_ui] Error:", errorMsg);
+    return {
+      toolReturn: `Failed to ${action} UI component: ${errorMsg}`,
+      status: "error"
+    };
+  }
+}
+var AGENT_BUS_URL, interactionQueue, MAX_QUEUE_SIZE = 100, INTERACTION_TTL_MS, interactionCallbacks, agentBusWs = null, isConnecting = false, pendingCallbacks;
+var init_canvas_ui2 = __esm(() => {
+  AGENT_BUS_URL = process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
+  interactionQueue = [];
+  INTERACTION_TTL_MS = 5 * 60 * 1000;
+  interactionCallbacks = new Map;
+  pendingCallbacks = [];
+});
+
 // src/tools/impl/Edit.ts
 import { promises as fs3 } from "node:fs";
 import * as path4 from "node:path";
@@ -36133,7 +36656,7 @@ var init_Edit2 = () => {};
 
 // src/cli/helpers/planName.ts
 import { homedir as homedir4 } from "node:os";
-import { join as join4 } from "node:path";
+import { join as join5 } from "node:path";
 function randomElement(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -36145,7 +36668,7 @@ function generatePlanName() {
 }
 function generatePlanFilePath() {
   const name = generatePlanName();
-  return join4(homedir4(), ".letta", "plans", `${name}.md`);
+  return join5(homedir4(), ".letta", "plans", `${name}.md`);
 }
 var adjectives, nouns;
 var init_planName = __esm(() => {
@@ -36751,6 +37274,1213 @@ ${truncatedFiles.join(`
 var DEFAULT_LIMIT = 100;
 var init_GrepFiles2 = __esm(() => {
   init_Grep2();
+});
+
+// src/tools/impl/get_canvas_interactions.ts
+async function get_canvas_interactions(args = {}) {
+  const { peek = false, componentId, interactionType } = args;
+  try {
+    let interactions = peek ? peekCanvasInteractions() : getCanvasInteractions();
+    if (componentId) {
+      interactions = interactions.filter((i) => i.componentId === componentId);
+    }
+    if (interactionType) {
+      interactions = interactions.filter((i) => i.interactionType === interactionType);
+    }
+    const count = interactions.length;
+    let resultMessage;
+    if (count === 0) {
+      resultMessage = "No pending interactions";
+    } else if (count === 1 && interactions[0]) {
+      const i = interactions[0];
+      resultMessage = `1 interaction: ${i.interactionType} on ${i.componentId}${i.data?.actionId ? ` (action: ${i.data.actionId})` : ""}`;
+    } else {
+      resultMessage = `${count} pending interactions`;
+    }
+    return {
+      toolReturn: resultMessage,
+      status: "success",
+      interactions,
+      count
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    return {
+      toolReturn: `Failed to get interactions: ${errorMsg}`,
+      status: "error",
+      interactions: [],
+      count: 0
+    };
+  }
+}
+var init_get_canvas_interactions2 = __esm(() => {
+  init_canvas_ui2();
+});
+
+// node_modules/@google/generative-ai/dist/index.mjs
+class RequestUrl {
+  constructor(model, task, apiKey, stream, requestOptions) {
+    this.model = model;
+    this.task = task;
+    this.apiKey = apiKey;
+    this.stream = stream;
+    this.requestOptions = requestOptions;
+  }
+  toString() {
+    var _a2, _b;
+    const apiVersion = ((_a2 = this.requestOptions) === null || _a2 === undefined ? undefined : _a2.apiVersion) || DEFAULT_API_VERSION;
+    const baseUrl = ((_b = this.requestOptions) === null || _b === undefined ? undefined : _b.baseUrl) || DEFAULT_BASE_URL;
+    let url = `${baseUrl}/${apiVersion}/${this.model}:${this.task}`;
+    if (this.stream) {
+      url += "?alt=sse";
+    }
+    return url;
+  }
+}
+function getClientHeaders(requestOptions) {
+  const clientHeaders = [];
+  if (requestOptions === null || requestOptions === undefined ? undefined : requestOptions.apiClient) {
+    clientHeaders.push(requestOptions.apiClient);
+  }
+  clientHeaders.push(`${PACKAGE_LOG_HEADER}/${PACKAGE_VERSION}`);
+  return clientHeaders.join(" ");
+}
+async function getHeaders(url) {
+  var _a2;
+  const headers = new Headers;
+  headers.append("Content-Type", "application/json");
+  headers.append("x-goog-api-client", getClientHeaders(url.requestOptions));
+  headers.append("x-goog-api-key", url.apiKey);
+  let customHeaders = (_a2 = url.requestOptions) === null || _a2 === undefined ? undefined : _a2.customHeaders;
+  if (customHeaders) {
+    if (!(customHeaders instanceof Headers)) {
+      try {
+        customHeaders = new Headers(customHeaders);
+      } catch (e) {
+        throw new GoogleGenerativeAIRequestInputError(`unable to convert customHeaders value ${JSON.stringify(customHeaders)} to Headers: ${e.message}`);
+      }
+    }
+    for (const [headerName, headerValue] of customHeaders.entries()) {
+      if (headerName === "x-goog-api-key") {
+        throw new GoogleGenerativeAIRequestInputError(`Cannot set reserved header name ${headerName}`);
+      } else if (headerName === "x-goog-api-client") {
+        throw new GoogleGenerativeAIRequestInputError(`Header name ${headerName} can only be set using the apiClient field`);
+      }
+      headers.append(headerName, headerValue);
+    }
+  }
+  return headers;
+}
+async function constructModelRequest(model, task, apiKey, stream, body, requestOptions) {
+  const url = new RequestUrl(model, task, apiKey, stream, requestOptions);
+  return {
+    url: url.toString(),
+    fetchOptions: Object.assign(Object.assign({}, buildFetchOptions(requestOptions)), { method: "POST", headers: await getHeaders(url), body })
+  };
+}
+async function makeModelRequest(model, task, apiKey, stream, body, requestOptions = {}, fetchFn = fetch) {
+  const { url, fetchOptions } = await constructModelRequest(model, task, apiKey, stream, body, requestOptions);
+  return makeRequest(url, fetchOptions, fetchFn);
+}
+async function makeRequest(url, fetchOptions, fetchFn = fetch) {
+  let response;
+  try {
+    response = await fetchFn(url, fetchOptions);
+  } catch (e) {
+    handleResponseError(e, url);
+  }
+  if (!response.ok) {
+    await handleResponseNotOk(response, url);
+  }
+  return response;
+}
+function handleResponseError(e, url) {
+  let err = e;
+  if (err.name === "AbortError") {
+    err = new GoogleGenerativeAIAbortError(`Request aborted when fetching ${url.toString()}: ${e.message}`);
+    err.stack = e.stack;
+  } else if (!(e instanceof GoogleGenerativeAIFetchError || e instanceof GoogleGenerativeAIRequestInputError)) {
+    err = new GoogleGenerativeAIError(`Error fetching from ${url.toString()}: ${e.message}`);
+    err.stack = e.stack;
+  }
+  throw err;
+}
+async function handleResponseNotOk(response, url) {
+  let message = "";
+  let errorDetails;
+  try {
+    const json = await response.json();
+    message = json.error.message;
+    if (json.error.details) {
+      message += ` ${JSON.stringify(json.error.details)}`;
+      errorDetails = json.error.details;
+    }
+  } catch (e) {}
+  throw new GoogleGenerativeAIFetchError(`Error fetching from ${url.toString()}: [${response.status} ${response.statusText}] ${message}`, response.status, response.statusText, errorDetails);
+}
+function buildFetchOptions(requestOptions) {
+  const fetchOptions = {};
+  if ((requestOptions === null || requestOptions === undefined ? undefined : requestOptions.signal) !== undefined || (requestOptions === null || requestOptions === undefined ? undefined : requestOptions.timeout) >= 0) {
+    const controller = new AbortController;
+    if ((requestOptions === null || requestOptions === undefined ? undefined : requestOptions.timeout) >= 0) {
+      setTimeout(() => controller.abort(), requestOptions.timeout);
+    }
+    if (requestOptions === null || requestOptions === undefined ? undefined : requestOptions.signal) {
+      requestOptions.signal.addEventListener("abort", () => {
+        controller.abort();
+      });
+    }
+    fetchOptions.signal = controller.signal;
+  }
+  return fetchOptions;
+}
+function addHelpers(response) {
+  response.text = () => {
+    if (response.candidates && response.candidates.length > 0) {
+      if (response.candidates.length > 1) {
+        console.warn(`This response had ${response.candidates.length} ` + `candidates. Returning text from the first candidate only. ` + `Access response.candidates directly to use the other candidates.`);
+      }
+      if (hadBadFinishReason(response.candidates[0])) {
+        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
+      }
+      return getText(response);
+    } else if (response.promptFeedback) {
+      throw new GoogleGenerativeAIResponseError(`Text not available. ${formatBlockErrorMessage(response)}`, response);
+    }
+    return "";
+  };
+  response.functionCall = () => {
+    if (response.candidates && response.candidates.length > 0) {
+      if (response.candidates.length > 1) {
+        console.warn(`This response had ${response.candidates.length} ` + `candidates. Returning function calls from the first candidate only. ` + `Access response.candidates directly to use the other candidates.`);
+      }
+      if (hadBadFinishReason(response.candidates[0])) {
+        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
+      }
+      console.warn(`response.functionCall() is deprecated. ` + `Use response.functionCalls() instead.`);
+      return getFunctionCalls(response)[0];
+    } else if (response.promptFeedback) {
+      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
+    }
+    return;
+  };
+  response.functionCalls = () => {
+    if (response.candidates && response.candidates.length > 0) {
+      if (response.candidates.length > 1) {
+        console.warn(`This response had ${response.candidates.length} ` + `candidates. Returning function calls from the first candidate only. ` + `Access response.candidates directly to use the other candidates.`);
+      }
+      if (hadBadFinishReason(response.candidates[0])) {
+        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
+      }
+      return getFunctionCalls(response);
+    } else if (response.promptFeedback) {
+      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
+    }
+    return;
+  };
+  return response;
+}
+function getText(response) {
+  var _a2, _b, _c, _d;
+  const textStrings = [];
+  if ((_b = (_a2 = response.candidates) === null || _a2 === undefined ? undefined : _a2[0].content) === null || _b === undefined ? undefined : _b.parts) {
+    for (const part of (_d = (_c = response.candidates) === null || _c === undefined ? undefined : _c[0].content) === null || _d === undefined ? undefined : _d.parts) {
+      if (part.text) {
+        textStrings.push(part.text);
+      }
+      if (part.executableCode) {
+        textStrings.push("\n```" + part.executableCode.language + `
+` + part.executableCode.code + "\n```\n");
+      }
+      if (part.codeExecutionResult) {
+        textStrings.push("\n```\n" + part.codeExecutionResult.output + "\n```\n");
+      }
+    }
+  }
+  if (textStrings.length > 0) {
+    return textStrings.join("");
+  } else {
+    return "";
+  }
+}
+function getFunctionCalls(response) {
+  var _a2, _b, _c, _d;
+  const functionCalls = [];
+  if ((_b = (_a2 = response.candidates) === null || _a2 === undefined ? undefined : _a2[0].content) === null || _b === undefined ? undefined : _b.parts) {
+    for (const part of (_d = (_c = response.candidates) === null || _c === undefined ? undefined : _c[0].content) === null || _d === undefined ? undefined : _d.parts) {
+      if (part.functionCall) {
+        functionCalls.push(part.functionCall);
+      }
+    }
+  }
+  if (functionCalls.length > 0) {
+    return functionCalls;
+  } else {
+    return;
+  }
+}
+function hadBadFinishReason(candidate) {
+  return !!candidate.finishReason && badFinishReasons.includes(candidate.finishReason);
+}
+function formatBlockErrorMessage(response) {
+  var _a2, _b, _c;
+  let message = "";
+  if ((!response.candidates || response.candidates.length === 0) && response.promptFeedback) {
+    message += "Response was blocked";
+    if ((_a2 = response.promptFeedback) === null || _a2 === undefined ? undefined : _a2.blockReason) {
+      message += ` due to ${response.promptFeedback.blockReason}`;
+    }
+    if ((_b = response.promptFeedback) === null || _b === undefined ? undefined : _b.blockReasonMessage) {
+      message += `: ${response.promptFeedback.blockReasonMessage}`;
+    }
+  } else if ((_c = response.candidates) === null || _c === undefined ? undefined : _c[0]) {
+    const firstCandidate = response.candidates[0];
+    if (hadBadFinishReason(firstCandidate)) {
+      message += `Candidate was blocked due to ${firstCandidate.finishReason}`;
+      if (firstCandidate.finishMessage) {
+        message += `: ${firstCandidate.finishMessage}`;
+      }
+    }
+  }
+  return message;
+}
+function __await(v) {
+  return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+function __asyncGenerator(thisArg, _arguments, generator) {
+  if (!Symbol.asyncIterator)
+    throw new TypeError("Symbol.asyncIterator is not defined.");
+  var g = generator.apply(thisArg, _arguments || []), i, q = [];
+  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
+    return this;
+  }, i;
+  function verb(n) {
+    if (g[n])
+      i[n] = function(v) {
+        return new Promise(function(a, b) {
+          q.push([n, v, a, b]) > 1 || resume(n, v);
+        });
+      };
+  }
+  function resume(n, v) {
+    try {
+      step(g[n](v));
+    } catch (e) {
+      settle(q[0][3], e);
+    }
+  }
+  function step(r) {
+    r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
+  }
+  function fulfill(value) {
+    resume("next", value);
+  }
+  function reject(value) {
+    resume("throw", value);
+  }
+  function settle(f, v) {
+    if (f(v), q.shift(), q.length)
+      resume(q[0][0], q[0][1]);
+  }
+}
+function processStream(response) {
+  const inputStream = response.body.pipeThrough(new TextDecoderStream("utf8", { fatal: true }));
+  const responseStream = getResponseStream(inputStream);
+  const [stream1, stream2] = responseStream.tee();
+  return {
+    stream: generateResponseSequence(stream1),
+    response: getResponsePromise(stream2)
+  };
+}
+async function getResponsePromise(stream) {
+  const allResponses = [];
+  const reader = stream.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      return addHelpers(aggregateResponses(allResponses));
+    }
+    allResponses.push(value);
+  }
+}
+function generateResponseSequence(stream) {
+  return __asyncGenerator(this, arguments, function* generateResponseSequence_1() {
+    const reader = stream.getReader();
+    while (true) {
+      const { value, done } = yield __await(reader.read());
+      if (done) {
+        break;
+      }
+      yield yield __await(addHelpers(value));
+    }
+  });
+}
+function getResponseStream(inputStream) {
+  const reader = inputStream.getReader();
+  const stream = new ReadableStream({
+    start(controller) {
+      let currentText = "";
+      return pump();
+      function pump() {
+        return reader.read().then(({ value, done }) => {
+          if (done) {
+            if (currentText.trim()) {
+              controller.error(new GoogleGenerativeAIError("Failed to parse stream"));
+              return;
+            }
+            controller.close();
+            return;
+          }
+          currentText += value;
+          let match = currentText.match(responseLineRE);
+          let parsedResponse;
+          while (match) {
+            try {
+              parsedResponse = JSON.parse(match[1]);
+            } catch (e) {
+              controller.error(new GoogleGenerativeAIError(`Error parsing JSON response: "${match[1]}"`));
+              return;
+            }
+            controller.enqueue(parsedResponse);
+            currentText = currentText.substring(match[0].length);
+            match = currentText.match(responseLineRE);
+          }
+          return pump();
+        }).catch((e) => {
+          let err = e;
+          err.stack = e.stack;
+          if (err.name === "AbortError") {
+            err = new GoogleGenerativeAIAbortError("Request aborted when reading from the stream");
+          } else {
+            err = new GoogleGenerativeAIError("Error reading from the stream");
+          }
+          throw err;
+        });
+      }
+    }
+  });
+  return stream;
+}
+function aggregateResponses(responses) {
+  const lastResponse = responses[responses.length - 1];
+  const aggregatedResponse = {
+    promptFeedback: lastResponse === null || lastResponse === undefined ? undefined : lastResponse.promptFeedback
+  };
+  for (const response of responses) {
+    if (response.candidates) {
+      let candidateIndex = 0;
+      for (const candidate of response.candidates) {
+        if (!aggregatedResponse.candidates) {
+          aggregatedResponse.candidates = [];
+        }
+        if (!aggregatedResponse.candidates[candidateIndex]) {
+          aggregatedResponse.candidates[candidateIndex] = {
+            index: candidateIndex
+          };
+        }
+        aggregatedResponse.candidates[candidateIndex].citationMetadata = candidate.citationMetadata;
+        aggregatedResponse.candidates[candidateIndex].groundingMetadata = candidate.groundingMetadata;
+        aggregatedResponse.candidates[candidateIndex].finishReason = candidate.finishReason;
+        aggregatedResponse.candidates[candidateIndex].finishMessage = candidate.finishMessage;
+        aggregatedResponse.candidates[candidateIndex].safetyRatings = candidate.safetyRatings;
+        if (candidate.content && candidate.content.parts) {
+          if (!aggregatedResponse.candidates[candidateIndex].content) {
+            aggregatedResponse.candidates[candidateIndex].content = {
+              role: candidate.content.role || "user",
+              parts: []
+            };
+          }
+          const newPart = {};
+          for (const part of candidate.content.parts) {
+            if (part.text) {
+              newPart.text = part.text;
+            }
+            if (part.functionCall) {
+              newPart.functionCall = part.functionCall;
+            }
+            if (part.executableCode) {
+              newPart.executableCode = part.executableCode;
+            }
+            if (part.codeExecutionResult) {
+              newPart.codeExecutionResult = part.codeExecutionResult;
+            }
+            if (Object.keys(newPart).length === 0) {
+              newPart.text = "";
+            }
+            aggregatedResponse.candidates[candidateIndex].content.parts.push(newPart);
+          }
+        }
+      }
+      candidateIndex++;
+    }
+    if (response.usageMetadata) {
+      aggregatedResponse.usageMetadata = response.usageMetadata;
+    }
+  }
+  return aggregatedResponse;
+}
+async function generateContentStream(apiKey, model, params, requestOptions) {
+  const response = await makeModelRequest(model, Task.STREAM_GENERATE_CONTENT, apiKey, true, JSON.stringify(params), requestOptions);
+  return processStream(response);
+}
+async function generateContent(apiKey, model, params, requestOptions) {
+  const response = await makeModelRequest(model, Task.GENERATE_CONTENT, apiKey, false, JSON.stringify(params), requestOptions);
+  const responseJson = await response.json();
+  const enhancedResponse = addHelpers(responseJson);
+  return {
+    response: enhancedResponse
+  };
+}
+function formatSystemInstruction(input) {
+  if (input == null) {
+    return;
+  } else if (typeof input === "string") {
+    return { role: "system", parts: [{ text: input }] };
+  } else if (input.text) {
+    return { role: "system", parts: [input] };
+  } else if (input.parts) {
+    if (!input.role) {
+      return { role: "system", parts: input.parts };
+    } else {
+      return input;
+    }
+  }
+}
+function formatNewContent(request) {
+  let newParts = [];
+  if (typeof request === "string") {
+    newParts = [{ text: request }];
+  } else {
+    for (const partOrString of request) {
+      if (typeof partOrString === "string") {
+        newParts.push({ text: partOrString });
+      } else {
+        newParts.push(partOrString);
+      }
+    }
+  }
+  return assignRoleToPartsAndValidateSendMessageRequest(newParts);
+}
+function assignRoleToPartsAndValidateSendMessageRequest(parts) {
+  const userContent = { role: "user", parts: [] };
+  const functionContent = { role: "function", parts: [] };
+  let hasUserContent = false;
+  let hasFunctionContent = false;
+  for (const part of parts) {
+    if ("functionResponse" in part) {
+      functionContent.parts.push(part);
+      hasFunctionContent = true;
+    } else {
+      userContent.parts.push(part);
+      hasUserContent = true;
+    }
+  }
+  if (hasUserContent && hasFunctionContent) {
+    throw new GoogleGenerativeAIError("Within a single message, FunctionResponse cannot be mixed with other type of part in the request for sending chat message.");
+  }
+  if (!hasUserContent && !hasFunctionContent) {
+    throw new GoogleGenerativeAIError("No content is provided for sending chat message.");
+  }
+  if (hasUserContent) {
+    return userContent;
+  }
+  return functionContent;
+}
+function formatCountTokensInput(params, modelParams) {
+  var _a2;
+  let formattedGenerateContentRequest = {
+    model: modelParams === null || modelParams === undefined ? undefined : modelParams.model,
+    generationConfig: modelParams === null || modelParams === undefined ? undefined : modelParams.generationConfig,
+    safetySettings: modelParams === null || modelParams === undefined ? undefined : modelParams.safetySettings,
+    tools: modelParams === null || modelParams === undefined ? undefined : modelParams.tools,
+    toolConfig: modelParams === null || modelParams === undefined ? undefined : modelParams.toolConfig,
+    systemInstruction: modelParams === null || modelParams === undefined ? undefined : modelParams.systemInstruction,
+    cachedContent: (_a2 = modelParams === null || modelParams === undefined ? undefined : modelParams.cachedContent) === null || _a2 === undefined ? undefined : _a2.name,
+    contents: []
+  };
+  const containsGenerateContentRequest = params.generateContentRequest != null;
+  if (params.contents) {
+    if (containsGenerateContentRequest) {
+      throw new GoogleGenerativeAIRequestInputError("CountTokensRequest must have one of contents or generateContentRequest, not both.");
+    }
+    formattedGenerateContentRequest.contents = params.contents;
+  } else if (containsGenerateContentRequest) {
+    formattedGenerateContentRequest = Object.assign(Object.assign({}, formattedGenerateContentRequest), params.generateContentRequest);
+  } else {
+    const content = formatNewContent(params);
+    formattedGenerateContentRequest.contents = [content];
+  }
+  return { generateContentRequest: formattedGenerateContentRequest };
+}
+function formatGenerateContentInput(params) {
+  let formattedRequest;
+  if (params.contents) {
+    formattedRequest = params;
+  } else {
+    const content = formatNewContent(params);
+    formattedRequest = { contents: [content] };
+  }
+  if (params.systemInstruction) {
+    formattedRequest.systemInstruction = formatSystemInstruction(params.systemInstruction);
+  }
+  return formattedRequest;
+}
+function formatEmbedContentInput(params) {
+  if (typeof params === "string" || Array.isArray(params)) {
+    const content = formatNewContent(params);
+    return { content };
+  }
+  return params;
+}
+function validateChatHistory(history) {
+  let prevContent = false;
+  for (const currContent of history) {
+    const { role, parts } = currContent;
+    if (!prevContent && role !== "user") {
+      throw new GoogleGenerativeAIError(`First content should be with role 'user', got ${role}`);
+    }
+    if (!POSSIBLE_ROLES.includes(role)) {
+      throw new GoogleGenerativeAIError(`Each item should include role field. Got ${role} but valid roles are: ${JSON.stringify(POSSIBLE_ROLES)}`);
+    }
+    if (!Array.isArray(parts)) {
+      throw new GoogleGenerativeAIError("Content should have 'parts' property with an array of Parts");
+    }
+    if (parts.length === 0) {
+      throw new GoogleGenerativeAIError("Each Content should have at least one part");
+    }
+    const countFields = {
+      text: 0,
+      inlineData: 0,
+      functionCall: 0,
+      functionResponse: 0,
+      fileData: 0,
+      executableCode: 0,
+      codeExecutionResult: 0
+    };
+    for (const part of parts) {
+      for (const key of VALID_PART_FIELDS) {
+        if (key in part) {
+          countFields[key] += 1;
+        }
+      }
+    }
+    const validParts = VALID_PARTS_PER_ROLE[role];
+    for (const key of VALID_PART_FIELDS) {
+      if (!validParts.includes(key) && countFields[key] > 0) {
+        throw new GoogleGenerativeAIError(`Content with role '${role}' can't contain '${key}' part`);
+      }
+    }
+    prevContent = true;
+  }
+}
+function isValidResponse(response) {
+  var _a2;
+  if (response.candidates === undefined || response.candidates.length === 0) {
+    return false;
+  }
+  const content = (_a2 = response.candidates[0]) === null || _a2 === undefined ? undefined : _a2.content;
+  if (content === undefined) {
+    return false;
+  }
+  if (content.parts === undefined || content.parts.length === 0) {
+    return false;
+  }
+  for (const part of content.parts) {
+    if (part === undefined || Object.keys(part).length === 0) {
+      return false;
+    }
+    if (part.text !== undefined && part.text === "") {
+      return false;
+    }
+  }
+  return true;
+}
+
+class ChatSession {
+  constructor(apiKey, model, params, _requestOptions = {}) {
+    this.model = model;
+    this.params = params;
+    this._requestOptions = _requestOptions;
+    this._history = [];
+    this._sendPromise = Promise.resolve();
+    this._apiKey = apiKey;
+    if (params === null || params === undefined ? undefined : params.history) {
+      validateChatHistory(params.history);
+      this._history = params.history;
+    }
+  }
+  async getHistory() {
+    await this._sendPromise;
+    return this._history;
+  }
+  async sendMessage(request, requestOptions = {}) {
+    var _a2, _b, _c, _d, _e, _f;
+    await this._sendPromise;
+    const newContent = formatNewContent(request);
+    const generateContentRequest = {
+      safetySettings: (_a2 = this.params) === null || _a2 === undefined ? undefined : _a2.safetySettings,
+      generationConfig: (_b = this.params) === null || _b === undefined ? undefined : _b.generationConfig,
+      tools: (_c = this.params) === null || _c === undefined ? undefined : _c.tools,
+      toolConfig: (_d = this.params) === null || _d === undefined ? undefined : _d.toolConfig,
+      systemInstruction: (_e = this.params) === null || _e === undefined ? undefined : _e.systemInstruction,
+      cachedContent: (_f = this.params) === null || _f === undefined ? undefined : _f.cachedContent,
+      contents: [...this._history, newContent]
+    };
+    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    let finalResult;
+    this._sendPromise = this._sendPromise.then(() => generateContent(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions)).then((result) => {
+      var _a3;
+      if (isValidResponse(result.response)) {
+        this._history.push(newContent);
+        const responseContent = Object.assign({
+          parts: [],
+          role: "model"
+        }, (_a3 = result.response.candidates) === null || _a3 === undefined ? undefined : _a3[0].content);
+        this._history.push(responseContent);
+      } else {
+        const blockErrorMessage = formatBlockErrorMessage(result.response);
+        if (blockErrorMessage) {
+          console.warn(`sendMessage() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
+        }
+      }
+      finalResult = result;
+    }).catch((e) => {
+      this._sendPromise = Promise.resolve();
+      throw e;
+    });
+    await this._sendPromise;
+    return finalResult;
+  }
+  async sendMessageStream(request, requestOptions = {}) {
+    var _a2, _b, _c, _d, _e, _f;
+    await this._sendPromise;
+    const newContent = formatNewContent(request);
+    const generateContentRequest = {
+      safetySettings: (_a2 = this.params) === null || _a2 === undefined ? undefined : _a2.safetySettings,
+      generationConfig: (_b = this.params) === null || _b === undefined ? undefined : _b.generationConfig,
+      tools: (_c = this.params) === null || _c === undefined ? undefined : _c.tools,
+      toolConfig: (_d = this.params) === null || _d === undefined ? undefined : _d.toolConfig,
+      systemInstruction: (_e = this.params) === null || _e === undefined ? undefined : _e.systemInstruction,
+      cachedContent: (_f = this.params) === null || _f === undefined ? undefined : _f.cachedContent,
+      contents: [...this._history, newContent]
+    };
+    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    const streamPromise = generateContentStream(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions);
+    this._sendPromise = this._sendPromise.then(() => streamPromise).catch((_ignored) => {
+      throw new Error(SILENT_ERROR);
+    }).then((streamResult) => streamResult.response).then((response) => {
+      if (isValidResponse(response)) {
+        this._history.push(newContent);
+        const responseContent = Object.assign({}, response.candidates[0].content);
+        if (!responseContent.role) {
+          responseContent.role = "model";
+        }
+        this._history.push(responseContent);
+      } else {
+        const blockErrorMessage = formatBlockErrorMessage(response);
+        if (blockErrorMessage) {
+          console.warn(`sendMessageStream() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
+        }
+      }
+    }).catch((e) => {
+      if (e.message !== SILENT_ERROR) {
+        console.error(e);
+      }
+    });
+    return streamPromise;
+  }
+}
+async function countTokens(apiKey, model, params, singleRequestOptions) {
+  const response = await makeModelRequest(model, Task.COUNT_TOKENS, apiKey, false, JSON.stringify(params), singleRequestOptions);
+  return response.json();
+}
+async function embedContent(apiKey, model, params, requestOptions) {
+  const response = await makeModelRequest(model, Task.EMBED_CONTENT, apiKey, false, JSON.stringify(params), requestOptions);
+  return response.json();
+}
+async function batchEmbedContents(apiKey, model, params, requestOptions) {
+  const requestsWithModel = params.requests.map((request) => {
+    return Object.assign(Object.assign({}, request), { model });
+  });
+  const response = await makeModelRequest(model, Task.BATCH_EMBED_CONTENTS, apiKey, false, JSON.stringify({ requests: requestsWithModel }), requestOptions);
+  return response.json();
+}
+
+class GenerativeModel {
+  constructor(apiKey, modelParams, _requestOptions = {}) {
+    this.apiKey = apiKey;
+    this._requestOptions = _requestOptions;
+    if (modelParams.model.includes("/")) {
+      this.model = modelParams.model;
+    } else {
+      this.model = `models/${modelParams.model}`;
+    }
+    this.generationConfig = modelParams.generationConfig || {};
+    this.safetySettings = modelParams.safetySettings || [];
+    this.tools = modelParams.tools;
+    this.toolConfig = modelParams.toolConfig;
+    this.systemInstruction = formatSystemInstruction(modelParams.systemInstruction);
+    this.cachedContent = modelParams.cachedContent;
+  }
+  async generateContent(request, requestOptions = {}) {
+    var _a2;
+    const formattedParams = formatGenerateContentInput(request);
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return generateContent(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a2 = this.cachedContent) === null || _a2 === undefined ? undefined : _a2.name }, formattedParams), generativeModelRequestOptions);
+  }
+  async generateContentStream(request, requestOptions = {}) {
+    var _a2;
+    const formattedParams = formatGenerateContentInput(request);
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return generateContentStream(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a2 = this.cachedContent) === null || _a2 === undefined ? undefined : _a2.name }, formattedParams), generativeModelRequestOptions);
+  }
+  startChat(startChatParams) {
+    var _a2;
+    return new ChatSession(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a2 = this.cachedContent) === null || _a2 === undefined ? undefined : _a2.name }, startChatParams), this._requestOptions);
+  }
+  async countTokens(request, requestOptions = {}) {
+    const formattedParams = formatCountTokensInput(request, {
+      model: this.model,
+      generationConfig: this.generationConfig,
+      safetySettings: this.safetySettings,
+      tools: this.tools,
+      toolConfig: this.toolConfig,
+      systemInstruction: this.systemInstruction,
+      cachedContent: this.cachedContent
+    });
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return countTokens(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
+  }
+  async embedContent(request, requestOptions = {}) {
+    const formattedParams = formatEmbedContentInput(request);
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return embedContent(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
+  }
+  async batchEmbedContents(batchEmbedContentRequest, requestOptions = {}) {
+    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
+    return batchEmbedContents(this.apiKey, this.model, batchEmbedContentRequest, generativeModelRequestOptions);
+  }
+}
+
+class GoogleGenerativeAI {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+  }
+  getGenerativeModel(modelParams, requestOptions) {
+    if (!modelParams.model) {
+      throw new GoogleGenerativeAIError(`Must provide a model name. ` + `Example: genai.getGenerativeModel({ model: 'my-model-name' })`);
+    }
+    return new GenerativeModel(this.apiKey, modelParams, requestOptions);
+  }
+  getGenerativeModelFromCachedContent(cachedContent, modelParams, requestOptions) {
+    if (!cachedContent.name) {
+      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `name` field.");
+    }
+    if (!cachedContent.model) {
+      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `model` field.");
+    }
+    const disallowedDuplicates = ["model", "systemInstruction"];
+    for (const key of disallowedDuplicates) {
+      if ((modelParams === null || modelParams === undefined ? undefined : modelParams[key]) && cachedContent[key] && (modelParams === null || modelParams === undefined ? undefined : modelParams[key]) !== cachedContent[key]) {
+        if (key === "model") {
+          const modelParamsComp = modelParams.model.startsWith("models/") ? modelParams.model.replace("models/", "") : modelParams.model;
+          const cachedContentComp = cachedContent.model.startsWith("models/") ? cachedContent.model.replace("models/", "") : cachedContent.model;
+          if (modelParamsComp === cachedContentComp) {
+            continue;
+          }
+        }
+        throw new GoogleGenerativeAIRequestInputError(`Different value for "${key}" specified in modelParams` + ` (${modelParams[key]}) and cachedContent (${cachedContent[key]})`);
+      }
+    }
+    const modelParamsFromCache = Object.assign(Object.assign({}, modelParams), { model: cachedContent.model, tools: cachedContent.tools, toolConfig: cachedContent.toolConfig, systemInstruction: cachedContent.systemInstruction, cachedContent });
+    return new GenerativeModel(this.apiKey, modelParamsFromCache, requestOptions);
+  }
+}
+var SchemaType, ExecutableCodeLanguage, Outcome, POSSIBLE_ROLES, HarmCategory, HarmBlockThreshold, HarmProbability, BlockReason, FinishReason, TaskType, FunctionCallingMode, DynamicRetrievalMode, GoogleGenerativeAIError, GoogleGenerativeAIResponseError, GoogleGenerativeAIFetchError, GoogleGenerativeAIRequestInputError, GoogleGenerativeAIAbortError, DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com", DEFAULT_API_VERSION = "v1beta", PACKAGE_VERSION = "0.24.1", PACKAGE_LOG_HEADER = "genai-js", Task, badFinishReasons, responseLineRE, VALID_PART_FIELDS, VALID_PARTS_PER_ROLE, SILENT_ERROR = "SILENT_ERROR";
+var init_dist4 = __esm(() => {
+  (function(SchemaType2) {
+    SchemaType2["STRING"] = "string";
+    SchemaType2["NUMBER"] = "number";
+    SchemaType2["INTEGER"] = "integer";
+    SchemaType2["BOOLEAN"] = "boolean";
+    SchemaType2["ARRAY"] = "array";
+    SchemaType2["OBJECT"] = "object";
+  })(SchemaType || (SchemaType = {}));
+  (function(ExecutableCodeLanguage2) {
+    ExecutableCodeLanguage2["LANGUAGE_UNSPECIFIED"] = "language_unspecified";
+    ExecutableCodeLanguage2["PYTHON"] = "python";
+  })(ExecutableCodeLanguage || (ExecutableCodeLanguage = {}));
+  (function(Outcome2) {
+    Outcome2["OUTCOME_UNSPECIFIED"] = "outcome_unspecified";
+    Outcome2["OUTCOME_OK"] = "outcome_ok";
+    Outcome2["OUTCOME_FAILED"] = "outcome_failed";
+    Outcome2["OUTCOME_DEADLINE_EXCEEDED"] = "outcome_deadline_exceeded";
+  })(Outcome || (Outcome = {}));
+  POSSIBLE_ROLES = ["user", "model", "function", "system"];
+  (function(HarmCategory2) {
+    HarmCategory2["HARM_CATEGORY_UNSPECIFIED"] = "HARM_CATEGORY_UNSPECIFIED";
+    HarmCategory2["HARM_CATEGORY_HATE_SPEECH"] = "HARM_CATEGORY_HATE_SPEECH";
+    HarmCategory2["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = "HARM_CATEGORY_SEXUALLY_EXPLICIT";
+    HarmCategory2["HARM_CATEGORY_HARASSMENT"] = "HARM_CATEGORY_HARASSMENT";
+    HarmCategory2["HARM_CATEGORY_DANGEROUS_CONTENT"] = "HARM_CATEGORY_DANGEROUS_CONTENT";
+    HarmCategory2["HARM_CATEGORY_CIVIC_INTEGRITY"] = "HARM_CATEGORY_CIVIC_INTEGRITY";
+  })(HarmCategory || (HarmCategory = {}));
+  (function(HarmBlockThreshold2) {
+    HarmBlockThreshold2["HARM_BLOCK_THRESHOLD_UNSPECIFIED"] = "HARM_BLOCK_THRESHOLD_UNSPECIFIED";
+    HarmBlockThreshold2["BLOCK_LOW_AND_ABOVE"] = "BLOCK_LOW_AND_ABOVE";
+    HarmBlockThreshold2["BLOCK_MEDIUM_AND_ABOVE"] = "BLOCK_MEDIUM_AND_ABOVE";
+    HarmBlockThreshold2["BLOCK_ONLY_HIGH"] = "BLOCK_ONLY_HIGH";
+    HarmBlockThreshold2["BLOCK_NONE"] = "BLOCK_NONE";
+  })(HarmBlockThreshold || (HarmBlockThreshold = {}));
+  (function(HarmProbability2) {
+    HarmProbability2["HARM_PROBABILITY_UNSPECIFIED"] = "HARM_PROBABILITY_UNSPECIFIED";
+    HarmProbability2["NEGLIGIBLE"] = "NEGLIGIBLE";
+    HarmProbability2["LOW"] = "LOW";
+    HarmProbability2["MEDIUM"] = "MEDIUM";
+    HarmProbability2["HIGH"] = "HIGH";
+  })(HarmProbability || (HarmProbability = {}));
+  (function(BlockReason2) {
+    BlockReason2["BLOCKED_REASON_UNSPECIFIED"] = "BLOCKED_REASON_UNSPECIFIED";
+    BlockReason2["SAFETY"] = "SAFETY";
+    BlockReason2["OTHER"] = "OTHER";
+  })(BlockReason || (BlockReason = {}));
+  (function(FinishReason2) {
+    FinishReason2["FINISH_REASON_UNSPECIFIED"] = "FINISH_REASON_UNSPECIFIED";
+    FinishReason2["STOP"] = "STOP";
+    FinishReason2["MAX_TOKENS"] = "MAX_TOKENS";
+    FinishReason2["SAFETY"] = "SAFETY";
+    FinishReason2["RECITATION"] = "RECITATION";
+    FinishReason2["LANGUAGE"] = "LANGUAGE";
+    FinishReason2["BLOCKLIST"] = "BLOCKLIST";
+    FinishReason2["PROHIBITED_CONTENT"] = "PROHIBITED_CONTENT";
+    FinishReason2["SPII"] = "SPII";
+    FinishReason2["MALFORMED_FUNCTION_CALL"] = "MALFORMED_FUNCTION_CALL";
+    FinishReason2["OTHER"] = "OTHER";
+  })(FinishReason || (FinishReason = {}));
+  (function(TaskType2) {
+    TaskType2["TASK_TYPE_UNSPECIFIED"] = "TASK_TYPE_UNSPECIFIED";
+    TaskType2["RETRIEVAL_QUERY"] = "RETRIEVAL_QUERY";
+    TaskType2["RETRIEVAL_DOCUMENT"] = "RETRIEVAL_DOCUMENT";
+    TaskType2["SEMANTIC_SIMILARITY"] = "SEMANTIC_SIMILARITY";
+    TaskType2["CLASSIFICATION"] = "CLASSIFICATION";
+    TaskType2["CLUSTERING"] = "CLUSTERING";
+  })(TaskType || (TaskType = {}));
+  (function(FunctionCallingMode2) {
+    FunctionCallingMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
+    FunctionCallingMode2["AUTO"] = "AUTO";
+    FunctionCallingMode2["ANY"] = "ANY";
+    FunctionCallingMode2["NONE"] = "NONE";
+  })(FunctionCallingMode || (FunctionCallingMode = {}));
+  (function(DynamicRetrievalMode2) {
+    DynamicRetrievalMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
+    DynamicRetrievalMode2["MODE_DYNAMIC"] = "MODE_DYNAMIC";
+  })(DynamicRetrievalMode || (DynamicRetrievalMode = {}));
+  GoogleGenerativeAIError = class GoogleGenerativeAIError extends Error {
+    constructor(message) {
+      super(`[GoogleGenerativeAI Error]: ${message}`);
+    }
+  };
+  GoogleGenerativeAIResponseError = class GoogleGenerativeAIResponseError extends GoogleGenerativeAIError {
+    constructor(message, response) {
+      super(message);
+      this.response = response;
+    }
+  };
+  GoogleGenerativeAIFetchError = class GoogleGenerativeAIFetchError extends GoogleGenerativeAIError {
+    constructor(message, status, statusText, errorDetails) {
+      super(message);
+      this.status = status;
+      this.statusText = statusText;
+      this.errorDetails = errorDetails;
+    }
+  };
+  GoogleGenerativeAIRequestInputError = class GoogleGenerativeAIRequestInputError extends GoogleGenerativeAIError {
+  };
+  GoogleGenerativeAIAbortError = class GoogleGenerativeAIAbortError extends GoogleGenerativeAIError {
+  };
+  (function(Task2) {
+    Task2["GENERATE_CONTENT"] = "generateContent";
+    Task2["STREAM_GENERATE_CONTENT"] = "streamGenerateContent";
+    Task2["COUNT_TOKENS"] = "countTokens";
+    Task2["EMBED_CONTENT"] = "embedContent";
+    Task2["BATCH_EMBED_CONTENTS"] = "batchEmbedContents";
+  })(Task || (Task = {}));
+  badFinishReasons = [
+    FinishReason.RECITATION,
+    FinishReason.SAFETY,
+    FinishReason.LANGUAGE
+  ];
+  responseLineRE = /^data\: (.*)(?:\n\n|\r\r|\r\n\r\n)/;
+  VALID_PART_FIELDS = [
+    "text",
+    "inlineData",
+    "functionCall",
+    "functionResponse",
+    "executableCode",
+    "codeExecutionResult"
+  ];
+  VALID_PARTS_PER_ROLE = {
+    user: ["text", "inlineData"],
+    function: ["functionResponse"],
+    model: ["text", "functionCall", "executableCode", "codeExecutionResult"],
+    system: ["text"]
+  };
+});
+
+// src/tools/impl/image_generator.ts
+function getDefaultProvider() {
+  const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (googleKey) {
+    return "google";
+  } else if (openaiKey) {
+    return "openai";
+  }
+  return "openai";
+}
+async function image_generator(args) {
+  try {
+    console.error("image_generator called with args:", JSON.stringify(args, null, 2));
+    if (!args || typeof args !== "object") {
+      return {
+        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
+        status: "error"
+      };
+    }
+    if (!args.prompt) {
+      return {
+        toolReturn: "prompt is required",
+        status: "error"
+      };
+    }
+    const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!googleKey && !openaiKey) {
+      return {
+        toolReturn: "No image generation API keys configured. Set either GOOGLE_API_KEY (preferred) or OPENAI_API_KEY in your .env file.",
+        status: "error"
+      };
+    }
+    const provider = args.provider || getDefaultProvider();
+    let imageUrl;
+    let revisedPrompt;
+    switch (provider) {
+      case "openai":
+        ({ imageUrl, revisedPrompt } = await generateWithOpenAI(args));
+        break;
+      case "google":
+        ({ imageUrl } = await generateWithGoogle(args));
+        break;
+      default:
+        return {
+          toolReturn: `Unknown provider: ${provider}. Valid providers: openai, google`,
+          status: "error"
+        };
+    }
+    let toolReturn = `Image generated successfully!
+Provider: ${provider}
+Prompt: ${args.prompt}`;
+    if (revisedPrompt) {
+      toolReturn += `
+Revised prompt: ${revisedPrompt}`;
+    }
+    if (imageUrl.startsWith("data:")) {
+      toolReturn += `
+Image: base64 data (${Math.round(imageUrl.length / 1024)}KB)`;
+    } else {
+      toolReturn += `
+Image URL: ${imageUrl}`;
+    }
+    let asset;
+    if (args.save_as_asset) {
+      asset = await saveAsAsset(imageUrl, args);
+      toolReturn += `
+
+Saved as asset: ${asset.id}
+Path: ${asset.path}`;
+    } else {
+      toolReturn += `
+
+To save this image, use the asset_manager tool or set save_as_asset: true`;
+    }
+    await broadcastStateChange("image_generated", {
+      assetId: asset?.id,
+      assetUrl: asset?.path ? `/api/assets/${asset.path}` : undefined,
+      storyId: args.story_id,
+      worldId: args.world_checkpoint
+    });
+    return {
+      toolReturn,
+      status: "success",
+      image_url: imageUrl,
+      revised_prompt: revisedPrompt,
+      asset
+    };
+  } catch (error) {
+    return {
+      toolReturn: `Error generating image: ${error instanceof Error ? error.message : String(error)}`,
+      status: "error"
+    };
+  }
+}
+async function generateWithOpenAI(args) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY environment variable not set");
+  }
+  let size = args.size || DEFAULT_SIZE;
+  if (size === "1792x1024") {
+    size = "1536x1024";
+  } else if (size === "1024x1792") {
+    size = "1024x1536";
+  } else if (size === "512x512" || size === "256x256") {
+    size = "1024x1024";
+  }
+  const model = args.model || "gpt-image-1.5";
+  const requestBody = {
+    model,
+    prompt: args.prompt,
+    n: 1,
+    size
+  };
+  if (model.startsWith("dall-e")) {
+    requestBody.response_format = "b64_json";
+    requestBody.quality = args.quality || DEFAULT_QUALITY;
+    requestBody.style = args.style || DEFAULT_STYLE;
+  }
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(requestBody)
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`OpenAI API error (${response.status}): ${error}`);
+  }
+  const data = await response.json();
+  if (!data.data || data.data.length === 0) {
+    throw new Error("No image returned from OpenAI");
+  }
+  const imageData = data.data[0];
+  if (!imageData) {
+    throw new Error("No image data returned from OpenAI");
+  }
+  let imageUrl;
+  if (imageData.b64_json) {
+    imageUrl = `data:image/png;base64,${imageData.b64_json}`;
+  } else if (imageData.url) {
+    const imgResponse = await fetch(imageData.url);
+    const imgBuffer = await imgResponse.arrayBuffer();
+    const base64 = Buffer.from(imgBuffer).toString("base64");
+    imageUrl = `data:image/png;base64,${base64}`;
+  } else {
+    throw new Error("No image data in response");
+  }
+  return {
+    imageUrl,
+    revisedPrompt: imageData.revised_prompt
+  };
+}
+async function generateWithGoogle(args) {
+  const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set. Get one at https://aistudio.google.com/apikey");
+  }
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const modelName = args.model || "gemini-3-pro-image-preview";
+  const model = genAI.getGenerativeModel({
+    model: modelName
+  });
+  const _numberOfImages = args.number_of_images || 1;
+  const result = await model.generateContent({
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: args.prompt
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      responseModalities: ["TEXT", "IMAGE"],
+      maxOutputTokens: 8192
+    }
+  });
+  const response = result.response;
+  if (!response.candidates || response.candidates.length === 0) {
+    throw new Error("No image generated by Google");
+  }
+  const candidate = response.candidates[0];
+  if (!candidate || !candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+    throw new Error("No image data in response");
+  }
+  const imagePart = candidate.content.parts.find((part) => part.inlineData?.mimeType?.startsWith("image/"));
+  if (!imagePart || !imagePart.inlineData) {
+    throw new Error("No image data found in response");
+  }
+  const base64Data = imagePart.inlineData.data;
+  const mimeType = imagePart.inlineData.mimeType || "image/png";
+  const dataUrl = `data:${mimeType};base64,${base64Data}`;
+  return {
+    imageUrl: dataUrl
+  };
+}
+async function saveAsAsset(imageUrl, args) {
+  const imageResponse = await fetch(imageUrl);
+  if (!imageResponse.ok) {
+    throw new Error(`Failed to download image: ${imageResponse.status}`);
+  }
+  const imageBuffer = await imageResponse.arrayBuffer();
+  const base64Data = Buffer.from(imageBuffer).toString("base64");
+  const dataUrl = `data:image/png;base64,${base64Data}`;
+  const assetId = args.asset_id || `img_${Date.now()}`;
+  const fileName = `${assetId}.png`;
+  let fullPath;
+  if (args.asset_path) {
+    if (args.story_id) {
+      fullPath = `${args.story_id}/${args.asset_path}`;
+    } else if (args.world_checkpoint) {
+      fullPath = `worlds/${args.world_checkpoint}/${args.asset_path}`;
+    } else {
+      fullPath = args.asset_path;
+    }
+  } else {
+    if (args.story_id) {
+      fullPath = `${args.story_id}/${fileName}`;
+    } else if (args.world_checkpoint) {
+      fullPath = `worlds/${args.world_checkpoint}/${fileName}`;
+    } else {
+      fullPath = fileName;
+    }
+  }
+  const asset = {
+    id: assetId,
+    type: "image",
+    path: fullPath,
+    description: args.asset_description || `Generated image: ${args.prompt.slice(0, 100)}`,
+    generated: true,
+    prompt: args.prompt
+  };
+  const result = await asset_manager({
+    operation: "save",
+    asset,
+    data: dataUrl
+  });
+  if (result.status === "error") {
+    throw new Error(`Failed to save asset: ${result.toolReturn}`);
+  }
+  return asset;
+}
+var DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard", DEFAULT_STYLE = "vivid";
+var init_image_generator2 = __esm(() => {
+  init_dist4();
+  init_asset_manager2();
+  init_canvas_ui2();
 });
 
 // src/tools/impl/KillBash.ts
@@ -38367,18 +40097,18 @@ var init_LS2 = __esm(() => {
 });
 
 // src/tools/impl/LS.ts
-import { readdir as readdir2, stat } from "node:fs/promises";
-import { join as join6, resolve as resolve6 } from "node:path";
+import { readdir as readdir3, stat } from "node:fs/promises";
+import { join as join7, resolve as resolve6 } from "node:path";
 async function ls(args) {
   validateRequiredParams(args, ["path"], "LS");
   validateParamTypes(args, LS_default2, "LS");
   const { path: inputPath, ignore = [] } = args;
   const dirPath = resolve6(inputPath);
   try {
-    const items = await readdir2(dirPath);
+    const items = await readdir3(dirPath);
     const filteredItems = items.filter((item) => !ignore.some((pattern) => import_picomatch.default.isMatch(item, pattern)));
     const fileInfos = await Promise.all(filteredItems.map(async (item) => {
-      const fullPath = join6(dirPath, item);
+      const fullPath = join7(dirPath, item);
       try {
         const stats = await stat(fullPath);
         return {
@@ -42067,7 +43797,7 @@ import { posix, win32 } from "node:path";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
 import { lstatSync, readdir as readdirCB, readdirSync, readlinkSync, realpathSync as rps } from "fs";
 import * as actualFS from "node:fs";
-import { lstat, readdir as readdir3, readlink, realpath } from "node:fs/promises";
+import { lstat, readdir as readdir4, readlink, realpath } from "node:fs/promises";
 var realpathSync, defaultFS, fsFromOption = (fsOption) => !fsOption || fsOption === defaultFS || fsOption === actualFS ? defaultFS : {
   ...defaultFS,
   ...fsOption,
@@ -42102,7 +43832,7 @@ var init_esm5 = __esm(() => {
     realpathSync,
     promises: {
       lstat,
-      readdir: readdir3,
+      readdir: readdir4,
       readlink,
       realpath
     }
@@ -44471,6 +46201,9 @@ var init_RunShellCommandGemini2 = __esm(async () => {
 
 // src/tools/impl/SearchFileContentGemini.ts
 async function search_file_content(args) {
+  if (!args.pattern || args.pattern.trim() === "") {
+    return { message: "No matches found (empty pattern)" };
+  }
   const lettaArgs = {
     pattern: args.pattern,
     path: args.dir_path,
@@ -44688,16 +46421,16 @@ __export(exports_skills, {
   SKILLS_DIR: () => SKILLS_DIR,
   GLOBAL_SKILLS_DIR: () => GLOBAL_SKILLS_DIR
 });
-import { existsSync as existsSync4 } from "node:fs";
-import { readdir as readdir4, readFile as readFile3 } from "node:fs/promises";
-import { dirname as dirname4, join as join7 } from "node:path";
+import { existsSync as existsSync5 } from "node:fs";
+import { readdir as readdir5, readFile as readFile4 } from "node:fs/promises";
+import { dirname as dirname4, join as join8 } from "node:path";
 import { fileURLToPath as fileURLToPath6 } from "node:url";
 function getBundledSkillsPath() {
   const thisDir = dirname4(fileURLToPath6(import.meta.url));
   if (thisDir.includes("src/agent") || thisDir.includes("src\\agent")) {
-    return join7(thisDir, "../skills/builtin");
+    return join8(thisDir, "../skills/builtin");
   }
-  return join7(thisDir, "skills");
+  return join8(thisDir, "skills");
 }
 async function getBundledSkills() {
   const bundledPath = getBundledSkillsPath();
@@ -44706,7 +46439,7 @@ async function getBundledSkills() {
 }
 async function discoverSkillsFromDir(skillsPath, source) {
   const errors = [];
-  if (!existsSync4(skillsPath)) {
+  if (!existsSync5(skillsPath)) {
     return { skills: [], errors: [] };
   }
   const skills = [];
@@ -44720,7 +46453,7 @@ async function discoverSkillsFromDir(skillsPath, source) {
   }
   return { skills, errors };
 }
-async function discoverSkills(projectSkillsPath = join7(process.cwd(), SKILLS_DIR)) {
+async function discoverSkills(projectSkillsPath = join8(process.cwd(), SKILLS_DIR)) {
   const allErrors = [];
   const skillsById = new Map;
   const bundledSkills = await getBundledSkills();
@@ -44744,9 +46477,9 @@ async function discoverSkills(projectSkillsPath = join7(process.cwd(), SKILLS_DI
 }
 async function findSkillFiles(currentPath, rootPath, skills, errors, source) {
   try {
-    const entries = await readdir4(currentPath, { withFileTypes: true });
+    const entries = await readdir5(currentPath, { withFileTypes: true });
     for (const entry of entries) {
-      const fullPath = join7(currentPath, entry.name);
+      const fullPath = join8(currentPath, entry.name);
       if (entry.isDirectory()) {
         await findSkillFiles(fullPath, rootPath, skills, errors, source);
       } else if (entry.isFile() && entry.name.toUpperCase() === "SKILL.MD") {
@@ -44771,7 +46504,7 @@ async function findSkillFiles(currentPath, rootPath, skills, errors, source) {
   }
 }
 async function parseSkillFile(filePath, rootPath, source) {
-  const content = await readFile3(filePath, "utf-8");
+  const content = await readFile4(filePath, "utf-8");
   const { frontmatter, body } = parseFrontmatter(content);
   const normalizedRoot = rootPath.endsWith("/") ? rootPath.slice(0, -1) : rootPath;
   const relativePath = filePath.slice(normalizedRoot.length + 1);
@@ -44932,13 +46665,13 @@ function formatSkillsForMemory(skills, skillsDirectory) {
 }
 var SKILLS_DIR = ".skills", GLOBAL_SKILLS_DIR, SKILLS_BLOCK_CHAR_LIMIT = 20000;
 var init_skills2 = __esm(() => {
-  GLOBAL_SKILLS_DIR = join7(process.env.HOME || process.env.USERPROFILE || "~", ".letta/skills");
+  GLOBAL_SKILLS_DIR = join8(process.env.HOME || process.env.USERPROFILE || "~", ".letta/skills");
 });
 
 // src/tools/impl/Skill.ts
 import { readdirSync as readdirSync2 } from "node:fs";
-import { readFile as readFile4 } from "node:fs/promises";
-import { dirname as dirname5, join as join8 } from "node:path";
+import { readFile as readFile5 } from "node:fs/promises";
+import { dirname as dirname5, join as join9 } from "node:path";
 function parseLoadedSkills(value) {
   const skillMap = new Map;
   const skillHeaderRegex = /# Skill: ([^\n]+)/g;
@@ -45009,24 +46742,24 @@ async function readSkillContent(skillId, skillsDir) {
   const bundledSkill = bundledSkills.find((s) => s.id === skillId);
   if (bundledSkill?.path) {
     try {
-      const content = await readFile4(bundledSkill.path, "utf-8");
+      const content = await readFile5(bundledSkill.path, "utf-8");
       return { content, path: bundledSkill.path };
     } catch {}
   }
-  const globalSkillPath = join8(GLOBAL_SKILLS_DIR, skillId, "SKILL.md");
+  const globalSkillPath = join9(GLOBAL_SKILLS_DIR, skillId, "SKILL.md");
   try {
-    const content = await readFile4(globalSkillPath, "utf-8");
+    const content = await readFile5(globalSkillPath, "utf-8");
     return { content, path: globalSkillPath };
   } catch {}
-  const projectSkillPath = join8(skillsDir, skillId, "SKILL.md");
+  const projectSkillPath = join9(skillsDir, skillId, "SKILL.md");
   try {
-    const content = await readFile4(projectSkillPath, "utf-8");
+    const content = await readFile5(projectSkillPath, "utf-8");
     return { content, path: projectSkillPath };
   } catch (primaryError) {
     try {
-      const bundledSkillsDir = join8(process.cwd(), "skills", "skills");
-      const bundledSkillPath = join8(bundledSkillsDir, skillId, "SKILL.md");
-      const content = await readFile4(bundledSkillPath, "utf-8");
+      const bundledSkillsDir = join9(process.cwd(), "skills", "skills");
+      const bundledSkillPath = join9(bundledSkillsDir, skillId, "SKILL.md");
+      const content = await readFile5(bundledSkillPath, "utf-8");
       return { content, path: bundledSkillPath };
     } catch {
       throw primaryError;
@@ -45046,7 +46779,7 @@ async function getResolvedSkillsDir(client, agentId) {
     } catch {}
   }
   if (!skillsDir) {
-    skillsDir = join8(process.cwd(), SKILLS_DIR);
+    skillsDir = join9(process.cwd(), SKILLS_DIR);
   }
   return skillsDir;
 }
@@ -45195,6 +46928,980 @@ var init_Skill2 = __esm(async () => {
   init_context();
   init_skills2();
   await init_client2();
+});
+
+// src/tools/impl/send_suggestion.ts
+function ensureAgentBusConnection2() {
+  return new Promise((resolve10, reject) => {
+    if (agentBusWs2 && agentBusWs2.readyState === WebSocket.OPEN) {
+      resolve10(agentBusWs2);
+      return;
+    }
+    if (isConnecting2) {
+      pendingCallbacks2.push({ resolve: resolve10, reject });
+      return;
+    }
+    isConnecting2 = true;
+    const ws = new WebSocket(AGENT_BUS_URL2);
+    ws.onopen = () => {
+      console.log("[send_suggestion] Connected to Agent Bus");
+      isConnecting2 = false;
+      agentBusWs2 = ws;
+      resolve10(ws);
+      for (const cb of pendingCallbacks2) {
+        cb.resolve(ws);
+      }
+      pendingCallbacks2 = [];
+    };
+    ws.onerror = (event) => {
+      console.error("[send_suggestion] Agent Bus connection error:", event);
+      isConnecting2 = false;
+      const err = new Error("Failed to connect to Agent Bus");
+      reject(err);
+      for (const cb of pendingCallbacks2) {
+        cb.reject(err);
+      }
+      pendingCallbacks2 = [];
+    };
+    ws.onclose = () => {
+      console.log("[send_suggestion] Agent Bus connection closed");
+      agentBusWs2 = null;
+      isConnecting2 = false;
+    };
+    ws.onmessage = () => {};
+  });
+}
+async function send_suggestion(args) {
+  const { title, description, priority, action_id, action_label, action_data } = args;
+  try {
+    const ws = await ensureAgentBusConnection2();
+    const suggestionId = `sug-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const message = {
+      type: "suggestion",
+      payload: {
+        id: suggestionId,
+        priority,
+        title,
+        description,
+        actionId: action_id,
+        actionLabel: action_label,
+        actionData: action_data
+      }
+    };
+    ws.send(JSON.stringify(message));
+    console.log(`[send_suggestion] Sent suggestion: ${title} (${priority})`);
+    return {
+      toolReturn: `Suggestion "${title}" sent to canvas`,
+      status: "success"
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("[send_suggestion] Error:", errorMsg);
+    return {
+      toolReturn: `Failed to send suggestion: ${errorMsg}`,
+      status: "error"
+    };
+  }
+}
+var AGENT_BUS_URL2, agentBusWs2 = null, isConnecting2 = false, pendingCallbacks2;
+var init_send_suggestion2 = __esm(() => {
+  AGENT_BUS_URL2 = process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
+  pendingCallbacks2 = [];
+});
+
+// src/tools/impl/world_manager.ts
+import { existsSync as existsSync6 } from "node:fs";
+import { mkdir as mkdir3, readFile as readFile6, writeFile as writeFile3 } from "node:fs/promises";
+import { join as join10 } from "node:path";
+async function world_manager(args) {
+  try {
+    console.error("world_manager called with args:", JSON.stringify(args, null, 2));
+    if (!args || typeof args !== "object") {
+      return {
+        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
+        status: "error"
+      };
+    }
+    if (!args.operation) {
+      return {
+        toolReturn: `Missing required parameter: operation. Received args: ${JSON.stringify(Object.keys(args))}`,
+        status: "error"
+      };
+    }
+    switch (args.operation) {
+      case "save":
+        return await saveWorld(args);
+      case "load":
+        return await loadWorld(args);
+      case "diff":
+        return await diffWorlds(args);
+      case "update":
+        return await updateWorld(args);
+      default:
+        return {
+          toolReturn: `Unknown operation: ${args.operation}. Valid operations: save, load, diff, update`,
+          status: "error"
+        };
+    }
+  } catch (error) {
+    return {
+      toolReturn: `Error in world_manager: ${error instanceof Error ? error.message : String(error)}`,
+      status: "error"
+    };
+  }
+}
+async function saveWorld(args) {
+  if (!args.checkpoint_name) {
+    return {
+      toolReturn: "checkpoint_name is required for save operation",
+      status: "error"
+    };
+  }
+  if (!args.world) {
+    return {
+      toolReturn: "world is required for save operation",
+      status: "error"
+    };
+  }
+  let world;
+  if (typeof args.world === "string") {
+    try {
+      world = JSON.parse(args.world);
+    } catch (error) {
+      return {
+        toolReturn: `Failed to parse world JSON: ${error instanceof Error ? error.message : String(error)}`,
+        status: "error"
+      };
+    }
+  } else {
+    world = args.world;
+  }
+  await mkdir3(WORLDS_DIR, { recursive: true });
+  const now = new Date().toISOString();
+  const shouldIncrementVersion = (world.development.revision_notes?.length ?? 0) > 0 && world.development.version > 0;
+  const worldToSave = {
+    ...world,
+    development: {
+      ...world.development,
+      version: shouldIncrementVersion ? world.development.version + 1 : Math.max(1, world.development.version),
+      last_modified: now
+    }
+  };
+  if (world.development.revision_notes?.length) {
+    const changelogEntry = {
+      version: worldToSave.development.version,
+      timestamp: now,
+      changes: world.development.revision_notes,
+      reason: world.development.revision_notes.join("; ")
+    };
+    worldToSave.changelog = [...world.changelog || [], changelogEntry];
+  }
+  const filePath = join10(WORLDS_DIR, `${args.checkpoint_name}.json`);
+  await writeFile3(filePath, JSON.stringify(worldToSave, null, 2), "utf-8");
+  await broadcastStateChange("world_entered", {
+    worldId: args.checkpoint_name,
+    version: worldToSave.development.version
+  });
+  return {
+    toolReturn: `World saved to ${filePath}
+Version: ${worldToSave.development.version}
+State: ${worldToSave.development.state}`,
+    status: "success",
+    data: worldToSave
+  };
+}
+async function loadWorld(args) {
+  if (!args.checkpoint_name) {
+    return {
+      toolReturn: "checkpoint_name is required for load operation",
+      status: "error"
+    };
+  }
+  const filePath = join10(WORLDS_DIR, `${args.checkpoint_name}.json`);
+  if (!existsSync6(filePath)) {
+    return {
+      toolReturn: `World checkpoint not found: ${filePath}`,
+      status: "error"
+    };
+  }
+  const content = await readFile6(filePath, "utf-8");
+  const world = JSON.parse(content);
+  return {
+    toolReturn: `World loaded from ${filePath}
+Version: ${world.development.version}
+State: ${world.development.state}
+Premise: ${world.foundation.core_premise}`,
+    status: "success",
+    data: world
+  };
+}
+async function diffWorlds(args) {
+  if (!args.checkpoint_name || !args.checkpoint_name_2) {
+    return {
+      toolReturn: "Both checkpoint_name and checkpoint_name_2 are required for diff operation",
+      status: "error"
+    };
+  }
+  const world1Result = await loadWorld({
+    operation: "load",
+    checkpoint_name: args.checkpoint_name
+  });
+  const world2Result = await loadWorld({
+    operation: "load",
+    checkpoint_name: args.checkpoint_name_2
+  });
+  if (world1Result.status === "error" || world2Result.status === "error") {
+    return {
+      toolReturn: `Failed to load worlds for diff: ${world1Result.toolReturn} | ${world2Result.toolReturn}`,
+      status: "error"
+    };
+  }
+  const world1 = world1Result.data;
+  const world2 = world2Result.data;
+  const diff2 = computeDiff(world1, world2);
+  const summary = formatDiffSummary(diff2);
+  return {
+    toolReturn: summary,
+    status: "success",
+    data: diff2
+  };
+}
+function computeDiff(world1, world2) {
+  const w1Elements = new Map(world1.surface.visible_elements.map((e) => [e.id, e]));
+  const w2Elements = new Map(world2.surface.visible_elements.map((e) => [e.id, e]));
+  const elementsAdded = [];
+  const elementsRemoved = [];
+  const elementsModified = [];
+  for (const [id, elem] of w2Elements) {
+    if (!w1Elements.has(id)) {
+      elementsAdded.push(elem);
+    } else {
+      const w1Elem = w1Elements.get(id);
+      const changes = detectElementChanges(w1Elem, elem);
+      if (changes.length > 0) {
+        elementsModified.push({ id, changes });
+      }
+    }
+  }
+  for (const id of w1Elements.keys()) {
+    if (!w2Elements.has(id)) {
+      elementsRemoved.push(id);
+    }
+  }
+  const w1Rules = new Map(world1.foundation.rules.map((r) => [r.id, r]));
+  const w2Rules = new Map(world2.foundation.rules.map((r) => [r.id, r]));
+  const rulesAdded = [];
+  const rulesRemoved = [];
+  const rulesModified = [];
+  for (const [id, rule] of w2Rules) {
+    if (!w1Rules.has(id)) {
+      rulesAdded.push(rule);
+    } else {
+      const w1Rule = w1Rules.get(id);
+      const changes = detectRuleChanges(w1Rule, rule);
+      if (changes.length > 0) {
+        rulesModified.push({ id, changes });
+      }
+    }
+  }
+  for (const id of w1Rules.keys()) {
+    if (!w2Rules.has(id)) {
+      rulesRemoved.push(id);
+    }
+  }
+  const w1Constraints = new Map(world1.constraints.map((c) => [c.id, c]));
+  const w2Constraints = new Map(world2.constraints.map((c) => [c.id, c]));
+  const constraintsAdded = [];
+  const constraintsRemoved = [];
+  for (const [id, constraint] of w2Constraints) {
+    if (!w1Constraints.has(id)) {
+      constraintsAdded.push(constraint);
+    }
+  }
+  for (const id of w1Constraints.keys()) {
+    if (!w2Constraints.has(id)) {
+      constraintsRemoved.push(id);
+    }
+  }
+  const depthChanges = {};
+  const w1Depths = world1.foundation.deep_focus_areas.depth_level;
+  const w2Depths = world2.foundation.deep_focus_areas.depth_level;
+  for (const area in w2Depths) {
+    const w1Depth = w1Depths[area];
+    const w2Depth = w2Depths[area];
+    if (w1Depth && w2Depth && w1Depth !== w2Depth) {
+      depthChanges[area] = {
+        from: w1Depth,
+        to: w2Depth
+      };
+    }
+  }
+  const w1ChangelogCount = world1.changelog?.length || 0;
+  const changelogEntries = world2.changelog?.slice(w1ChangelogCount) || [];
+  const stateChange = world1.development.state !== world2.development.state ? [world1.development.state, world2.development.state] : undefined;
+  return {
+    version_diff: [world1.development.version, world2.development.version],
+    timestamp_diff: [
+      world1.development.last_modified,
+      world2.development.last_modified
+    ],
+    state_change: stateChange,
+    elements_added: elementsAdded,
+    elements_removed: elementsRemoved,
+    elements_modified: elementsModified,
+    rules_added: rulesAdded,
+    rules_removed: rulesRemoved,
+    rules_modified: rulesModified,
+    constraints_added: constraintsAdded,
+    constraints_removed: constraintsRemoved,
+    depth_changes: depthChanges,
+    changelog_entries: changelogEntries,
+    summary: ""
+  };
+}
+function detectElementChanges(elem1, elem2) {
+  const changes = [];
+  if (elem1.description !== elem2.description) {
+    changes.push("description changed");
+  }
+  if (elem1.detail_level !== elem2.detail_level) {
+    changes.push(`detail_level: ${elem1.detail_level} → ${elem2.detail_level}`);
+  }
+  if (elem1.name !== elem2.name) {
+    changes.push(`name: ${elem1.name || "(none)"} → ${elem2.name || "(none)"}`);
+  }
+  if (JSON.stringify(elem1.properties) !== JSON.stringify(elem2.properties)) {
+    changes.push("properties modified");
+  }
+  return changes;
+}
+function detectRuleChanges(rule1, rule2) {
+  const changes = [];
+  if (rule1.statement !== rule2.statement) {
+    changes.push("statement changed");
+  }
+  if (rule1.certainty !== rule2.certainty) {
+    changes.push(`certainty: ${rule1.certainty} → ${rule2.certainty}`);
+  }
+  if (rule1.revealed !== rule2.revealed) {
+    changes.push(`revealed: ${rule1.revealed} → ${rule2.revealed}`);
+  }
+  return changes;
+}
+function formatDiffSummary(diff2) {
+  const lines = [];
+  lines.push(`=== World Diff: v${diff2.version_diff[0]} → v${diff2.version_diff[1]} ===
+`);
+  if (diff2.state_change) {
+    lines.push(`State: ${diff2.state_change[0]} → ${diff2.state_change[1]}`);
+  }
+  if (diff2.elements_added.length > 0) {
+    lines.push(`
+✓ Elements Added (${diff2.elements_added.length}):`);
+    for (const elem of diff2.elements_added) {
+      lines.push(`  - ${elem.type}: ${elem.name || elem.id}`);
+    }
+  }
+  if (diff2.elements_removed.length > 0) {
+    lines.push(`
+✗ Elements Removed (${diff2.elements_removed.length}):`);
+    for (const id of diff2.elements_removed) {
+      lines.push(`  - ${id}`);
+    }
+  }
+  if (diff2.elements_modified.length > 0) {
+    lines.push(`
+~ Elements Modified (${diff2.elements_modified.length}):`);
+    for (const mod of diff2.elements_modified) {
+      lines.push(`  - ${mod.id}: ${mod.changes.join(", ")}`);
+    }
+  }
+  if (diff2.rules_added.length > 0) {
+    lines.push(`
+✓ Rules Added (${diff2.rules_added.length}):`);
+    for (const rule of diff2.rules_added) {
+      lines.push(`  - [${rule.certainty}] ${rule.statement}`);
+    }
+  }
+  if (diff2.rules_modified.length > 0) {
+    lines.push(`
+~ Rules Modified (${diff2.rules_modified.length}):`);
+    for (const mod of diff2.rules_modified) {
+      lines.push(`  - ${mod.id}: ${mod.changes.join(", ")}`);
+    }
+  }
+  if (Object.keys(diff2.depth_changes).length > 0) {
+    lines.push(`
+↕ Depth Changes:`);
+    for (const [area, change] of Object.entries(diff2.depth_changes)) {
+      lines.push(`  - ${area}: ${change.from} → ${change.to}`);
+    }
+  }
+  if (diff2.changelog_entries.length > 0) {
+    lines.push(`
+\uD83D\uDCDD Changelog:`);
+    for (const entry of diff2.changelog_entries) {
+      lines.push(`  v${entry.version}: ${entry.reason}`);
+    }
+  }
+  return lines.join(`
+`);
+}
+async function updateWorld(args) {
+  if (!args.current_checkpoint) {
+    return {
+      toolReturn: "current_checkpoint is required for update operation",
+      status: "error"
+    };
+  }
+  if (!args.updates || args.updates.length === 0) {
+    return {
+      toolReturn: "updates array is required for update operation",
+      status: "error"
+    };
+  }
+  const loadResult = await loadWorld({
+    operation: "load",
+    checkpoint_name: args.current_checkpoint
+  });
+  if (loadResult.status === "error") {
+    return loadResult;
+  }
+  let world = loadResult.data;
+  const revisionNotes = [];
+  for (let i = 0;i < args.updates.length; i++) {
+    const update = args.updates[i];
+    if (!update)
+      continue;
+    if (!update.path) {
+      return {
+        toolReturn: `Update at index ${i} is missing required 'path' field. Each update must have: { path: "field.name", operation: "add|update|remove", value: ... }`,
+        status: "error"
+      };
+    }
+    if (!update.operation || !["add", "update", "remove"].includes(update.operation)) {
+      return {
+        toolReturn: `Update at index ${i} has invalid 'operation' field. Must be one of: add, update, remove`,
+        status: "error"
+      };
+    }
+    world = applyUpdate(world, update);
+    if (update.reason) {
+      revisionNotes.push(update.reason);
+    }
+  }
+  world.development.revision_notes = revisionNotes;
+  return await saveWorld({
+    operation: "save",
+    checkpoint_name: args.current_checkpoint,
+    world
+  });
+}
+function applyUpdate(world, update) {
+  if (!update.path) {
+    throw new Error("Update operation missing required 'path' field");
+  }
+  const path13 = update.path.split(".");
+  const newWorld = JSON.parse(JSON.stringify(world));
+  let current = newWorld;
+  for (let i = 0;i < path13.length - 1; i++) {
+    const key = path13[i];
+    if (key) {
+      current = current[key];
+    }
+  }
+  const lastKey = path13[path13.length - 1];
+  if (!lastKey) {
+    throw new Error("Invalid path: empty key");
+  }
+  switch (update.operation) {
+    case "add":
+      if (Array.isArray(current[lastKey])) {
+        current[lastKey].push(update.value);
+      } else {
+        current[lastKey] = update.value;
+      }
+      break;
+    case "update":
+      current[lastKey] = update.value;
+      break;
+    case "remove":
+      if (Array.isArray(current[lastKey])) {
+        current[lastKey] = current[lastKey].filter((item) => item.id !== update.value);
+      } else {
+        delete current[lastKey];
+      }
+      break;
+  }
+  return newWorld;
+}
+var WORLDS_DIR = ".dsf/worlds";
+var init_world_manager2 = __esm(() => {
+  init_canvas_ui2();
+});
+
+// src/tools/impl/story_manager.ts
+import { existsSync as existsSync7 } from "node:fs";
+import { mkdir as mkdir4, readdir as readdir6, readFile as readFile7, writeFile as writeFile4 } from "node:fs/promises";
+import { join as join11 } from "node:path";
+async function story_manager(args) {
+  try {
+    console.error("story_manager called with args:", JSON.stringify(args, null, 2));
+    if (!args || typeof args !== "object") {
+      return {
+        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
+        status: "error"
+      };
+    }
+    if (!args.operation) {
+      return {
+        toolReturn: `Missing required parameter: operation. Received args: ${JSON.stringify(Object.keys(args))}`,
+        status: "error"
+      };
+    }
+    switch (args.operation) {
+      case "create":
+        return await createStory(args);
+      case "save_segment":
+        return await saveSegment(args);
+      case "load":
+        return await loadStory(args);
+      case "list":
+        return await listStories(args);
+      case "branch":
+        return await createBranch(args);
+      case "continue":
+        return await getContinuationContext(args);
+      case "update_metadata":
+        return await updateMetadata(args);
+      default:
+        return {
+          toolReturn: `Unknown operation: ${args.operation}. Valid operations: create, save_segment, load, list, branch, continue, update_metadata`,
+          status: "error"
+        };
+    }
+  } catch (error) {
+    return {
+      toolReturn: `Error in story_manager: ${error instanceof Error ? error.message : String(error)}`,
+      status: "error"
+    };
+  }
+}
+async function createStory(args) {
+  if (!args.world_checkpoint) {
+    return {
+      toolReturn: "world_checkpoint is required for create operation",
+      status: "error"
+    };
+  }
+  if (!args.title) {
+    return {
+      toolReturn: "title is required for create operation",
+      status: "error"
+    };
+  }
+  const worldResult = await world_manager({
+    operation: "load",
+    checkpoint_name: args.world_checkpoint
+  });
+  if (worldResult.status === "error") {
+    return {
+      toolReturn: `Failed to load world: ${worldResult.toolReturn}`,
+      status: "error"
+    };
+  }
+  const world = worldResult.data;
+  const storyId = generateId(args.title);
+  const now = new Date().toISOString();
+  const story = {
+    id: storyId,
+    world_checkpoint: args.world_checkpoint,
+    world_version: world.development.version,
+    metadata: {
+      title: args.title,
+      created: now,
+      last_updated: now,
+      status: "active",
+      tags: []
+    },
+    segments: [],
+    endpoints: [],
+    world_contributions: {
+      characters_developed: [],
+      locations_explored: [],
+      rules_tested: [],
+      new_rules_discovered: [],
+      contradictions_found: [],
+      themes_explored: []
+    }
+  };
+  const worldDir = join11(STORIES_DIR, args.world_checkpoint);
+  await mkdir4(worldDir, { recursive: true });
+  const filePath = join11(worldDir, `${storyId}.json`);
+  await writeFile4(filePath, JSON.stringify(story, null, 2), "utf-8");
+  await broadcastStateChange("story_started", {
+    storyId,
+    worldId: args.world_checkpoint
+  });
+  return {
+    toolReturn: `Story created: ${args.title}
+ID: ${storyId}
+World: ${args.world_checkpoint} (v${world.development.version})
+Path: ${filePath}`,
+    status: "success",
+    data: story
+  };
+}
+async function saveSegment(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for save_segment operation",
+      status: "error"
+    };
+  }
+  if (!args.segment) {
+    return {
+      toolReturn: "segment is required for save_segment operation",
+      status: "error"
+    };
+  }
+  const loadResult = await loadStory({
+    operation: "load",
+    story_id: args.story_id
+  });
+  if (loadResult.status === "error") {
+    return loadResult;
+  }
+  const story = loadResult.data;
+  const now = new Date().toISOString();
+  const segmentId = `seg_${String(story.segments.length + 1).padStart(3, "0")}`;
+  const segment = {
+    id: segmentId,
+    created: now,
+    ...args.segment
+  };
+  story.segments.push(segment);
+  story.metadata.last_updated = now;
+  updateEndpoints(story, segment);
+  updateWorldContributions(story, segment);
+  const worldDir = join11(STORIES_DIR, story.world_checkpoint);
+  const filePath = join11(worldDir, `${story.id}.json`);
+  await writeFile4(filePath, JSON.stringify(story, null, 2), "utf-8");
+  await broadcastStateChange("story_continued", {
+    storyId: story.id,
+    segmentId,
+    worldId: story.world_checkpoint
+  });
+  return {
+    toolReturn: `Segment saved to story "${story.metadata.title}"
+Segment ID: ${segmentId}
+Word count: ${segment.word_count}
+Total segments: ${story.segments.length}`,
+    status: "success",
+    data: segment
+  };
+}
+async function loadStory(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for load operation",
+      status: "error"
+    };
+  }
+  const storyFile = await findStoryFile(args.story_id);
+  if (!storyFile) {
+    return {
+      toolReturn: `Story not found: ${args.story_id}`,
+      status: "error"
+    };
+  }
+  const content = await readFile7(storyFile, "utf-8");
+  const story = JSON.parse(content);
+  return {
+    toolReturn: `Story loaded: "${story.metadata.title}"
+World: ${story.world_checkpoint} (v${story.world_version})
+Segments: ${story.segments.length}
+Status: ${story.metadata.status}`,
+    status: "success",
+    data: story
+  };
+}
+async function listStories(args) {
+  const stories = [];
+  if (!existsSync7(STORIES_DIR)) {
+    return {
+      toolReturn: "No stories found (stories directory doesn't exist yet)",
+      status: "success",
+      data: []
+    };
+  }
+  if (args.world_checkpoint) {
+    const worldDir = join11(STORIES_DIR, args.world_checkpoint);
+    if (existsSync7(worldDir)) {
+      const files = await readdir6(worldDir);
+      for (const file of files) {
+        if (file.endsWith(".json")) {
+          const content = await readFile7(join11(worldDir, file), "utf-8");
+          stories.push(JSON.parse(content));
+        }
+      }
+    }
+  } else {
+    const worldDirs = await readdir6(STORIES_DIR);
+    for (const worldDir of worldDirs) {
+      const worldPath = join11(STORIES_DIR, worldDir);
+      const stat2 = await readFile7(worldPath).catch(() => null);
+      if (!stat2)
+        continue;
+      const files = await readdir6(worldPath);
+      for (const file of files) {
+        if (file.endsWith(".json")) {
+          const content = await readFile7(join11(worldPath, file), "utf-8");
+          stories.push(JSON.parse(content));
+        }
+      }
+    }
+  }
+  const summary = stories.map((s) => `- ${s.metadata.title} (${s.id})
+  World: ${s.world_checkpoint}, Segments: ${s.segments.length}, Status: ${s.metadata.status}`).join(`
+`);
+  return {
+    toolReturn: `Found ${stories.length} stories:
+${summary}`,
+    status: "success",
+    data: stories
+  };
+}
+async function createBranch(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for branch operation",
+      status: "error"
+    };
+  }
+  if (!args.branch) {
+    return {
+      toolReturn: "branch is required for branch operation",
+      status: "error"
+    };
+  }
+  const loadResult = await loadStory({
+    operation: "load",
+    story_id: args.story_id
+  });
+  if (loadResult.status === "error") {
+    return loadResult;
+  }
+  const story = loadResult.data;
+  const lastSegment = story.segments[story.segments.length - 1];
+  if (!lastSegment) {
+    return {
+      toolReturn: "Cannot create branch: story has no segments yet",
+      status: "error"
+    };
+  }
+  const branchId = `branch_${String((lastSegment.branches?.length || 0) + 1).padStart(2, "0")}`;
+  const branch = {
+    id: branchId,
+    ...args.branch
+  };
+  if (!lastSegment.branches) {
+    lastSegment.branches = [];
+  }
+  lastSegment.branches.push(branch);
+  const endpoint = {
+    segment_id: lastSegment.id,
+    branch_id: branchId,
+    status: "pending"
+  };
+  story.endpoints.push(endpoint);
+  const worldDir = join11(STORIES_DIR, story.world_checkpoint);
+  const filePath = join11(worldDir, `${story.id}.json`);
+  await writeFile4(filePath, JSON.stringify(story, null, 2), "utf-8");
+  return {
+    toolReturn: `Branch created in story "${story.metadata.title}"
+Branch ID: ${branchId}
+Prompt: ${branch.prompt}
+Segment: ${lastSegment.id}`,
+    status: "success",
+    data: story
+  };
+}
+async function getContinuationContext(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for continue operation",
+      status: "error"
+    };
+  }
+  const loadResult = await loadStory({
+    operation: "load",
+    story_id: args.story_id
+  });
+  if (loadResult.status === "error") {
+    return loadResult;
+  }
+  const story = loadResult.data;
+  const worldResult = await world_manager({
+    operation: "load",
+    checkpoint_name: story.world_checkpoint
+  });
+  if (worldResult.status === "error") {
+    return {
+      toolReturn: `Failed to load world: ${worldResult.toolReturn}`,
+      status: "error"
+    };
+  }
+  const world = worldResult.data;
+  const lastSegment = story.segments[story.segments.length - 1];
+  if (!lastSegment) {
+    return {
+      toolReturn: "Cannot continue: story has no segments yet. Use save_segment to add the first segment.",
+      status: "error"
+    };
+  }
+  const activeEndpoints = story.endpoints.filter((ep) => ep.status === "active" || ep.status === "pending");
+  const appliedRuleIds = new Set;
+  for (const segment of story.segments) {
+    segment.world_evolution?.rules_applied?.forEach((id) => appliedRuleIds.add(id));
+  }
+  const rulesInPlay = world.foundation.rules.filter((r) => appliedRuleIds.has(r.id));
+  const introducedElementIds = new Set;
+  for (const segment of story.segments) {
+    segment.world_evolution?.elements_introduced?.forEach((id) => introducedElementIds.add(id));
+  }
+  const elementsInPlay = world.surface.visible_elements.filter((e) => introducedElementIds.has(e.id));
+  const suggestedDirections = [];
+  if (lastSegment.branches && lastSegment.branches.length > 0) {
+    lastSegment.branches.forEach((b) => {
+      if (b.status === "pending") {
+        suggestedDirections.push(`Branch: ${b.prompt}`);
+      }
+    });
+  }
+  if (lastSegment.world_evolution.new_questions && lastSegment.world_evolution.new_questions.length > 0) {
+    suggestedDirections.push(`Explore questions: ${lastSegment.world_evolution.new_questions.join(", ")}`);
+  }
+  const unusedRules = world.foundation.rules.filter((r) => !appliedRuleIds.has(r.id));
+  if (unusedRules.length > 0) {
+    suggestedDirections.push(`Test rules: ${unusedRules.slice(0, 3).map((r) => r.id).join(", ")}`);
+  }
+  const context3 = {
+    story,
+    world,
+    last_segment: lastSegment,
+    active_endpoints: activeEndpoints,
+    suggested_directions: suggestedDirections,
+    rules_to_consider: rulesInPlay,
+    elements_in_play: elementsInPlay
+  };
+  return {
+    toolReturn: `Continuation context for "${story.metadata.title}"
+
+Last segment: ${lastSegment.id} (${lastSegment.word_count} words)
+Active endpoints: ${activeEndpoints.length}
+Suggested directions:
+${suggestedDirections.map((d) => `  - ${d}`).join(`
+`)}
+
+Rules in play: ${rulesInPlay.length}
+Elements in play: ${elementsInPlay.length}`,
+    status: "success",
+    data: context3
+  };
+}
+async function updateMetadata(args) {
+  if (!args.story_id) {
+    return {
+      toolReturn: "story_id is required for update_metadata operation",
+      status: "error"
+    };
+  }
+  if (!args.metadata) {
+    return {
+      toolReturn: "metadata is required for update_metadata operation",
+      status: "error"
+    };
+  }
+  const loadResult = await loadStory({
+    operation: "load",
+    story_id: args.story_id
+  });
+  if (loadResult.status === "error") {
+    return loadResult;
+  }
+  const story = loadResult.data;
+  story.metadata = {
+    ...story.metadata,
+    ...args.metadata,
+    last_updated: new Date().toISOString()
+  };
+  const worldDir = join11(STORIES_DIR, story.world_checkpoint);
+  const filePath = join11(worldDir, `${story.id}.json`);
+  await writeFile4(filePath, JSON.stringify(story, null, 2), "utf-8");
+  return {
+    toolReturn: `Metadata updated for story "${story.metadata.title}"
+Status: ${story.metadata.status}`,
+    status: "success",
+    data: story
+  };
+}
+function generateId(title) {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 50);
+}
+async function findStoryFile(storyId) {
+  if (!existsSync7(STORIES_DIR)) {
+    return null;
+  }
+  const worldDirs = await readdir6(STORIES_DIR);
+  for (const worldDir of worldDirs) {
+    const filePath = join11(STORIES_DIR, worldDir, `${storyId}.json`);
+    if (existsSync7(filePath)) {
+      return filePath;
+    }
+  }
+  return null;
+}
+function updateEndpoints(story, newSegment) {
+  if (newSegment.parent_segment) {
+    story.endpoints = story.endpoints.filter((ep) => ep.segment_id !== newSegment.parent_segment);
+  }
+  if (newSegment.branches && newSegment.branches.length > 0) {
+    for (const branch of newSegment.branches) {
+      story.endpoints.push({
+        segment_id: newSegment.id,
+        branch_id: branch.id,
+        status: "pending"
+      });
+    }
+  } else {
+    story.endpoints.push({
+      segment_id: newSegment.id,
+      status: "active"
+    });
+  }
+}
+function updateWorldContributions(story, segment) {
+  const contrib = story.world_contributions;
+  if (segment.world_evolution?.elements_introduced) {
+    for (const elemId of segment.world_evolution.elements_introduced) {
+      if (!contrib.characters_developed.includes(elemId) && !contrib.locations_explored.includes(elemId)) {
+        contrib.characters_developed.push(elemId);
+      }
+    }
+  }
+  if (segment.world_evolution?.rules_applied) {
+    for (const ruleId of segment.world_evolution.rules_applied) {
+      if (!contrib.rules_tested.includes(ruleId)) {
+        contrib.rules_tested.push(ruleId);
+      }
+    }
+  }
+}
+var STORIES_DIR = ".dsf/stories";
+var init_story_manager2 = __esm(() => {
+  init_canvas_ui2();
+  init_world_manager2();
 });
 
 // src/cli/helpers/subagentState.ts
@@ -45884,2509 +48591,6 @@ ${todoListString}` : "Successfully cleared the todo list.";
   };
 }
 
-// src/tools/impl/canvas_ui.ts
-function getCanvasInteractions() {
-  const now = Date.now();
-  const validInteractions = interactionQueue.filter((i) => now - i.timestamp < INTERACTION_TTL_MS);
-  interactionQueue.length = 0;
-  return validInteractions;
-}
-function peekCanvasInteractions() {
-  const now = Date.now();
-  return interactionQueue.filter((i) => now - i.timestamp < INTERACTION_TTL_MS);
-}
-function handleInteraction(message) {
-  const { target, data, componentId, interactionType } = message;
-  const queuedInteraction = {
-    id: `int-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    timestamp: Date.now(),
-    componentId,
-    interactionType,
-    target,
-    data
-  };
-  interactionQueue.push(queuedInteraction);
-  while (interactionQueue.length > MAX_QUEUE_SIZE) {
-    interactionQueue.shift();
-  }
-  console.log(`[canvas_ui] Queued interaction: ${interactionType} on ${componentId} (queue size: ${interactionQueue.length})`);
-  if (target && interactionCallbacks.has(target)) {
-    const callback = interactionCallbacks.get(target);
-    Promise.resolve(callback(data)).catch((err) => {
-      console.error(`[canvas_ui] Interaction callback error for ${target}:`, err);
-    });
-    return;
-  }
-  if (interactionCallbacks.has(componentId)) {
-    const callback = interactionCallbacks.get(componentId);
-    Promise.resolve(callback({ ...data, interactionType })).catch((err) => {
-      console.error(`[canvas_ui] Interaction callback error for ${componentId}:`, err);
-    });
-  }
-}
-function ensureAgentBusConnection() {
-  return new Promise((resolve11, reject) => {
-    if (agentBusWs && agentBusWs.readyState === WebSocket.OPEN) {
-      resolve11(agentBusWs);
-      return;
-    }
-    if (isConnecting) {
-      pendingCallbacks.push({ resolve: resolve11, reject });
-      return;
-    }
-    isConnecting = true;
-    const ws = new WebSocket(AGENT_BUS_URL);
-    ws.onopen = () => {
-      console.log("[canvas_ui] Connected to Agent Bus");
-      isConnecting = false;
-      agentBusWs = ws;
-      resolve11(ws);
-      for (const cb of pendingCallbacks) {
-        cb.resolve(ws);
-      }
-      pendingCallbacks = [];
-    };
-    ws.onerror = (event) => {
-      console.error("[canvas_ui] Agent Bus connection error:", event);
-      isConnecting = false;
-      const err = new Error("Failed to connect to Agent Bus");
-      reject(err);
-      for (const cb of pendingCallbacks) {
-        cb.reject(err);
-      }
-      pendingCallbacks = [];
-    };
-    ws.onclose = () => {
-      console.log("[canvas_ui] Agent Bus connection closed");
-      agentBusWs = null;
-      isConnecting = false;
-    };
-    ws.onmessage = (event) => {
-      try {
-        const data = typeof event.data === "string" ? event.data : event.data.toString();
-        const message = JSON.parse(data);
-        if (message.type === "interaction") {
-          console.log("[canvas_ui] User interaction:", message);
-          handleInteraction(message);
-        }
-      } catch (err) {
-        console.error("[canvas_ui] Failed to parse message:", err);
-      }
-    };
-  });
-}
-async function broadcastStateChange(event, data) {
-  try {
-    const ws = await ensureAgentBusConnection();
-    const message = {
-      type: "state_change",
-      event,
-      data
-    };
-    ws.send(JSON.stringify(message));
-    console.log(`[canvas_ui] Broadcast state change: ${event}`);
-  } catch (error) {
-    console.error("[canvas_ui] Failed to broadcast state change:", error);
-    throw error;
-  }
-}
-async function canvas_ui(args) {
-  const { target, spec, action = "create", mode = "overlay" } = args;
-  try {
-    const ws = await ensureAgentBusConnection();
-    const componentId = spec.id || `canvas-${Date.now()}`;
-    const message = {
-      type: "canvas_ui",
-      action,
-      target,
-      componentId,
-      spec: action === "remove" ? undefined : spec,
-      mode
-    };
-    ws.send(JSON.stringify(message));
-    console.log(`[canvas_ui] Sent ${action} for ${componentId} at ${target}`);
-    let resultMessage;
-    if (action === "remove") {
-      resultMessage = `Removed component from ${target}`;
-    } else {
-      resultMessage = `Component ${componentId} ${action === "update" ? "updated" : "created"} at ${target}`;
-    }
-    return {
-      toolReturn: resultMessage,
-      status: "success"
-    };
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error("[canvas_ui] Error:", errorMsg);
-    return {
-      toolReturn: `Failed to ${action} UI component: ${errorMsg}`,
-      status: "error"
-    };
-  }
-}
-var AGENT_BUS_URL, interactionQueue, MAX_QUEUE_SIZE = 100, INTERACTION_TTL_MS, interactionCallbacks, agentBusWs = null, isConnecting = false, pendingCallbacks;
-var init_canvas_ui2 = __esm(() => {
-  AGENT_BUS_URL = process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
-  interactionQueue = [];
-  INTERACTION_TTL_MS = 5 * 60 * 1000;
-  interactionCallbacks = new Map;
-  pendingCallbacks = [];
-});
-
-// src/tools/impl/world_manager.ts
-import { mkdir as mkdir2, readFile as readFile5, writeFile as writeFile2 } from "node:fs/promises";
-import { existsSync as existsSync5 } from "node:fs";
-import { join as join9 } from "node:path";
-async function world_manager(args) {
-  try {
-    console.error("world_manager called with args:", JSON.stringify(args, null, 2));
-    if (!args || typeof args !== "object") {
-      return {
-        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
-        status: "error"
-      };
-    }
-    if (!args.operation) {
-      return {
-        toolReturn: `Missing required parameter: operation. Received args: ${JSON.stringify(Object.keys(args))}`,
-        status: "error"
-      };
-    }
-    switch (args.operation) {
-      case "save":
-        return await saveWorld(args);
-      case "load":
-        return await loadWorld(args);
-      case "diff":
-        return await diffWorlds(args);
-      case "update":
-        return await updateWorld(args);
-      default:
-        return {
-          toolReturn: `Unknown operation: ${args.operation}. Valid operations: save, load, diff, update`,
-          status: "error"
-        };
-    }
-  } catch (error) {
-    return {
-      toolReturn: `Error in world_manager: ${error instanceof Error ? error.message : String(error)}`,
-      status: "error"
-    };
-  }
-}
-async function saveWorld(args) {
-  if (!args.checkpoint_name) {
-    return {
-      toolReturn: "checkpoint_name is required for save operation",
-      status: "error"
-    };
-  }
-  if (!args.world) {
-    return {
-      toolReturn: "world is required for save operation",
-      status: "error"
-    };
-  }
-  let world;
-  if (typeof args.world === "string") {
-    try {
-      world = JSON.parse(args.world);
-    } catch (error) {
-      return {
-        toolReturn: `Failed to parse world JSON: ${error instanceof Error ? error.message : String(error)}`,
-        status: "error"
-      };
-    }
-  } else {
-    world = args.world;
-  }
-  await mkdir2(WORLDS_DIR, { recursive: true });
-  const now = new Date().toISOString();
-  const shouldIncrementVersion = (world.development.revision_notes?.length ?? 0) > 0 && world.development.version > 0;
-  const worldToSave = {
-    ...world,
-    development: {
-      ...world.development,
-      version: shouldIncrementVersion ? world.development.version + 1 : Math.max(1, world.development.version),
-      last_modified: now
-    }
-  };
-  if (world.development.revision_notes?.length) {
-    const changelogEntry = {
-      version: worldToSave.development.version,
-      timestamp: now,
-      changes: world.development.revision_notes,
-      reason: world.development.revision_notes.join("; ")
-    };
-    worldToSave.changelog = [...world.changelog || [], changelogEntry];
-  }
-  const filePath = join9(WORLDS_DIR, `${args.checkpoint_name}.json`);
-  await writeFile2(filePath, JSON.stringify(worldToSave, null, 2), "utf-8");
-  await broadcastStateChange("world_entered", {
-    worldId: args.checkpoint_name,
-    version: worldToSave.development.version
-  });
-  return {
-    toolReturn: `World saved to ${filePath}
-Version: ${worldToSave.development.version}
-State: ${worldToSave.development.state}`,
-    status: "success",
-    data: worldToSave
-  };
-}
-async function loadWorld(args) {
-  if (!args.checkpoint_name) {
-    return {
-      toolReturn: "checkpoint_name is required for load operation",
-      status: "error"
-    };
-  }
-  const filePath = join9(WORLDS_DIR, `${args.checkpoint_name}.json`);
-  if (!existsSync5(filePath)) {
-    return {
-      toolReturn: `World checkpoint not found: ${filePath}`,
-      status: "error"
-    };
-  }
-  const content = await readFile5(filePath, "utf-8");
-  const world = JSON.parse(content);
-  return {
-    toolReturn: `World loaded from ${filePath}
-Version: ${world.development.version}
-State: ${world.development.state}
-Premise: ${world.foundation.core_premise}`,
-    status: "success",
-    data: world
-  };
-}
-async function diffWorlds(args) {
-  if (!args.checkpoint_name || !args.checkpoint_name_2) {
-    return {
-      toolReturn: "Both checkpoint_name and checkpoint_name_2 are required for diff operation",
-      status: "error"
-    };
-  }
-  const world1Result = await loadWorld({
-    operation: "load",
-    checkpoint_name: args.checkpoint_name
-  });
-  const world2Result = await loadWorld({
-    operation: "load",
-    checkpoint_name: args.checkpoint_name_2
-  });
-  if (world1Result.status === "error" || world2Result.status === "error") {
-    return {
-      toolReturn: `Failed to load worlds for diff: ${world1Result.toolReturn} | ${world2Result.toolReturn}`,
-      status: "error"
-    };
-  }
-  const world1 = world1Result.data;
-  const world2 = world2Result.data;
-  const diff2 = computeDiff(world1, world2);
-  const summary = formatDiffSummary(diff2);
-  return {
-    toolReturn: summary,
-    status: "success",
-    data: diff2
-  };
-}
-function computeDiff(world1, world2) {
-  const w1Elements = new Map(world1.surface.visible_elements.map((e) => [e.id, e]));
-  const w2Elements = new Map(world2.surface.visible_elements.map((e) => [e.id, e]));
-  const elementsAdded = [];
-  const elementsRemoved = [];
-  const elementsModified = [];
-  for (const [id, elem] of w2Elements) {
-    if (!w1Elements.has(id)) {
-      elementsAdded.push(elem);
-    } else {
-      const w1Elem = w1Elements.get(id);
-      const changes = detectElementChanges(w1Elem, elem);
-      if (changes.length > 0) {
-        elementsModified.push({ id, changes });
-      }
-    }
-  }
-  for (const id of w1Elements.keys()) {
-    if (!w2Elements.has(id)) {
-      elementsRemoved.push(id);
-    }
-  }
-  const w1Rules = new Map(world1.foundation.rules.map((r) => [r.id, r]));
-  const w2Rules = new Map(world2.foundation.rules.map((r) => [r.id, r]));
-  const rulesAdded = [];
-  const rulesRemoved = [];
-  const rulesModified = [];
-  for (const [id, rule] of w2Rules) {
-    if (!w1Rules.has(id)) {
-      rulesAdded.push(rule);
-    } else {
-      const w1Rule = w1Rules.get(id);
-      const changes = detectRuleChanges(w1Rule, rule);
-      if (changes.length > 0) {
-        rulesModified.push({ id, changes });
-      }
-    }
-  }
-  for (const id of w1Rules.keys()) {
-    if (!w2Rules.has(id)) {
-      rulesRemoved.push(id);
-    }
-  }
-  const w1Constraints = new Map(world1.constraints.map((c) => [c.id, c]));
-  const w2Constraints = new Map(world2.constraints.map((c) => [c.id, c]));
-  const constraintsAdded = [];
-  const constraintsRemoved = [];
-  for (const [id, constraint] of w2Constraints) {
-    if (!w1Constraints.has(id)) {
-      constraintsAdded.push(constraint);
-    }
-  }
-  for (const id of w1Constraints.keys()) {
-    if (!w2Constraints.has(id)) {
-      constraintsRemoved.push(id);
-    }
-  }
-  const depthChanges = {};
-  const w1Depths = world1.foundation.deep_focus_areas.depth_level;
-  const w2Depths = world2.foundation.deep_focus_areas.depth_level;
-  for (const area in w2Depths) {
-    const w1Depth = w1Depths[area];
-    const w2Depth = w2Depths[area];
-    if (w1Depth && w2Depth && w1Depth !== w2Depth) {
-      depthChanges[area] = {
-        from: w1Depth,
-        to: w2Depth
-      };
-    }
-  }
-  const w1ChangelogCount = world1.changelog?.length || 0;
-  const changelogEntries = world2.changelog?.slice(w1ChangelogCount) || [];
-  const stateChange = world1.development.state !== world2.development.state ? [world1.development.state, world2.development.state] : undefined;
-  return {
-    version_diff: [world1.development.version, world2.development.version],
-    timestamp_diff: [world1.development.last_modified, world2.development.last_modified],
-    state_change: stateChange,
-    elements_added: elementsAdded,
-    elements_removed: elementsRemoved,
-    elements_modified: elementsModified,
-    rules_added: rulesAdded,
-    rules_removed: rulesRemoved,
-    rules_modified: rulesModified,
-    constraints_added: constraintsAdded,
-    constraints_removed: constraintsRemoved,
-    depth_changes: depthChanges,
-    changelog_entries: changelogEntries,
-    summary: ""
-  };
-}
-function detectElementChanges(elem1, elem2) {
-  const changes = [];
-  if (elem1.description !== elem2.description) {
-    changes.push("description changed");
-  }
-  if (elem1.detail_level !== elem2.detail_level) {
-    changes.push(`detail_level: ${elem1.detail_level} → ${elem2.detail_level}`);
-  }
-  if (elem1.name !== elem2.name) {
-    changes.push(`name: ${elem1.name || "(none)"} → ${elem2.name || "(none)"}`);
-  }
-  if (JSON.stringify(elem1.properties) !== JSON.stringify(elem2.properties)) {
-    changes.push("properties modified");
-  }
-  return changes;
-}
-function detectRuleChanges(rule1, rule2) {
-  const changes = [];
-  if (rule1.statement !== rule2.statement) {
-    changes.push("statement changed");
-  }
-  if (rule1.certainty !== rule2.certainty) {
-    changes.push(`certainty: ${rule1.certainty} → ${rule2.certainty}`);
-  }
-  if (rule1.revealed !== rule2.revealed) {
-    changes.push(`revealed: ${rule1.revealed} → ${rule2.revealed}`);
-  }
-  return changes;
-}
-function formatDiffSummary(diff2) {
-  const lines = [];
-  lines.push(`=== World Diff: v${diff2.version_diff[0]} → v${diff2.version_diff[1]} ===
-`);
-  if (diff2.state_change) {
-    lines.push(`State: ${diff2.state_change[0]} → ${diff2.state_change[1]}`);
-  }
-  if (diff2.elements_added.length > 0) {
-    lines.push(`
-✓ Elements Added (${diff2.elements_added.length}):`);
-    for (const elem of diff2.elements_added) {
-      lines.push(`  - ${elem.type}: ${elem.name || elem.id}`);
-    }
-  }
-  if (diff2.elements_removed.length > 0) {
-    lines.push(`
-✗ Elements Removed (${diff2.elements_removed.length}):`);
-    for (const id of diff2.elements_removed) {
-      lines.push(`  - ${id}`);
-    }
-  }
-  if (diff2.elements_modified.length > 0) {
-    lines.push(`
-~ Elements Modified (${diff2.elements_modified.length}):`);
-    for (const mod of diff2.elements_modified) {
-      lines.push(`  - ${mod.id}: ${mod.changes.join(", ")}`);
-    }
-  }
-  if (diff2.rules_added.length > 0) {
-    lines.push(`
-✓ Rules Added (${diff2.rules_added.length}):`);
-    for (const rule of diff2.rules_added) {
-      lines.push(`  - [${rule.certainty}] ${rule.statement}`);
-    }
-  }
-  if (diff2.rules_modified.length > 0) {
-    lines.push(`
-~ Rules Modified (${diff2.rules_modified.length}):`);
-    for (const mod of diff2.rules_modified) {
-      lines.push(`  - ${mod.id}: ${mod.changes.join(", ")}`);
-    }
-  }
-  if (Object.keys(diff2.depth_changes).length > 0) {
-    lines.push(`
-↕ Depth Changes:`);
-    for (const [area, change] of Object.entries(diff2.depth_changes)) {
-      lines.push(`  - ${area}: ${change.from} → ${change.to}`);
-    }
-  }
-  if (diff2.changelog_entries.length > 0) {
-    lines.push(`
-\uD83D\uDCDD Changelog:`);
-    for (const entry of diff2.changelog_entries) {
-      lines.push(`  v${entry.version}: ${entry.reason}`);
-    }
-  }
-  return lines.join(`
-`);
-}
-async function updateWorld(args) {
-  if (!args.current_checkpoint) {
-    return {
-      toolReturn: "current_checkpoint is required for update operation",
-      status: "error"
-    };
-  }
-  if (!args.updates || args.updates.length === 0) {
-    return {
-      toolReturn: "updates array is required for update operation",
-      status: "error"
-    };
-  }
-  const loadResult = await loadWorld({
-    operation: "load",
-    checkpoint_name: args.current_checkpoint
-  });
-  if (loadResult.status === "error") {
-    return loadResult;
-  }
-  let world = loadResult.data;
-  const revisionNotes = [];
-  for (let i = 0;i < args.updates.length; i++) {
-    const update = args.updates[i];
-    if (!update)
-      continue;
-    if (!update.path) {
-      return {
-        toolReturn: `Update at index ${i} is missing required 'path' field. Each update must have: { path: "field.name", operation: "add|update|remove", value: ... }`,
-        status: "error"
-      };
-    }
-    if (!update.operation || !["add", "update", "remove"].includes(update.operation)) {
-      return {
-        toolReturn: `Update at index ${i} has invalid 'operation' field. Must be one of: add, update, remove`,
-        status: "error"
-      };
-    }
-    world = applyUpdate(world, update);
-    if (update.reason) {
-      revisionNotes.push(update.reason);
-    }
-  }
-  world.development.revision_notes = revisionNotes;
-  return await saveWorld({
-    operation: "save",
-    checkpoint_name: args.current_checkpoint,
-    world
-  });
-}
-function applyUpdate(world, update) {
-  if (!update.path) {
-    throw new Error("Update operation missing required 'path' field");
-  }
-  const path14 = update.path.split(".");
-  const newWorld = JSON.parse(JSON.stringify(world));
-  let current = newWorld;
-  for (let i = 0;i < path14.length - 1; i++) {
-    const key = path14[i];
-    if (key) {
-      current = current[key];
-    }
-  }
-  const lastKey = path14[path14.length - 1];
-  if (!lastKey) {
-    throw new Error("Invalid path: empty key");
-  }
-  switch (update.operation) {
-    case "add":
-      if (Array.isArray(current[lastKey])) {
-        current[lastKey].push(update.value);
-      } else {
-        current[lastKey] = update.value;
-      }
-      break;
-    case "update":
-      current[lastKey] = update.value;
-      break;
-    case "remove":
-      if (Array.isArray(current[lastKey])) {
-        current[lastKey] = current[lastKey].filter((item) => item.id !== update.value);
-      } else {
-        delete current[lastKey];
-      }
-      break;
-  }
-  return newWorld;
-}
-var WORLDS_DIR = ".dsf/worlds";
-var init_world_manager2 = __esm(() => {
-  init_canvas_ui2();
-});
-
-// src/tools/impl/story_manager.ts
-import { mkdir as mkdir3, readFile as readFile6, writeFile as writeFile3, readdir as readdir5 } from "node:fs/promises";
-import { existsSync as existsSync6 } from "node:fs";
-import { join as join10 } from "node:path";
-async function story_manager(args) {
-  try {
-    console.error("story_manager called with args:", JSON.stringify(args, null, 2));
-    if (!args || typeof args !== "object") {
-      return {
-        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
-        status: "error"
-      };
-    }
-    if (!args.operation) {
-      return {
-        toolReturn: `Missing required parameter: operation. Received args: ${JSON.stringify(Object.keys(args))}`,
-        status: "error"
-      };
-    }
-    switch (args.operation) {
-      case "create":
-        return await createStory(args);
-      case "save_segment":
-        return await saveSegment(args);
-      case "load":
-        return await loadStory(args);
-      case "list":
-        return await listStories(args);
-      case "branch":
-        return await createBranch(args);
-      case "continue":
-        return await getContinuationContext(args);
-      case "update_metadata":
-        return await updateMetadata(args);
-      default:
-        return {
-          toolReturn: `Unknown operation: ${args.operation}. Valid operations: create, save_segment, load, list, branch, continue, update_metadata`,
-          status: "error"
-        };
-    }
-  } catch (error) {
-    return {
-      toolReturn: `Error in story_manager: ${error instanceof Error ? error.message : String(error)}`,
-      status: "error"
-    };
-  }
-}
-async function createStory(args) {
-  if (!args.world_checkpoint) {
-    return {
-      toolReturn: "world_checkpoint is required for create operation",
-      status: "error"
-    };
-  }
-  if (!args.title) {
-    return {
-      toolReturn: "title is required for create operation",
-      status: "error"
-    };
-  }
-  const worldResult = await world_manager({
-    operation: "load",
-    checkpoint_name: args.world_checkpoint
-  });
-  if (worldResult.status === "error") {
-    return {
-      toolReturn: `Failed to load world: ${worldResult.toolReturn}`,
-      status: "error"
-    };
-  }
-  const world = worldResult.data;
-  const storyId = generateId(args.title);
-  const now = new Date().toISOString();
-  const story = {
-    id: storyId,
-    world_checkpoint: args.world_checkpoint,
-    world_version: world.development.version,
-    metadata: {
-      title: args.title,
-      created: now,
-      last_updated: now,
-      status: "active",
-      tags: []
-    },
-    segments: [],
-    endpoints: [],
-    world_contributions: {
-      characters_developed: [],
-      locations_explored: [],
-      rules_tested: [],
-      new_rules_discovered: [],
-      contradictions_found: [],
-      themes_explored: []
-    }
-  };
-  const worldDir = join10(STORIES_DIR, args.world_checkpoint);
-  await mkdir3(worldDir, { recursive: true });
-  const filePath = join10(worldDir, `${storyId}.json`);
-  await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
-  await broadcastStateChange("story_started", {
-    storyId,
-    worldId: args.world_checkpoint
-  });
-  return {
-    toolReturn: `Story created: ${args.title}
-ID: ${storyId}
-World: ${args.world_checkpoint} (v${world.development.version})
-Path: ${filePath}`,
-    status: "success",
-    data: story
-  };
-}
-async function saveSegment(args) {
-  if (!args.story_id) {
-    return {
-      toolReturn: "story_id is required for save_segment operation",
-      status: "error"
-    };
-  }
-  if (!args.segment) {
-    return {
-      toolReturn: "segment is required for save_segment operation",
-      status: "error"
-    };
-  }
-  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
-  if (loadResult.status === "error") {
-    return loadResult;
-  }
-  const story = loadResult.data;
-  const now = new Date().toISOString();
-  const segmentId = `seg_${String(story.segments.length + 1).padStart(3, "0")}`;
-  const segment = {
-    id: segmentId,
-    created: now,
-    ...args.segment
-  };
-  story.segments.push(segment);
-  story.metadata.last_updated = now;
-  updateEndpoints(story, segment);
-  updateWorldContributions(story, segment);
-  const worldDir = join10(STORIES_DIR, story.world_checkpoint);
-  const filePath = join10(worldDir, `${story.id}.json`);
-  await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
-  await broadcastStateChange("story_continued", {
-    storyId: story.id,
-    segmentId,
-    worldId: story.world_checkpoint
-  });
-  return {
-    toolReturn: `Segment saved to story "${story.metadata.title}"
-Segment ID: ${segmentId}
-Word count: ${segment.word_count}
-Total segments: ${story.segments.length}`,
-    status: "success",
-    data: segment
-  };
-}
-async function loadStory(args) {
-  if (!args.story_id) {
-    return {
-      toolReturn: "story_id is required for load operation",
-      status: "error"
-    };
-  }
-  const storyFile = await findStoryFile(args.story_id);
-  if (!storyFile) {
-    return {
-      toolReturn: `Story not found: ${args.story_id}`,
-      status: "error"
-    };
-  }
-  const content = await readFile6(storyFile, "utf-8");
-  const story = JSON.parse(content);
-  return {
-    toolReturn: `Story loaded: "${story.metadata.title}"
-World: ${story.world_checkpoint} (v${story.world_version})
-Segments: ${story.segments.length}
-Status: ${story.metadata.status}`,
-    status: "success",
-    data: story
-  };
-}
-async function listStories(args) {
-  const stories = [];
-  if (!existsSync6(STORIES_DIR)) {
-    return {
-      toolReturn: "No stories found (stories directory doesn't exist yet)",
-      status: "success",
-      data: []
-    };
-  }
-  if (args.world_checkpoint) {
-    const worldDir = join10(STORIES_DIR, args.world_checkpoint);
-    if (existsSync6(worldDir)) {
-      const files = await readdir5(worldDir);
-      for (const file of files) {
-        if (file.endsWith(".json")) {
-          const content = await readFile6(join10(worldDir, file), "utf-8");
-          stories.push(JSON.parse(content));
-        }
-      }
-    }
-  } else {
-    const worldDirs = await readdir5(STORIES_DIR);
-    for (const worldDir of worldDirs) {
-      const worldPath = join10(STORIES_DIR, worldDir);
-      const stat2 = await readFile6(worldPath).catch(() => null);
-      if (!stat2)
-        continue;
-      const files = await readdir5(worldPath);
-      for (const file of files) {
-        if (file.endsWith(".json")) {
-          const content = await readFile6(join10(worldPath, file), "utf-8");
-          stories.push(JSON.parse(content));
-        }
-      }
-    }
-  }
-  const summary = stories.map((s) => `- ${s.metadata.title} (${s.id})
-  World: ${s.world_checkpoint}, Segments: ${s.segments.length}, Status: ${s.metadata.status}`).join(`
-`);
-  return {
-    toolReturn: `Found ${stories.length} stories:
-${summary}`,
-    status: "success",
-    data: stories
-  };
-}
-async function createBranch(args) {
-  if (!args.story_id) {
-    return {
-      toolReturn: "story_id is required for branch operation",
-      status: "error"
-    };
-  }
-  if (!args.branch) {
-    return {
-      toolReturn: "branch is required for branch operation",
-      status: "error"
-    };
-  }
-  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
-  if (loadResult.status === "error") {
-    return loadResult;
-  }
-  const story = loadResult.data;
-  const lastSegment = story.segments[story.segments.length - 1];
-  if (!lastSegment) {
-    return {
-      toolReturn: "Cannot create branch: story has no segments yet",
-      status: "error"
-    };
-  }
-  const branchId = `branch_${String((lastSegment.branches?.length || 0) + 1).padStart(2, "0")}`;
-  const branch = {
-    id: branchId,
-    ...args.branch
-  };
-  if (!lastSegment.branches) {
-    lastSegment.branches = [];
-  }
-  lastSegment.branches.push(branch);
-  const endpoint = {
-    segment_id: lastSegment.id,
-    branch_id: branchId,
-    status: "pending"
-  };
-  story.endpoints.push(endpoint);
-  const worldDir = join10(STORIES_DIR, story.world_checkpoint);
-  const filePath = join10(worldDir, `${story.id}.json`);
-  await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
-  return {
-    toolReturn: `Branch created in story "${story.metadata.title}"
-Branch ID: ${branchId}
-Prompt: ${branch.prompt}
-Segment: ${lastSegment.id}`,
-    status: "success",
-    data: story
-  };
-}
-async function getContinuationContext(args) {
-  if (!args.story_id) {
-    return {
-      toolReturn: "story_id is required for continue operation",
-      status: "error"
-    };
-  }
-  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
-  if (loadResult.status === "error") {
-    return loadResult;
-  }
-  const story = loadResult.data;
-  const worldResult = await world_manager({
-    operation: "load",
-    checkpoint_name: story.world_checkpoint
-  });
-  if (worldResult.status === "error") {
-    return {
-      toolReturn: `Failed to load world: ${worldResult.toolReturn}`,
-      status: "error"
-    };
-  }
-  const world = worldResult.data;
-  const lastSegment = story.segments[story.segments.length - 1];
-  if (!lastSegment) {
-    return {
-      toolReturn: "Cannot continue: story has no segments yet. Use save_segment to add the first segment.",
-      status: "error"
-    };
-  }
-  const activeEndpoints = story.endpoints.filter((ep) => ep.status === "active" || ep.status === "pending");
-  const appliedRuleIds = new Set;
-  for (const segment of story.segments) {
-    segment.world_evolution?.rules_applied?.forEach((id) => appliedRuleIds.add(id));
-  }
-  const rulesInPlay = world.foundation.rules.filter((r) => appliedRuleIds.has(r.id));
-  const introducedElementIds = new Set;
-  for (const segment of story.segments) {
-    segment.world_evolution?.elements_introduced?.forEach((id) => introducedElementIds.add(id));
-  }
-  const elementsInPlay = world.surface.visible_elements.filter((e) => introducedElementIds.has(e.id));
-  const suggestedDirections = [];
-  if (lastSegment.branches && lastSegment.branches.length > 0) {
-    lastSegment.branches.forEach((b) => {
-      if (b.status === "pending") {
-        suggestedDirections.push(`Branch: ${b.prompt}`);
-      }
-    });
-  }
-  if (lastSegment.world_evolution.new_questions && lastSegment.world_evolution.new_questions.length > 0) {
-    suggestedDirections.push(`Explore questions: ${lastSegment.world_evolution.new_questions.join(", ")}`);
-  }
-  const unusedRules = world.foundation.rules.filter((r) => !appliedRuleIds.has(r.id));
-  if (unusedRules.length > 0) {
-    suggestedDirections.push(`Test rules: ${unusedRules.slice(0, 3).map((r) => r.id).join(", ")}`);
-  }
-  const context3 = {
-    story,
-    world,
-    last_segment: lastSegment,
-    active_endpoints: activeEndpoints,
-    suggested_directions: suggestedDirections,
-    rules_to_consider: rulesInPlay,
-    elements_in_play: elementsInPlay
-  };
-  return {
-    toolReturn: `Continuation context for "${story.metadata.title}"
-
-Last segment: ${lastSegment.id} (${lastSegment.word_count} words)
-Active endpoints: ${activeEndpoints.length}
-Suggested directions:
-${suggestedDirections.map((d) => `  - ${d}`).join(`
-`)}
-
-Rules in play: ${rulesInPlay.length}
-Elements in play: ${elementsInPlay.length}`,
-    status: "success",
-    data: context3
-  };
-}
-async function updateMetadata(args) {
-  if (!args.story_id) {
-    return {
-      toolReturn: "story_id is required for update_metadata operation",
-      status: "error"
-    };
-  }
-  if (!args.metadata) {
-    return {
-      toolReturn: "metadata is required for update_metadata operation",
-      status: "error"
-    };
-  }
-  const loadResult = await loadStory({ operation: "load", story_id: args.story_id });
-  if (loadResult.status === "error") {
-    return loadResult;
-  }
-  const story = loadResult.data;
-  story.metadata = {
-    ...story.metadata,
-    ...args.metadata,
-    last_updated: new Date().toISOString()
-  };
-  const worldDir = join10(STORIES_DIR, story.world_checkpoint);
-  const filePath = join10(worldDir, `${story.id}.json`);
-  await writeFile3(filePath, JSON.stringify(story, null, 2), "utf-8");
-  return {
-    toolReturn: `Metadata updated for story "${story.metadata.title}"
-Status: ${story.metadata.status}`,
-    status: "success",
-    data: story
-  };
-}
-function generateId(title) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").substring(0, 50);
-}
-async function findStoryFile(storyId) {
-  if (!existsSync6(STORIES_DIR)) {
-    return null;
-  }
-  const worldDirs = await readdir5(STORIES_DIR);
-  for (const worldDir of worldDirs) {
-    const filePath = join10(STORIES_DIR, worldDir, `${storyId}.json`);
-    if (existsSync6(filePath)) {
-      return filePath;
-    }
-  }
-  return null;
-}
-function updateEndpoints(story, newSegment) {
-  if (newSegment.parent_segment) {
-    story.endpoints = story.endpoints.filter((ep) => ep.segment_id !== newSegment.parent_segment);
-  }
-  if (newSegment.branches && newSegment.branches.length > 0) {
-    for (const branch of newSegment.branches) {
-      story.endpoints.push({
-        segment_id: newSegment.id,
-        branch_id: branch.id,
-        status: "pending"
-      });
-    }
-  } else {
-    story.endpoints.push({
-      segment_id: newSegment.id,
-      status: "active"
-    });
-  }
-}
-function updateWorldContributions(story, segment) {
-  const contrib = story.world_contributions;
-  if (segment.world_evolution?.elements_introduced) {
-    for (const elemId of segment.world_evolution.elements_introduced) {
-      if (!contrib.characters_developed.includes(elemId) && !contrib.locations_explored.includes(elemId)) {
-        contrib.characters_developed.push(elemId);
-      }
-    }
-  }
-  if (segment.world_evolution?.rules_applied) {
-    for (const ruleId of segment.world_evolution.rules_applied) {
-      if (!contrib.rules_tested.includes(ruleId)) {
-        contrib.rules_tested.push(ruleId);
-      }
-    }
-  }
-}
-var STORIES_DIR = ".dsf/stories";
-var init_story_manager2 = __esm(() => {
-  init_world_manager2();
-  init_canvas_ui2();
-});
-
-// src/tools/impl/asset_manager.ts
-import { mkdir as mkdir4, readFile as readFile7, writeFile as writeFile4, readdir as readdir6, unlink } from "node:fs/promises";
-import { existsSync as existsSync7 } from "node:fs";
-import { join as join11 } from "node:path";
-async function asset_manager(args) {
-  try {
-    console.error("asset_manager called with args:", JSON.stringify(args, null, 2));
-    if (!args || typeof args !== "object") {
-      return {
-        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
-        status: "error"
-      };
-    }
-    if (!args.operation) {
-      return {
-        toolReturn: `Missing required parameter: operation`,
-        status: "error"
-      };
-    }
-    switch (args.operation) {
-      case "save":
-        return await saveAsset(args);
-      case "load":
-        return await loadAsset(args);
-      case "list":
-        return await listAssets(args);
-      case "delete":
-        return await deleteAsset(args);
-      default:
-        return {
-          toolReturn: `Unknown operation: ${args.operation}. Valid operations: save, load, list, delete`,
-          status: "error"
-        };
-    }
-  } catch (error) {
-    return {
-      toolReturn: `Error in asset_manager: ${error instanceof Error ? error.message : String(error)}`,
-      status: "error"
-    };
-  }
-}
-async function saveAsset(args) {
-  if (!args.asset) {
-    return {
-      toolReturn: "asset is required for save operation",
-      status: "error"
-    };
-  }
-  if (!args.data) {
-    return {
-      toolReturn: "data is required for save operation (base64 or file path)",
-      status: "error"
-    };
-  }
-  await mkdir4(ASSETS_DIR, { recursive: true });
-  let assetPath;
-  if (args.story_id) {
-    const storyDir = join11(ASSETS_DIR, args.story_id);
-    await mkdir4(storyDir, { recursive: true });
-    assetPath = join11(storyDir, args.asset.path);
-  } else if (args.world_checkpoint) {
-    const worldDir = join11(ASSETS_DIR, "worlds", args.world_checkpoint);
-    await mkdir4(worldDir, { recursive: true });
-    assetPath = join11(worldDir, args.asset.path);
-  } else {
-    assetPath = join11(ASSETS_DIR, args.asset.path);
-    const parentDir = join11(assetPath, "..");
-    await mkdir4(parentDir, { recursive: true });
-  }
-  let fileData;
-  if (args.data.startsWith("data:")) {
-    const base64Data = args.data.split(",")[1] || "";
-    fileData = Buffer.from(base64Data, "base64");
-  } else if (args.data.startsWith("/") || args.data.startsWith("./")) {
-    fileData = await readFile7(args.data);
-  } else {
-    fileData = Buffer.from(args.data, "base64");
-  }
-  await writeFile4(assetPath, fileData);
-  return {
-    toolReturn: `Asset saved: ${args.asset.id}
-Type: ${args.asset.type}
-Path: ${assetPath}
-Size: ${fileData.length} bytes`,
-    status: "success",
-    data: args.asset
-  };
-}
-async function loadAsset(args) {
-  if (!args.asset_id && !args.asset) {
-    return {
-      toolReturn: "asset_id or asset is required for load operation",
-      status: "error"
-    };
-  }
-  const assetPath = args.asset ? join11(ASSETS_DIR, args.asset.path) : await findAssetPath(args.asset_id);
-  if (!assetPath || !existsSync7(assetPath)) {
-    return {
-      toolReturn: `Asset not found: ${args.asset_id || args.asset?.path}`,
-      status: "error"
-    };
-  }
-  const data = await readFile7(assetPath);
-  const base64 = data.toString("base64");
-  if (args.asset) {
-    return {
-      toolReturn: `Asset loaded: ${args.asset.id}
-Size: ${data.length} bytes`,
-      status: "success",
-      data: {
-        ...args.asset
-      }
-    };
-  }
-  return {
-    toolReturn: `Asset loaded from ${assetPath}
-Size: ${data.length} bytes`,
-    status: "success"
-  };
-}
-async function listAssets(args) {
-  if (!existsSync7(ASSETS_DIR)) {
-    return {
-      toolReturn: "No assets found (assets directory doesn't exist yet)",
-      status: "success",
-      data: []
-    };
-  }
-  const assets = [];
-  if (args.story_id) {
-    const storyDir = join11(ASSETS_DIR, args.story_id);
-    if (existsSync7(storyDir)) {
-      const files = await readdir6(storyDir);
-      assets.push(...files.map((f) => join11(args.story_id, f)));
-    }
-  } else if (args.world_checkpoint) {
-    const worldDir = join11(ASSETS_DIR, "worlds", args.world_checkpoint);
-    if (existsSync7(worldDir)) {
-      const files = await readdir6(worldDir);
-      assets.push(...files.map((f) => join11("worlds", args.world_checkpoint, f)));
-    }
-  } else {
-    const files = await readdir6(ASSETS_DIR, { recursive: true });
-    assets.push(...files.filter((f) => typeof f === "string"));
-  }
-  const summary = assets.length > 0 ? `Found ${assets.length} assets:
-${assets.map((a) => `  - ${a}`).join(`
-`)}` : "No assets found";
-  return {
-    toolReturn: summary,
-    status: "success",
-    data: assets
-  };
-}
-async function deleteAsset(args) {
-  if (!args.asset_id && !args.asset) {
-    return {
-      toolReturn: "asset_id or asset is required for delete operation",
-      status: "error"
-    };
-  }
-  const assetPath = args.asset ? join11(ASSETS_DIR, args.asset.path) : await findAssetPath(args.asset_id);
-  if (!assetPath || !existsSync7(assetPath)) {
-    return {
-      toolReturn: `Asset not found: ${args.asset_id || args.asset?.path}`,
-      status: "error"
-    };
-  }
-  await unlink(assetPath);
-  return {
-    toolReturn: `Asset deleted: ${assetPath}`,
-    status: "success"
-  };
-}
-async function findAssetPath(assetId) {
-  if (!existsSync7(ASSETS_DIR)) {
-    return null;
-  }
-  const files = await readdir6(ASSETS_DIR, { recursive: true });
-  for (const file of files) {
-    if (typeof file === "string" && file.includes(assetId)) {
-      return join11(ASSETS_DIR, file);
-    }
-  }
-  return null;
-}
-var ASSETS_DIR = ".dsf/assets";
-var init_asset_manager2 = () => {};
-
-// node_modules/@google/generative-ai/dist/index.mjs
-class RequestUrl {
-  constructor(model, task2, apiKey, stream2, requestOptions) {
-    this.model = model;
-    this.task = task2;
-    this.apiKey = apiKey;
-    this.stream = stream2;
-    this.requestOptions = requestOptions;
-  }
-  toString() {
-    var _a2, _b;
-    const apiVersion = ((_a2 = this.requestOptions) === null || _a2 === undefined ? undefined : _a2.apiVersion) || DEFAULT_API_VERSION;
-    const baseUrl = ((_b = this.requestOptions) === null || _b === undefined ? undefined : _b.baseUrl) || DEFAULT_BASE_URL;
-    let url = `${baseUrl}/${apiVersion}/${this.model}:${this.task}`;
-    if (this.stream) {
-      url += "?alt=sse";
-    }
-    return url;
-  }
-}
-function getClientHeaders(requestOptions) {
-  const clientHeaders = [];
-  if (requestOptions === null || requestOptions === undefined ? undefined : requestOptions.apiClient) {
-    clientHeaders.push(requestOptions.apiClient);
-  }
-  clientHeaders.push(`${PACKAGE_LOG_HEADER}/${PACKAGE_VERSION}`);
-  return clientHeaders.join(" ");
-}
-async function getHeaders(url) {
-  var _a2;
-  const headers = new Headers;
-  headers.append("Content-Type", "application/json");
-  headers.append("x-goog-api-client", getClientHeaders(url.requestOptions));
-  headers.append("x-goog-api-key", url.apiKey);
-  let customHeaders = (_a2 = url.requestOptions) === null || _a2 === undefined ? undefined : _a2.customHeaders;
-  if (customHeaders) {
-    if (!(customHeaders instanceof Headers)) {
-      try {
-        customHeaders = new Headers(customHeaders);
-      } catch (e) {
-        throw new GoogleGenerativeAIRequestInputError(`unable to convert customHeaders value ${JSON.stringify(customHeaders)} to Headers: ${e.message}`);
-      }
-    }
-    for (const [headerName, headerValue] of customHeaders.entries()) {
-      if (headerName === "x-goog-api-key") {
-        throw new GoogleGenerativeAIRequestInputError(`Cannot set reserved header name ${headerName}`);
-      } else if (headerName === "x-goog-api-client") {
-        throw new GoogleGenerativeAIRequestInputError(`Header name ${headerName} can only be set using the apiClient field`);
-      }
-      headers.append(headerName, headerValue);
-    }
-  }
-  return headers;
-}
-async function constructModelRequest(model, task2, apiKey, stream2, body, requestOptions) {
-  const url = new RequestUrl(model, task2, apiKey, stream2, requestOptions);
-  return {
-    url: url.toString(),
-    fetchOptions: Object.assign(Object.assign({}, buildFetchOptions(requestOptions)), { method: "POST", headers: await getHeaders(url), body })
-  };
-}
-async function makeModelRequest(model, task2, apiKey, stream2, body, requestOptions = {}, fetchFn = fetch) {
-  const { url, fetchOptions } = await constructModelRequest(model, task2, apiKey, stream2, body, requestOptions);
-  return makeRequest(url, fetchOptions, fetchFn);
-}
-async function makeRequest(url, fetchOptions, fetchFn = fetch) {
-  let response;
-  try {
-    response = await fetchFn(url, fetchOptions);
-  } catch (e) {
-    handleResponseError(e, url);
-  }
-  if (!response.ok) {
-    await handleResponseNotOk(response, url);
-  }
-  return response;
-}
-function handleResponseError(e, url) {
-  let err = e;
-  if (err.name === "AbortError") {
-    err = new GoogleGenerativeAIAbortError(`Request aborted when fetching ${url.toString()}: ${e.message}`);
-    err.stack = e.stack;
-  } else if (!(e instanceof GoogleGenerativeAIFetchError || e instanceof GoogleGenerativeAIRequestInputError)) {
-    err = new GoogleGenerativeAIError(`Error fetching from ${url.toString()}: ${e.message}`);
-    err.stack = e.stack;
-  }
-  throw err;
-}
-async function handleResponseNotOk(response, url) {
-  let message = "";
-  let errorDetails;
-  try {
-    const json = await response.json();
-    message = json.error.message;
-    if (json.error.details) {
-      message += ` ${JSON.stringify(json.error.details)}`;
-      errorDetails = json.error.details;
-    }
-  } catch (e) {}
-  throw new GoogleGenerativeAIFetchError(`Error fetching from ${url.toString()}: [${response.status} ${response.statusText}] ${message}`, response.status, response.statusText, errorDetails);
-}
-function buildFetchOptions(requestOptions) {
-  const fetchOptions = {};
-  if ((requestOptions === null || requestOptions === undefined ? undefined : requestOptions.signal) !== undefined || (requestOptions === null || requestOptions === undefined ? undefined : requestOptions.timeout) >= 0) {
-    const controller = new AbortController;
-    if ((requestOptions === null || requestOptions === undefined ? undefined : requestOptions.timeout) >= 0) {
-      setTimeout(() => controller.abort(), requestOptions.timeout);
-    }
-    if (requestOptions === null || requestOptions === undefined ? undefined : requestOptions.signal) {
-      requestOptions.signal.addEventListener("abort", () => {
-        controller.abort();
-      });
-    }
-    fetchOptions.signal = controller.signal;
-  }
-  return fetchOptions;
-}
-function addHelpers(response) {
-  response.text = () => {
-    if (response.candidates && response.candidates.length > 0) {
-      if (response.candidates.length > 1) {
-        console.warn(`This response had ${response.candidates.length} ` + `candidates. Returning text from the first candidate only. ` + `Access response.candidates directly to use the other candidates.`);
-      }
-      if (hadBadFinishReason(response.candidates[0])) {
-        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
-      }
-      return getText(response);
-    } else if (response.promptFeedback) {
-      throw new GoogleGenerativeAIResponseError(`Text not available. ${formatBlockErrorMessage(response)}`, response);
-    }
-    return "";
-  };
-  response.functionCall = () => {
-    if (response.candidates && response.candidates.length > 0) {
-      if (response.candidates.length > 1) {
-        console.warn(`This response had ${response.candidates.length} ` + `candidates. Returning function calls from the first candidate only. ` + `Access response.candidates directly to use the other candidates.`);
-      }
-      if (hadBadFinishReason(response.candidates[0])) {
-        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
-      }
-      console.warn(`response.functionCall() is deprecated. ` + `Use response.functionCalls() instead.`);
-      return getFunctionCalls(response)[0];
-    } else if (response.promptFeedback) {
-      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
-    }
-    return;
-  };
-  response.functionCalls = () => {
-    if (response.candidates && response.candidates.length > 0) {
-      if (response.candidates.length > 1) {
-        console.warn(`This response had ${response.candidates.length} ` + `candidates. Returning function calls from the first candidate only. ` + `Access response.candidates directly to use the other candidates.`);
-      }
-      if (hadBadFinishReason(response.candidates[0])) {
-        throw new GoogleGenerativeAIResponseError(`${formatBlockErrorMessage(response)}`, response);
-      }
-      return getFunctionCalls(response);
-    } else if (response.promptFeedback) {
-      throw new GoogleGenerativeAIResponseError(`Function call not available. ${formatBlockErrorMessage(response)}`, response);
-    }
-    return;
-  };
-  return response;
-}
-function getText(response) {
-  var _a2, _b, _c, _d;
-  const textStrings = [];
-  if ((_b = (_a2 = response.candidates) === null || _a2 === undefined ? undefined : _a2[0].content) === null || _b === undefined ? undefined : _b.parts) {
-    for (const part of (_d = (_c = response.candidates) === null || _c === undefined ? undefined : _c[0].content) === null || _d === undefined ? undefined : _d.parts) {
-      if (part.text) {
-        textStrings.push(part.text);
-      }
-      if (part.executableCode) {
-        textStrings.push("\n```" + part.executableCode.language + `
-` + part.executableCode.code + "\n```\n");
-      }
-      if (part.codeExecutionResult) {
-        textStrings.push("\n```\n" + part.codeExecutionResult.output + "\n```\n");
-      }
-    }
-  }
-  if (textStrings.length > 0) {
-    return textStrings.join("");
-  } else {
-    return "";
-  }
-}
-function getFunctionCalls(response) {
-  var _a2, _b, _c, _d;
-  const functionCalls = [];
-  if ((_b = (_a2 = response.candidates) === null || _a2 === undefined ? undefined : _a2[0].content) === null || _b === undefined ? undefined : _b.parts) {
-    for (const part of (_d = (_c = response.candidates) === null || _c === undefined ? undefined : _c[0].content) === null || _d === undefined ? undefined : _d.parts) {
-      if (part.functionCall) {
-        functionCalls.push(part.functionCall);
-      }
-    }
-  }
-  if (functionCalls.length > 0) {
-    return functionCalls;
-  } else {
-    return;
-  }
-}
-function hadBadFinishReason(candidate) {
-  return !!candidate.finishReason && badFinishReasons.includes(candidate.finishReason);
-}
-function formatBlockErrorMessage(response) {
-  var _a2, _b, _c;
-  let message = "";
-  if ((!response.candidates || response.candidates.length === 0) && response.promptFeedback) {
-    message += "Response was blocked";
-    if ((_a2 = response.promptFeedback) === null || _a2 === undefined ? undefined : _a2.blockReason) {
-      message += ` due to ${response.promptFeedback.blockReason}`;
-    }
-    if ((_b = response.promptFeedback) === null || _b === undefined ? undefined : _b.blockReasonMessage) {
-      message += `: ${response.promptFeedback.blockReasonMessage}`;
-    }
-  } else if ((_c = response.candidates) === null || _c === undefined ? undefined : _c[0]) {
-    const firstCandidate = response.candidates[0];
-    if (hadBadFinishReason(firstCandidate)) {
-      message += `Candidate was blocked due to ${firstCandidate.finishReason}`;
-      if (firstCandidate.finishMessage) {
-        message += `: ${firstCandidate.finishMessage}`;
-      }
-    }
-  }
-  return message;
-}
-function __await(v) {
-  return this instanceof __await ? (this.v = v, this) : new __await(v);
-}
-function __asyncGenerator(thisArg, _arguments, generator) {
-  if (!Symbol.asyncIterator)
-    throw new TypeError("Symbol.asyncIterator is not defined.");
-  var g = generator.apply(thisArg, _arguments || []), i, q = [];
-  return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
-    return this;
-  }, i;
-  function verb(n) {
-    if (g[n])
-      i[n] = function(v) {
-        return new Promise(function(a, b) {
-          q.push([n, v, a, b]) > 1 || resume(n, v);
-        });
-      };
-  }
-  function resume(n, v) {
-    try {
-      step(g[n](v));
-    } catch (e) {
-      settle(q[0][3], e);
-    }
-  }
-  function step(r) {
-    r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
-  }
-  function fulfill(value) {
-    resume("next", value);
-  }
-  function reject(value) {
-    resume("throw", value);
-  }
-  function settle(f, v) {
-    if (f(v), q.shift(), q.length)
-      resume(q[0][0], q[0][1]);
-  }
-}
-function processStream(response) {
-  const inputStream = response.body.pipeThrough(new TextDecoderStream("utf8", { fatal: true }));
-  const responseStream = getResponseStream(inputStream);
-  const [stream1, stream2] = responseStream.tee();
-  return {
-    stream: generateResponseSequence(stream1),
-    response: getResponsePromise(stream2)
-  };
-}
-async function getResponsePromise(stream2) {
-  const allResponses = [];
-  const reader = stream2.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      return addHelpers(aggregateResponses(allResponses));
-    }
-    allResponses.push(value);
-  }
-}
-function generateResponseSequence(stream2) {
-  return __asyncGenerator(this, arguments, function* generateResponseSequence_1() {
-    const reader = stream2.getReader();
-    while (true) {
-      const { value, done } = yield __await(reader.read());
-      if (done) {
-        break;
-      }
-      yield yield __await(addHelpers(value));
-    }
-  });
-}
-function getResponseStream(inputStream) {
-  const reader = inputStream.getReader();
-  const stream2 = new ReadableStream({
-    start(controller) {
-      let currentText = "";
-      return pump();
-      function pump() {
-        return reader.read().then(({ value, done }) => {
-          if (done) {
-            if (currentText.trim()) {
-              controller.error(new GoogleGenerativeAIError("Failed to parse stream"));
-              return;
-            }
-            controller.close();
-            return;
-          }
-          currentText += value;
-          let match2 = currentText.match(responseLineRE);
-          let parsedResponse;
-          while (match2) {
-            try {
-              parsedResponse = JSON.parse(match2[1]);
-            } catch (e) {
-              controller.error(new GoogleGenerativeAIError(`Error parsing JSON response: "${match2[1]}"`));
-              return;
-            }
-            controller.enqueue(parsedResponse);
-            currentText = currentText.substring(match2[0].length);
-            match2 = currentText.match(responseLineRE);
-          }
-          return pump();
-        }).catch((e) => {
-          let err = e;
-          err.stack = e.stack;
-          if (err.name === "AbortError") {
-            err = new GoogleGenerativeAIAbortError("Request aborted when reading from the stream");
-          } else {
-            err = new GoogleGenerativeAIError("Error reading from the stream");
-          }
-          throw err;
-        });
-      }
-    }
-  });
-  return stream2;
-}
-function aggregateResponses(responses) {
-  const lastResponse = responses[responses.length - 1];
-  const aggregatedResponse = {
-    promptFeedback: lastResponse === null || lastResponse === undefined ? undefined : lastResponse.promptFeedback
-  };
-  for (const response of responses) {
-    if (response.candidates) {
-      let candidateIndex = 0;
-      for (const candidate of response.candidates) {
-        if (!aggregatedResponse.candidates) {
-          aggregatedResponse.candidates = [];
-        }
-        if (!aggregatedResponse.candidates[candidateIndex]) {
-          aggregatedResponse.candidates[candidateIndex] = {
-            index: candidateIndex
-          };
-        }
-        aggregatedResponse.candidates[candidateIndex].citationMetadata = candidate.citationMetadata;
-        aggregatedResponse.candidates[candidateIndex].groundingMetadata = candidate.groundingMetadata;
-        aggregatedResponse.candidates[candidateIndex].finishReason = candidate.finishReason;
-        aggregatedResponse.candidates[candidateIndex].finishMessage = candidate.finishMessage;
-        aggregatedResponse.candidates[candidateIndex].safetyRatings = candidate.safetyRatings;
-        if (candidate.content && candidate.content.parts) {
-          if (!aggregatedResponse.candidates[candidateIndex].content) {
-            aggregatedResponse.candidates[candidateIndex].content = {
-              role: candidate.content.role || "user",
-              parts: []
-            };
-          }
-          const newPart = {};
-          for (const part of candidate.content.parts) {
-            if (part.text) {
-              newPart.text = part.text;
-            }
-            if (part.functionCall) {
-              newPart.functionCall = part.functionCall;
-            }
-            if (part.executableCode) {
-              newPart.executableCode = part.executableCode;
-            }
-            if (part.codeExecutionResult) {
-              newPart.codeExecutionResult = part.codeExecutionResult;
-            }
-            if (Object.keys(newPart).length === 0) {
-              newPart.text = "";
-            }
-            aggregatedResponse.candidates[candidateIndex].content.parts.push(newPart);
-          }
-        }
-      }
-      candidateIndex++;
-    }
-    if (response.usageMetadata) {
-      aggregatedResponse.usageMetadata = response.usageMetadata;
-    }
-  }
-  return aggregatedResponse;
-}
-async function generateContentStream(apiKey, model, params, requestOptions) {
-  const response = await makeModelRequest(model, Task.STREAM_GENERATE_CONTENT, apiKey, true, JSON.stringify(params), requestOptions);
-  return processStream(response);
-}
-async function generateContent(apiKey, model, params, requestOptions) {
-  const response = await makeModelRequest(model, Task.GENERATE_CONTENT, apiKey, false, JSON.stringify(params), requestOptions);
-  const responseJson = await response.json();
-  const enhancedResponse = addHelpers(responseJson);
-  return {
-    response: enhancedResponse
-  };
-}
-function formatSystemInstruction(input) {
-  if (input == null) {
-    return;
-  } else if (typeof input === "string") {
-    return { role: "system", parts: [{ text: input }] };
-  } else if (input.text) {
-    return { role: "system", parts: [input] };
-  } else if (input.parts) {
-    if (!input.role) {
-      return { role: "system", parts: input.parts };
-    } else {
-      return input;
-    }
-  }
-}
-function formatNewContent(request) {
-  let newParts = [];
-  if (typeof request === "string") {
-    newParts = [{ text: request }];
-  } else {
-    for (const partOrString of request) {
-      if (typeof partOrString === "string") {
-        newParts.push({ text: partOrString });
-      } else {
-        newParts.push(partOrString);
-      }
-    }
-  }
-  return assignRoleToPartsAndValidateSendMessageRequest(newParts);
-}
-function assignRoleToPartsAndValidateSendMessageRequest(parts) {
-  const userContent = { role: "user", parts: [] };
-  const functionContent = { role: "function", parts: [] };
-  let hasUserContent = false;
-  let hasFunctionContent = false;
-  for (const part of parts) {
-    if ("functionResponse" in part) {
-      functionContent.parts.push(part);
-      hasFunctionContent = true;
-    } else {
-      userContent.parts.push(part);
-      hasUserContent = true;
-    }
-  }
-  if (hasUserContent && hasFunctionContent) {
-    throw new GoogleGenerativeAIError("Within a single message, FunctionResponse cannot be mixed with other type of part in the request for sending chat message.");
-  }
-  if (!hasUserContent && !hasFunctionContent) {
-    throw new GoogleGenerativeAIError("No content is provided for sending chat message.");
-  }
-  if (hasUserContent) {
-    return userContent;
-  }
-  return functionContent;
-}
-function formatCountTokensInput(params, modelParams) {
-  var _a2;
-  let formattedGenerateContentRequest = {
-    model: modelParams === null || modelParams === undefined ? undefined : modelParams.model,
-    generationConfig: modelParams === null || modelParams === undefined ? undefined : modelParams.generationConfig,
-    safetySettings: modelParams === null || modelParams === undefined ? undefined : modelParams.safetySettings,
-    tools: modelParams === null || modelParams === undefined ? undefined : modelParams.tools,
-    toolConfig: modelParams === null || modelParams === undefined ? undefined : modelParams.toolConfig,
-    systemInstruction: modelParams === null || modelParams === undefined ? undefined : modelParams.systemInstruction,
-    cachedContent: (_a2 = modelParams === null || modelParams === undefined ? undefined : modelParams.cachedContent) === null || _a2 === undefined ? undefined : _a2.name,
-    contents: []
-  };
-  const containsGenerateContentRequest = params.generateContentRequest != null;
-  if (params.contents) {
-    if (containsGenerateContentRequest) {
-      throw new GoogleGenerativeAIRequestInputError("CountTokensRequest must have one of contents or generateContentRequest, not both.");
-    }
-    formattedGenerateContentRequest.contents = params.contents;
-  } else if (containsGenerateContentRequest) {
-    formattedGenerateContentRequest = Object.assign(Object.assign({}, formattedGenerateContentRequest), params.generateContentRequest);
-  } else {
-    const content = formatNewContent(params);
-    formattedGenerateContentRequest.contents = [content];
-  }
-  return { generateContentRequest: formattedGenerateContentRequest };
-}
-function formatGenerateContentInput(params) {
-  let formattedRequest;
-  if (params.contents) {
-    formattedRequest = params;
-  } else {
-    const content = formatNewContent(params);
-    formattedRequest = { contents: [content] };
-  }
-  if (params.systemInstruction) {
-    formattedRequest.systemInstruction = formatSystemInstruction(params.systemInstruction);
-  }
-  return formattedRequest;
-}
-function formatEmbedContentInput(params) {
-  if (typeof params === "string" || Array.isArray(params)) {
-    const content = formatNewContent(params);
-    return { content };
-  }
-  return params;
-}
-function validateChatHistory(history) {
-  let prevContent = false;
-  for (const currContent of history) {
-    const { role, parts } = currContent;
-    if (!prevContent && role !== "user") {
-      throw new GoogleGenerativeAIError(`First content should be with role 'user', got ${role}`);
-    }
-    if (!POSSIBLE_ROLES.includes(role)) {
-      throw new GoogleGenerativeAIError(`Each item should include role field. Got ${role} but valid roles are: ${JSON.stringify(POSSIBLE_ROLES)}`);
-    }
-    if (!Array.isArray(parts)) {
-      throw new GoogleGenerativeAIError("Content should have 'parts' property with an array of Parts");
-    }
-    if (parts.length === 0) {
-      throw new GoogleGenerativeAIError("Each Content should have at least one part");
-    }
-    const countFields = {
-      text: 0,
-      inlineData: 0,
-      functionCall: 0,
-      functionResponse: 0,
-      fileData: 0,
-      executableCode: 0,
-      codeExecutionResult: 0
-    };
-    for (const part of parts) {
-      for (const key of VALID_PART_FIELDS) {
-        if (key in part) {
-          countFields[key] += 1;
-        }
-      }
-    }
-    const validParts = VALID_PARTS_PER_ROLE[role];
-    for (const key of VALID_PART_FIELDS) {
-      if (!validParts.includes(key) && countFields[key] > 0) {
-        throw new GoogleGenerativeAIError(`Content with role '${role}' can't contain '${key}' part`);
-      }
-    }
-    prevContent = true;
-  }
-}
-function isValidResponse(response) {
-  var _a2;
-  if (response.candidates === undefined || response.candidates.length === 0) {
-    return false;
-  }
-  const content = (_a2 = response.candidates[0]) === null || _a2 === undefined ? undefined : _a2.content;
-  if (content === undefined) {
-    return false;
-  }
-  if (content.parts === undefined || content.parts.length === 0) {
-    return false;
-  }
-  for (const part of content.parts) {
-    if (part === undefined || Object.keys(part).length === 0) {
-      return false;
-    }
-    if (part.text !== undefined && part.text === "") {
-      return false;
-    }
-  }
-  return true;
-}
-
-class ChatSession {
-  constructor(apiKey, model, params, _requestOptions = {}) {
-    this.model = model;
-    this.params = params;
-    this._requestOptions = _requestOptions;
-    this._history = [];
-    this._sendPromise = Promise.resolve();
-    this._apiKey = apiKey;
-    if (params === null || params === undefined ? undefined : params.history) {
-      validateChatHistory(params.history);
-      this._history = params.history;
-    }
-  }
-  async getHistory() {
-    await this._sendPromise;
-    return this._history;
-  }
-  async sendMessage(request, requestOptions = {}) {
-    var _a2, _b, _c, _d, _e, _f;
-    await this._sendPromise;
-    const newContent = formatNewContent(request);
-    const generateContentRequest = {
-      safetySettings: (_a2 = this.params) === null || _a2 === undefined ? undefined : _a2.safetySettings,
-      generationConfig: (_b = this.params) === null || _b === undefined ? undefined : _b.generationConfig,
-      tools: (_c = this.params) === null || _c === undefined ? undefined : _c.tools,
-      toolConfig: (_d = this.params) === null || _d === undefined ? undefined : _d.toolConfig,
-      systemInstruction: (_e = this.params) === null || _e === undefined ? undefined : _e.systemInstruction,
-      cachedContent: (_f = this.params) === null || _f === undefined ? undefined : _f.cachedContent,
-      contents: [...this._history, newContent]
-    };
-    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    let finalResult;
-    this._sendPromise = this._sendPromise.then(() => generateContent(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions)).then((result) => {
-      var _a3;
-      if (isValidResponse(result.response)) {
-        this._history.push(newContent);
-        const responseContent = Object.assign({
-          parts: [],
-          role: "model"
-        }, (_a3 = result.response.candidates) === null || _a3 === undefined ? undefined : _a3[0].content);
-        this._history.push(responseContent);
-      } else {
-        const blockErrorMessage = formatBlockErrorMessage(result.response);
-        if (blockErrorMessage) {
-          console.warn(`sendMessage() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
-        }
-      }
-      finalResult = result;
-    }).catch((e) => {
-      this._sendPromise = Promise.resolve();
-      throw e;
-    });
-    await this._sendPromise;
-    return finalResult;
-  }
-  async sendMessageStream(request, requestOptions = {}) {
-    var _a2, _b, _c, _d, _e, _f;
-    await this._sendPromise;
-    const newContent = formatNewContent(request);
-    const generateContentRequest = {
-      safetySettings: (_a2 = this.params) === null || _a2 === undefined ? undefined : _a2.safetySettings,
-      generationConfig: (_b = this.params) === null || _b === undefined ? undefined : _b.generationConfig,
-      tools: (_c = this.params) === null || _c === undefined ? undefined : _c.tools,
-      toolConfig: (_d = this.params) === null || _d === undefined ? undefined : _d.toolConfig,
-      systemInstruction: (_e = this.params) === null || _e === undefined ? undefined : _e.systemInstruction,
-      cachedContent: (_f = this.params) === null || _f === undefined ? undefined : _f.cachedContent,
-      contents: [...this._history, newContent]
-    };
-    const chatSessionRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    const streamPromise = generateContentStream(this._apiKey, this.model, generateContentRequest, chatSessionRequestOptions);
-    this._sendPromise = this._sendPromise.then(() => streamPromise).catch((_ignored) => {
-      throw new Error(SILENT_ERROR);
-    }).then((streamResult) => streamResult.response).then((response) => {
-      if (isValidResponse(response)) {
-        this._history.push(newContent);
-        const responseContent = Object.assign({}, response.candidates[0].content);
-        if (!responseContent.role) {
-          responseContent.role = "model";
-        }
-        this._history.push(responseContent);
-      } else {
-        const blockErrorMessage = formatBlockErrorMessage(response);
-        if (blockErrorMessage) {
-          console.warn(`sendMessageStream() was unsuccessful. ${blockErrorMessage}. Inspect response object for details.`);
-        }
-      }
-    }).catch((e) => {
-      if (e.message !== SILENT_ERROR) {
-        console.error(e);
-      }
-    });
-    return streamPromise;
-  }
-}
-async function countTokens(apiKey, model, params, singleRequestOptions) {
-  const response = await makeModelRequest(model, Task.COUNT_TOKENS, apiKey, false, JSON.stringify(params), singleRequestOptions);
-  return response.json();
-}
-async function embedContent(apiKey, model, params, requestOptions) {
-  const response = await makeModelRequest(model, Task.EMBED_CONTENT, apiKey, false, JSON.stringify(params), requestOptions);
-  return response.json();
-}
-async function batchEmbedContents(apiKey, model, params, requestOptions) {
-  const requestsWithModel = params.requests.map((request) => {
-    return Object.assign(Object.assign({}, request), { model });
-  });
-  const response = await makeModelRequest(model, Task.BATCH_EMBED_CONTENTS, apiKey, false, JSON.stringify({ requests: requestsWithModel }), requestOptions);
-  return response.json();
-}
-
-class GenerativeModel {
-  constructor(apiKey, modelParams, _requestOptions = {}) {
-    this.apiKey = apiKey;
-    this._requestOptions = _requestOptions;
-    if (modelParams.model.includes("/")) {
-      this.model = modelParams.model;
-    } else {
-      this.model = `models/${modelParams.model}`;
-    }
-    this.generationConfig = modelParams.generationConfig || {};
-    this.safetySettings = modelParams.safetySettings || [];
-    this.tools = modelParams.tools;
-    this.toolConfig = modelParams.toolConfig;
-    this.systemInstruction = formatSystemInstruction(modelParams.systemInstruction);
-    this.cachedContent = modelParams.cachedContent;
-  }
-  async generateContent(request, requestOptions = {}) {
-    var _a2;
-    const formattedParams = formatGenerateContentInput(request);
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return generateContent(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a2 = this.cachedContent) === null || _a2 === undefined ? undefined : _a2.name }, formattedParams), generativeModelRequestOptions);
-  }
-  async generateContentStream(request, requestOptions = {}) {
-    var _a2;
-    const formattedParams = formatGenerateContentInput(request);
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return generateContentStream(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a2 = this.cachedContent) === null || _a2 === undefined ? undefined : _a2.name }, formattedParams), generativeModelRequestOptions);
-  }
-  startChat(startChatParams) {
-    var _a2;
-    return new ChatSession(this.apiKey, this.model, Object.assign({ generationConfig: this.generationConfig, safetySettings: this.safetySettings, tools: this.tools, toolConfig: this.toolConfig, systemInstruction: this.systemInstruction, cachedContent: (_a2 = this.cachedContent) === null || _a2 === undefined ? undefined : _a2.name }, startChatParams), this._requestOptions);
-  }
-  async countTokens(request, requestOptions = {}) {
-    const formattedParams = formatCountTokensInput(request, {
-      model: this.model,
-      generationConfig: this.generationConfig,
-      safetySettings: this.safetySettings,
-      tools: this.tools,
-      toolConfig: this.toolConfig,
-      systemInstruction: this.systemInstruction,
-      cachedContent: this.cachedContent
-    });
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return countTokens(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
-  }
-  async embedContent(request, requestOptions = {}) {
-    const formattedParams = formatEmbedContentInput(request);
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return embedContent(this.apiKey, this.model, formattedParams, generativeModelRequestOptions);
-  }
-  async batchEmbedContents(batchEmbedContentRequest, requestOptions = {}) {
-    const generativeModelRequestOptions = Object.assign(Object.assign({}, this._requestOptions), requestOptions);
-    return batchEmbedContents(this.apiKey, this.model, batchEmbedContentRequest, generativeModelRequestOptions);
-  }
-}
-
-class GoogleGenerativeAI {
-  constructor(apiKey) {
-    this.apiKey = apiKey;
-  }
-  getGenerativeModel(modelParams, requestOptions) {
-    if (!modelParams.model) {
-      throw new GoogleGenerativeAIError(`Must provide a model name. ` + `Example: genai.getGenerativeModel({ model: 'my-model-name' })`);
-    }
-    return new GenerativeModel(this.apiKey, modelParams, requestOptions);
-  }
-  getGenerativeModelFromCachedContent(cachedContent, modelParams, requestOptions) {
-    if (!cachedContent.name) {
-      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `name` field.");
-    }
-    if (!cachedContent.model) {
-      throw new GoogleGenerativeAIRequestInputError("Cached content must contain a `model` field.");
-    }
-    const disallowedDuplicates = ["model", "systemInstruction"];
-    for (const key of disallowedDuplicates) {
-      if ((modelParams === null || modelParams === undefined ? undefined : modelParams[key]) && cachedContent[key] && (modelParams === null || modelParams === undefined ? undefined : modelParams[key]) !== cachedContent[key]) {
-        if (key === "model") {
-          const modelParamsComp = modelParams.model.startsWith("models/") ? modelParams.model.replace("models/", "") : modelParams.model;
-          const cachedContentComp = cachedContent.model.startsWith("models/") ? cachedContent.model.replace("models/", "") : cachedContent.model;
-          if (modelParamsComp === cachedContentComp) {
-            continue;
-          }
-        }
-        throw new GoogleGenerativeAIRequestInputError(`Different value for "${key}" specified in modelParams` + ` (${modelParams[key]}) and cachedContent (${cachedContent[key]})`);
-      }
-    }
-    const modelParamsFromCache = Object.assign(Object.assign({}, modelParams), { model: cachedContent.model, tools: cachedContent.tools, toolConfig: cachedContent.toolConfig, systemInstruction: cachedContent.systemInstruction, cachedContent });
-    return new GenerativeModel(this.apiKey, modelParamsFromCache, requestOptions);
-  }
-}
-var SchemaType, ExecutableCodeLanguage, Outcome, POSSIBLE_ROLES, HarmCategory, HarmBlockThreshold, HarmProbability, BlockReason, FinishReason, TaskType, FunctionCallingMode, DynamicRetrievalMode, GoogleGenerativeAIError, GoogleGenerativeAIResponseError, GoogleGenerativeAIFetchError, GoogleGenerativeAIRequestInputError, GoogleGenerativeAIAbortError, DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com", DEFAULT_API_VERSION = "v1beta", PACKAGE_VERSION = "0.24.1", PACKAGE_LOG_HEADER = "genai-js", Task, badFinishReasons, responseLineRE, VALID_PART_FIELDS, VALID_PARTS_PER_ROLE, SILENT_ERROR = "SILENT_ERROR";
-var init_dist4 = __esm(() => {
-  (function(SchemaType2) {
-    SchemaType2["STRING"] = "string";
-    SchemaType2["NUMBER"] = "number";
-    SchemaType2["INTEGER"] = "integer";
-    SchemaType2["BOOLEAN"] = "boolean";
-    SchemaType2["ARRAY"] = "array";
-    SchemaType2["OBJECT"] = "object";
-  })(SchemaType || (SchemaType = {}));
-  (function(ExecutableCodeLanguage2) {
-    ExecutableCodeLanguage2["LANGUAGE_UNSPECIFIED"] = "language_unspecified";
-    ExecutableCodeLanguage2["PYTHON"] = "python";
-  })(ExecutableCodeLanguage || (ExecutableCodeLanguage = {}));
-  (function(Outcome2) {
-    Outcome2["OUTCOME_UNSPECIFIED"] = "outcome_unspecified";
-    Outcome2["OUTCOME_OK"] = "outcome_ok";
-    Outcome2["OUTCOME_FAILED"] = "outcome_failed";
-    Outcome2["OUTCOME_DEADLINE_EXCEEDED"] = "outcome_deadline_exceeded";
-  })(Outcome || (Outcome = {}));
-  POSSIBLE_ROLES = ["user", "model", "function", "system"];
-  (function(HarmCategory2) {
-    HarmCategory2["HARM_CATEGORY_UNSPECIFIED"] = "HARM_CATEGORY_UNSPECIFIED";
-    HarmCategory2["HARM_CATEGORY_HATE_SPEECH"] = "HARM_CATEGORY_HATE_SPEECH";
-    HarmCategory2["HARM_CATEGORY_SEXUALLY_EXPLICIT"] = "HARM_CATEGORY_SEXUALLY_EXPLICIT";
-    HarmCategory2["HARM_CATEGORY_HARASSMENT"] = "HARM_CATEGORY_HARASSMENT";
-    HarmCategory2["HARM_CATEGORY_DANGEROUS_CONTENT"] = "HARM_CATEGORY_DANGEROUS_CONTENT";
-    HarmCategory2["HARM_CATEGORY_CIVIC_INTEGRITY"] = "HARM_CATEGORY_CIVIC_INTEGRITY";
-  })(HarmCategory || (HarmCategory = {}));
-  (function(HarmBlockThreshold2) {
-    HarmBlockThreshold2["HARM_BLOCK_THRESHOLD_UNSPECIFIED"] = "HARM_BLOCK_THRESHOLD_UNSPECIFIED";
-    HarmBlockThreshold2["BLOCK_LOW_AND_ABOVE"] = "BLOCK_LOW_AND_ABOVE";
-    HarmBlockThreshold2["BLOCK_MEDIUM_AND_ABOVE"] = "BLOCK_MEDIUM_AND_ABOVE";
-    HarmBlockThreshold2["BLOCK_ONLY_HIGH"] = "BLOCK_ONLY_HIGH";
-    HarmBlockThreshold2["BLOCK_NONE"] = "BLOCK_NONE";
-  })(HarmBlockThreshold || (HarmBlockThreshold = {}));
-  (function(HarmProbability2) {
-    HarmProbability2["HARM_PROBABILITY_UNSPECIFIED"] = "HARM_PROBABILITY_UNSPECIFIED";
-    HarmProbability2["NEGLIGIBLE"] = "NEGLIGIBLE";
-    HarmProbability2["LOW"] = "LOW";
-    HarmProbability2["MEDIUM"] = "MEDIUM";
-    HarmProbability2["HIGH"] = "HIGH";
-  })(HarmProbability || (HarmProbability = {}));
-  (function(BlockReason2) {
-    BlockReason2["BLOCKED_REASON_UNSPECIFIED"] = "BLOCKED_REASON_UNSPECIFIED";
-    BlockReason2["SAFETY"] = "SAFETY";
-    BlockReason2["OTHER"] = "OTHER";
-  })(BlockReason || (BlockReason = {}));
-  (function(FinishReason2) {
-    FinishReason2["FINISH_REASON_UNSPECIFIED"] = "FINISH_REASON_UNSPECIFIED";
-    FinishReason2["STOP"] = "STOP";
-    FinishReason2["MAX_TOKENS"] = "MAX_TOKENS";
-    FinishReason2["SAFETY"] = "SAFETY";
-    FinishReason2["RECITATION"] = "RECITATION";
-    FinishReason2["LANGUAGE"] = "LANGUAGE";
-    FinishReason2["BLOCKLIST"] = "BLOCKLIST";
-    FinishReason2["PROHIBITED_CONTENT"] = "PROHIBITED_CONTENT";
-    FinishReason2["SPII"] = "SPII";
-    FinishReason2["MALFORMED_FUNCTION_CALL"] = "MALFORMED_FUNCTION_CALL";
-    FinishReason2["OTHER"] = "OTHER";
-  })(FinishReason || (FinishReason = {}));
-  (function(TaskType2) {
-    TaskType2["TASK_TYPE_UNSPECIFIED"] = "TASK_TYPE_UNSPECIFIED";
-    TaskType2["RETRIEVAL_QUERY"] = "RETRIEVAL_QUERY";
-    TaskType2["RETRIEVAL_DOCUMENT"] = "RETRIEVAL_DOCUMENT";
-    TaskType2["SEMANTIC_SIMILARITY"] = "SEMANTIC_SIMILARITY";
-    TaskType2["CLASSIFICATION"] = "CLASSIFICATION";
-    TaskType2["CLUSTERING"] = "CLUSTERING";
-  })(TaskType || (TaskType = {}));
-  (function(FunctionCallingMode2) {
-    FunctionCallingMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
-    FunctionCallingMode2["AUTO"] = "AUTO";
-    FunctionCallingMode2["ANY"] = "ANY";
-    FunctionCallingMode2["NONE"] = "NONE";
-  })(FunctionCallingMode || (FunctionCallingMode = {}));
-  (function(DynamicRetrievalMode2) {
-    DynamicRetrievalMode2["MODE_UNSPECIFIED"] = "MODE_UNSPECIFIED";
-    DynamicRetrievalMode2["MODE_DYNAMIC"] = "MODE_DYNAMIC";
-  })(DynamicRetrievalMode || (DynamicRetrievalMode = {}));
-  GoogleGenerativeAIError = class GoogleGenerativeAIError extends Error {
-    constructor(message) {
-      super(`[GoogleGenerativeAI Error]: ${message}`);
-    }
-  };
-  GoogleGenerativeAIResponseError = class GoogleGenerativeAIResponseError extends GoogleGenerativeAIError {
-    constructor(message, response) {
-      super(message);
-      this.response = response;
-    }
-  };
-  GoogleGenerativeAIFetchError = class GoogleGenerativeAIFetchError extends GoogleGenerativeAIError {
-    constructor(message, status, statusText, errorDetails) {
-      super(message);
-      this.status = status;
-      this.statusText = statusText;
-      this.errorDetails = errorDetails;
-    }
-  };
-  GoogleGenerativeAIRequestInputError = class GoogleGenerativeAIRequestInputError extends GoogleGenerativeAIError {
-  };
-  GoogleGenerativeAIAbortError = class GoogleGenerativeAIAbortError extends GoogleGenerativeAIError {
-  };
-  (function(Task2) {
-    Task2["GENERATE_CONTENT"] = "generateContent";
-    Task2["STREAM_GENERATE_CONTENT"] = "streamGenerateContent";
-    Task2["COUNT_TOKENS"] = "countTokens";
-    Task2["EMBED_CONTENT"] = "embedContent";
-    Task2["BATCH_EMBED_CONTENTS"] = "batchEmbedContents";
-  })(Task || (Task = {}));
-  badFinishReasons = [
-    FinishReason.RECITATION,
-    FinishReason.SAFETY,
-    FinishReason.LANGUAGE
-  ];
-  responseLineRE = /^data\: (.*)(?:\n\n|\r\r|\r\n\r\n)/;
-  VALID_PART_FIELDS = [
-    "text",
-    "inlineData",
-    "functionCall",
-    "functionResponse",
-    "executableCode",
-    "codeExecutionResult"
-  ];
-  VALID_PARTS_PER_ROLE = {
-    user: ["text", "inlineData"],
-    function: ["functionResponse"],
-    model: ["text", "functionCall", "executableCode", "codeExecutionResult"],
-    system: ["text"]
-  };
-});
-
-// src/tools/impl/image_generator.ts
-function getDefaultProvider() {
-  const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
-  if (googleKey) {
-    return "google";
-  } else if (openaiKey) {
-    return "openai";
-  }
-  return "openai";
-}
-async function image_generator(args) {
-  try {
-    console.error("image_generator called with args:", JSON.stringify(args, null, 2));
-    if (!args || typeof args !== "object") {
-      return {
-        toolReturn: `Invalid arguments: expected object, got ${typeof args}`,
-        status: "error"
-      };
-    }
-    if (!args.prompt) {
-      return {
-        toolReturn: "prompt is required",
-        status: "error"
-      };
-    }
-    const googleKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (!googleKey && !openaiKey) {
-      return {
-        toolReturn: "No image generation API keys configured. Set either GOOGLE_API_KEY (preferred) or OPENAI_API_KEY in your .env file.",
-        status: "error"
-      };
-    }
-    const provider = args.provider || getDefaultProvider();
-    let imageUrl;
-    let revisedPrompt;
-    switch (provider) {
-      case "openai":
-        ({ imageUrl, revisedPrompt } = await generateWithOpenAI(args));
-        break;
-      case "google":
-        ({ imageUrl } = await generateWithGoogle(args));
-        break;
-      default:
-        return {
-          toolReturn: `Unknown provider: ${provider}. Valid providers: openai, google`,
-          status: "error"
-        };
-    }
-    let toolReturn = `Image generated successfully!
-Provider: ${provider}
-Prompt: ${args.prompt}`;
-    if (revisedPrompt) {
-      toolReturn += `
-Revised prompt: ${revisedPrompt}`;
-    }
-    if (imageUrl.startsWith("data:")) {
-      toolReturn += `
-Image: base64 data (${Math.round(imageUrl.length / 1024)}KB)`;
-    } else {
-      toolReturn += `
-Image URL: ${imageUrl}`;
-    }
-    let asset;
-    if (args.save_as_asset) {
-      asset = await saveAsAsset(imageUrl, args);
-      toolReturn += `
-
-Saved as asset: ${asset.id}
-Path: ${asset.path}`;
-    } else {
-      toolReturn += `
-
-To save this image, use the asset_manager tool or set save_as_asset: true`;
-    }
-    await broadcastStateChange("image_generated", {
-      assetPath: asset?.path,
-      storyId: args.story_id,
-      worldId: args.world_checkpoint
-    });
-    return {
-      toolReturn,
-      status: "success",
-      image_url: imageUrl,
-      revised_prompt: revisedPrompt,
-      asset
-    };
-  } catch (error) {
-    return {
-      toolReturn: `Error generating image: ${error instanceof Error ? error.message : String(error)}`,
-      status: "error"
-    };
-  }
-}
-async function generateWithOpenAI(args) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY environment variable not set");
-  }
-  let size = args.size || DEFAULT_SIZE;
-  if (size === "1792x1024") {
-    size = "1536x1024";
-  } else if (size === "1024x1792") {
-    size = "1024x1536";
-  } else if (size === "512x512" || size === "256x256") {
-    size = "1024x1024";
-  }
-  const model = args.model || "gpt-image-1.5";
-  const requestBody = {
-    model,
-    prompt: args.prompt,
-    n: 1,
-    size
-  };
-  if (model.startsWith("dall-e")) {
-    requestBody.response_format = "b64_json";
-    requestBody.quality = args.quality || DEFAULT_QUALITY;
-    requestBody.style = args.style || DEFAULT_STYLE;
-  }
-  const response = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`
-    },
-    body: JSON.stringify(requestBody)
-  });
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`OpenAI API error (${response.status}): ${error}`);
-  }
-  const data = await response.json();
-  if (!data.data || data.data.length === 0) {
-    throw new Error("No image returned from OpenAI");
-  }
-  const imageData = data.data[0];
-  if (!imageData) {
-    throw new Error("No image data returned from OpenAI");
-  }
-  let imageUrl;
-  if (imageData.b64_json) {
-    imageUrl = `data:image/png;base64,${imageData.b64_json}`;
-  } else if (imageData.url) {
-    const imgResponse = await fetch(imageData.url);
-    const imgBuffer = await imgResponse.arrayBuffer();
-    const base64 = Buffer.from(imgBuffer).toString("base64");
-    imageUrl = `data:image/png;base64,${base64}`;
-  } else {
-    throw new Error("No image data in response");
-  }
-  return {
-    imageUrl,
-    revisedPrompt: imageData.revised_prompt
-  };
-}
-async function generateWithGoogle(args) {
-  const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set. Get one at https://aistudio.google.com/apikey");
-  }
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const modelName = args.model || "gemini-3-pro-image-preview";
-  const model = genAI.getGenerativeModel({
-    model: modelName
-  });
-  const numberOfImages = args.number_of_images || 1;
-  const result = await model.generateContent({
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: args.prompt
-          }
-        ]
-      }
-    ],
-    generationConfig: {
-      responseModalities: ["TEXT", "IMAGE"],
-      maxOutputTokens: 8192
-    }
-  });
-  const response = result.response;
-  if (!response.candidates || response.candidates.length === 0) {
-    throw new Error("No image generated by Google");
-  }
-  const candidate = response.candidates[0];
-  if (!candidate || !candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-    throw new Error("No image data in response");
-  }
-  const imagePart = candidate.content.parts.find((part) => part.inlineData?.mimeType?.startsWith("image/"));
-  if (!imagePart || !imagePart.inlineData) {
-    throw new Error("No image data found in response");
-  }
-  const base64Data = imagePart.inlineData.data;
-  const mimeType = imagePart.inlineData.mimeType || "image/png";
-  const dataUrl = `data:${mimeType};base64,${base64Data}`;
-  return {
-    imageUrl: dataUrl
-  };
-}
-async function saveAsAsset(imageUrl, args) {
-  const imageResponse = await fetch(imageUrl);
-  if (!imageResponse.ok) {
-    throw new Error(`Failed to download image: ${imageResponse.status}`);
-  }
-  const imageBuffer = await imageResponse.arrayBuffer();
-  const base64Data = Buffer.from(imageBuffer).toString("base64");
-  const dataUrl = `data:image/png;base64,${base64Data}`;
-  const assetId = args.asset_id || `img_${Date.now()}`;
-  const fileName = `${assetId}.png`;
-  let fullPath;
-  if (args.asset_path) {
-    if (args.story_id) {
-      fullPath = `${args.story_id}/${args.asset_path}`;
-    } else if (args.world_checkpoint) {
-      fullPath = `worlds/${args.world_checkpoint}/${args.asset_path}`;
-    } else {
-      fullPath = args.asset_path;
-    }
-  } else {
-    if (args.story_id) {
-      fullPath = `${args.story_id}/${fileName}`;
-    } else if (args.world_checkpoint) {
-      fullPath = `worlds/${args.world_checkpoint}/${fileName}`;
-    } else {
-      fullPath = fileName;
-    }
-  }
-  const asset = {
-    id: assetId,
-    type: "image",
-    path: fullPath,
-    description: args.asset_description || `Generated image: ${args.prompt.slice(0, 100)}`,
-    generated: true,
-    prompt: args.prompt
-  };
-  const result = await asset_manager({
-    operation: "save",
-    asset,
-    data: dataUrl
-  });
-  if (result.status === "error") {
-    throw new Error(`Failed to save asset: ${result.toolReturn}`);
-  }
-  return asset;
-}
-var DEFAULT_SIZE = "1024x1024", DEFAULT_QUALITY = "standard", DEFAULT_STYLE = "vivid";
-var init_image_generator2 = __esm(() => {
-  init_asset_manager2();
-  init_dist4();
-  init_canvas_ui2();
-});
-
-// src/tools/impl/get_canvas_interactions.ts
-async function get_canvas_interactions(args = {}) {
-  const { peek = false, componentId, interactionType } = args;
-  try {
-    let interactions = peek ? peekCanvasInteractions() : getCanvasInteractions();
-    if (componentId) {
-      interactions = interactions.filter((i) => i.componentId === componentId);
-    }
-    if (interactionType) {
-      interactions = interactions.filter((i) => i.interactionType === interactionType);
-    }
-    const count = interactions.length;
-    let resultMessage;
-    if (count === 0) {
-      resultMessage = "No pending interactions";
-    } else if (count === 1) {
-      const i = interactions[0];
-      resultMessage = `1 interaction: ${i.interactionType} on ${i.componentId}${i.data?.actionId ? ` (action: ${i.data.actionId})` : ""}`;
-    } else {
-      resultMessage = `${count} pending interactions`;
-    }
-    return {
-      toolReturn: resultMessage,
-      status: "success",
-      interactions,
-      count
-    };
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    return {
-      toolReturn: `Failed to get interactions: ${errorMsg}`,
-      status: "error",
-      interactions: [],
-      count: 0
-    };
-  }
-}
-var init_get_canvas_interactions2 = __esm(() => {
-  init_canvas_ui2();
-});
-
-// src/tools/impl/send_suggestion.ts
-function ensureAgentBusConnection2() {
-  return new Promise((resolve11, reject) => {
-    if (agentBusWs2 && agentBusWs2.readyState === WebSocket.OPEN) {
-      resolve11(agentBusWs2);
-      return;
-    }
-    if (isConnecting2) {
-      pendingCallbacks2.push({ resolve: resolve11, reject });
-      return;
-    }
-    isConnecting2 = true;
-    const ws = new WebSocket(AGENT_BUS_URL2);
-    ws.onopen = () => {
-      console.log("[send_suggestion] Connected to Agent Bus");
-      isConnecting2 = false;
-      agentBusWs2 = ws;
-      resolve11(ws);
-      for (const cb of pendingCallbacks2) {
-        cb.resolve(ws);
-      }
-      pendingCallbacks2 = [];
-    };
-    ws.onerror = (event) => {
-      console.error("[send_suggestion] Agent Bus connection error:", event);
-      isConnecting2 = false;
-      const err = new Error("Failed to connect to Agent Bus");
-      reject(err);
-      for (const cb of pendingCallbacks2) {
-        cb.reject(err);
-      }
-      pendingCallbacks2 = [];
-    };
-    ws.onclose = () => {
-      console.log("[send_suggestion] Agent Bus connection closed");
-      agentBusWs2 = null;
-      isConnecting2 = false;
-    };
-    ws.onmessage = () => {};
-  });
-}
-async function send_suggestion(args) {
-  const { title, description, priority, action_id, action_label, action_data } = args;
-  try {
-    const ws = await ensureAgentBusConnection2();
-    const suggestionId = `sug-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const message = {
-      type: "suggestion",
-      payload: {
-        id: suggestionId,
-        priority,
-        title,
-        description,
-        actionId: action_id,
-        actionLabel: action_label,
-        actionData: action_data
-      }
-    };
-    ws.send(JSON.stringify(message));
-    console.log(`[send_suggestion] Sent suggestion: ${title} (${priority})`);
-    return {
-      toolReturn: `Suggestion "${title}" sent to canvas`,
-      status: "success"
-    };
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error("[send_suggestion] Error:", errorMsg);
-    return {
-      toolReturn: `Failed to send suggestion: ${errorMsg}`,
-      status: "error"
-    };
-  }
-}
-var AGENT_BUS_URL2, agentBusWs2 = null, isConnecting2 = false, pendingCallbacks2;
-var init_send_suggestion2 = __esm(() => {
-  AGENT_BUS_URL2 = process.env.AGENT_BUS_URL || "ws://localhost:8284/ws?type=agent";
-  pendingCallbacks2 = [];
-});
-
 // src/tools/schemas/ApplyPatch.json
 var ApplyPatch_default2;
 var init_ApplyPatch3 = __esm(() => {
@@ -48470,6 +48674,70 @@ var init_AskUserQuestion3 = __esm(() => {
   };
 });
 
+// src/tools/schemas/asset_manager.json
+var asset_manager_default2;
+var init_asset_manager3 = __esm(() => {
+  asset_manager_default2 = {
+    type: "object",
+    properties: {
+      operation: {
+        type: "string",
+        enum: ["save", "load", "list", "delete"],
+        description: "The operation to perform: save (store asset), load (retrieve asset), list (all assets), delete (remove asset)"
+      },
+      asset: {
+        type: "object",
+        description: "Asset metadata (for save/load/delete operations)",
+        properties: {
+          id: {
+            type: "string",
+            description: "Unique identifier for the asset"
+          },
+          type: {
+            type: "string",
+            enum: ["image", "audio", "video", "document"],
+            description: "Type of asset"
+          },
+          path: {
+            type: "string",
+            description: "Path relative to .dsf/assets/ where asset will be stored"
+          },
+          description: {
+            type: "string",
+            description: "Human-readable description of the asset"
+          },
+          generated: {
+            type: "boolean",
+            description: "Whether this asset was AI-generated"
+          },
+          prompt: {
+            type: "string",
+            description: "Generation prompt if asset was AI-generated"
+          }
+        },
+        required: ["id", "type", "path"]
+      },
+      asset_id: {
+        type: "string",
+        description: "Asset ID (for load/delete operations)"
+      },
+      story_id: {
+        type: "string",
+        description: "Story ID to organize assets by story"
+      },
+      world_checkpoint: {
+        type: "string",
+        description: "World checkpoint to filter assets (for list operation)"
+      },
+      data: {
+        type: "string",
+        description: "Asset data as base64 string, data URL, or file path (for save operation)"
+      }
+    },
+    required: ["operation"]
+  };
+});
+
 // src/tools/schemas/Bash.json
 var Bash_default2;
 var init_Bash3 = __esm(() => {
@@ -48528,6 +48796,30 @@ var init_BashOutput3 = __esm(() => {
     required: ["shell_id"],
     additionalProperties: false,
     $schema: "http://json-schema.org/draft-07/schema#"
+  };
+});
+
+// src/tools/schemas/canvas_ui.json
+var canvas_ui_default2;
+var init_canvas_ui3 = __esm(() => {
+  canvas_ui_default2 = {
+    type: "object",
+    properties: {
+      target: {
+        type: "string",
+        description: "Mount point where the UI component should appear. Options: 'floating' (overlay), 'story_header', 'story_segment_{id}', 'story_segment_{id}_before', 'story_footer', 'world_header', 'world_overview'"
+      },
+      spec: {
+        type: "object",
+        description: "Component specification defining the UI to render. Must include 'type' (Dialog, Button, Text, Stack) and 'props'. May include 'id' and 'children' for nested components."
+      },
+      action: {
+        type: "string",
+        enum: ["create", "update", "remove"],
+        description: "Action to perform: create (new component), update (existing component), remove (delete component)"
+      }
+    },
+    required: ["target", "spec"]
   };
 });
 
@@ -48729,6 +49021,92 @@ var init_GrepFiles3 = __esm(() => {
     },
     required: ["pattern"],
     additionalProperties: false
+  };
+});
+
+// src/tools/schemas/get_canvas_interactions.json
+var get_canvas_interactions_default2;
+var init_get_canvas_interactions3 = __esm(() => {
+  get_canvas_interactions_default2 = {
+    name: "get_canvas_interactions",
+    description: "Get pending user interactions from the canvas UI. Call this to see what buttons users clicked, actions selected, or other interactions with your UI components.",
+    parameters: {
+      type: "object",
+      properties: {
+        peek: {
+          type: "boolean",
+          description: "If true, look at interactions without clearing the queue. Default: false (clears after reading)"
+        },
+        componentId: {
+          type: "string",
+          description: "Filter interactions by component ID"
+        },
+        interactionType: {
+          type: "string",
+          description: "Filter by interaction type (e.g., 'click', 'action')"
+        }
+      },
+      required: []
+    }
+  };
+});
+
+// src/tools/schemas/image_generator.json
+var image_generator_default2;
+var init_image_generator3 = __esm(() => {
+  image_generator_default2 = {
+    type: "object",
+    properties: {
+      prompt: {
+        type: "string",
+        description: "Detailed description of the image to generate. Be specific about style, mood, composition, lighting, etc."
+      },
+      provider: {
+        type: "string",
+        enum: ["openai", "google"],
+        description: "Image generation provider. 'openai' uses DALL-E (default), 'google' uses Gemini/Imagen (Nano Banana)."
+      },
+      size: {
+        type: "string",
+        enum: ["1024x1024", "1792x1024", "1024x1792", "512x512", "256x256"],
+        description: "Image dimensions. DALL-E 3 supports 1024x1024, 1792x1024, 1024x1792. DALL-E 2 supports 256x256, 512x512, 1024x1024. Default: 1024x1024"
+      },
+      quality: {
+        type: "string",
+        enum: ["standard", "hd"],
+        description: "Image quality (DALL-E 3 only). 'hd' creates more detailed images but takes longer. Default: standard"
+      },
+      style: {
+        type: "string",
+        enum: ["vivid", "natural"],
+        description: "Image style (DALL-E 3 only). 'vivid' is more dramatic and artistic, 'natural' is more realistic. Default: vivid"
+      },
+      model: {
+        type: "string",
+        description: "Model to use (Google only). Examples: 'gemini-2.0-flash-exp' (Nano Banana, fast, free), 'imagen-3.0-generate-001'. Default: gemini-2.0-flash-exp"
+      },
+      number_of_images: {
+        type: "number",
+        description: "Number of images to generate (Google only, 1-4). Default: 1"
+      },
+      save_as_asset: {
+        type: "boolean",
+        description: "If true, automatically saves the generated image as a story asset. Default: false"
+      },
+      story_id: {
+        type: "string",
+        description: "Story ID to associate the asset with (required if save_as_asset is true)"
+      },
+      asset_id: {
+        type: "string",
+        description: "Custom asset ID. If not provided, auto-generates one."
+      },
+      asset_description: {
+        type: "string",
+        description: "Description of what the asset shows (used in story metadata)"
+      }
+    },
+    required: ["prompt"]
   };
 });
 
@@ -49193,6 +49571,217 @@ var init_Skill3 = __esm(() => {
   };
 });
 
+// src/tools/schemas/send_suggestion.json
+var send_suggestion_default2;
+var init_send_suggestion3 = __esm(() => {
+  send_suggestion_default2 = {
+    type: "object",
+    properties: {
+      title: {
+        type: "string",
+        description: "Short title for the suggestion (3-5 words)"
+      },
+      description: {
+        type: "string",
+        description: "Full explanation of the suggestion. Never truncate - include all relevant context"
+      },
+      priority: {
+        type: "string",
+        enum: ["high", "medium", "low"],
+        description: "Priority level: high (urgent), medium (helpful), low (optional)"
+      },
+      action_id: {
+        type: "string",
+        description: "Unique identifier for the action (e.g., 'develop_rule', 'continue_story', 'explore_branch')"
+      },
+      action_label: {
+        type: "string",
+        description: "Button text shown to user (e.g., 'Test in story', 'Explore this path')"
+      },
+      action_data: {
+        type: "object",
+        description: "Additional data to pass when user accepts the suggestion"
+      }
+    },
+    required: ["title", "description", "priority", "action_id"]
+  };
+});
+
+// src/tools/schemas/story_manager.json
+var story_manager_default2;
+var init_story_manager3 = __esm(() => {
+  story_manager_default2 = {
+    type: "object",
+    properties: {
+      operation: {
+        type: "string",
+        enum: [
+          "create",
+          "save_segment",
+          "load",
+          "list",
+          "branch",
+          "continue",
+          "update_metadata"
+        ],
+        description: "The operation to perform: create (new story), save_segment (add segment), load (restore story), list (all stories), branch (create branch), continue (get context), update_metadata (update story info)"
+      },
+      story_id: {
+        type: "string",
+        description: "Unique identifier for the story (required for most operations)"
+      },
+      world_checkpoint: {
+        type: "string",
+        description: "Name of the world checkpoint this story belongs to (required for create)"
+      },
+      title: {
+        type: "string",
+        description: "Title of the story (required for create operation)"
+      },
+      segment: {
+        type: "object",
+        description: "Story segment to add (for save_segment operation)",
+        properties: {
+          content: {
+            type: "string",
+            description: "The story text content"
+          },
+          word_count: {
+            type: "number",
+            description: "Number of words in this segment"
+          },
+          parent_segment: {
+            type: ["string", "null"],
+            description: "ID of parent segment, or null for first segment"
+          },
+          world_evolution: {
+            type: "object",
+            description: "How this segment affects the world",
+            properties: {
+              elements_introduced: {
+                type: "array",
+                items: { type: "string" },
+                description: "Element IDs introduced in this segment"
+              },
+              rules_applied: {
+                type: "array",
+                items: { type: "string" },
+                description: "Rule IDs applied in this segment"
+              },
+              rules_challenged: {
+                type: "array",
+                items: { type: "string" },
+                description: "Rules that were tested or bent"
+              },
+              new_questions: {
+                type: "array",
+                items: { type: "string" },
+                description: "Questions raised for worldbuilding"
+              },
+              world_changes: {
+                type: "array",
+                items: { type: "string" },
+                description: "How this segment changed the world"
+              }
+            }
+          },
+          assets: {
+            type: "array",
+            description: "Multimedia assets for this segment",
+            items: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string"
+                },
+                type: {
+                  type: "string",
+                  enum: ["image", "audio", "video", "document"]
+                },
+                path: {
+                  type: "string",
+                  description: "Path relative to .dsf/assets/"
+                },
+                description: {
+                  type: "string"
+                },
+                generated: {
+                  type: "boolean"
+                },
+                prompt: {
+                  type: "string"
+                }
+              },
+              required: ["id", "type", "path"]
+            }
+          },
+          branches: {
+            type: "array",
+            description: "Possible story branches from this segment",
+            items: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "string"
+                },
+                prompt: {
+                  type: "string"
+                },
+                status: {
+                  type: "string",
+                  enum: ["active", "pending", "completed", "abandoned"]
+                },
+                segment_id: {
+                  type: "string"
+                }
+              },
+              required: ["id", "prompt", "status"]
+            }
+          }
+        },
+        required: ["content", "word_count", "parent_segment", "world_evolution"]
+      },
+      branch: {
+        type: "object",
+        description: "Story branch to create (for branch operation)",
+        properties: {
+          prompt: {
+            type: "string",
+            description: "What this branch explores"
+          },
+          status: {
+            type: "string",
+            enum: ["active", "pending", "completed", "abandoned"],
+            description: "Status of this branch"
+          }
+        },
+        required: ["prompt", "status"]
+      },
+      metadata: {
+        type: "object",
+        description: "Story metadata to update (for update_metadata operation)",
+        properties: {
+          title: {
+            type: "string"
+          },
+          status: {
+            type: "string",
+            enum: ["active", "completed", "abandoned", "paused"]
+          },
+          tags: {
+            type: "array",
+            items: { type: "string" }
+          },
+          author_notes: {
+            type: "string"
+          }
+        }
+      }
+    },
+    required: ["operation"]
+  };
+});
+
 // src/tools/schemas/Task.json
 var Task_default2;
 var init_Task3 = __esm(() => {
@@ -49426,390 +50015,15 @@ var init_world_manager3 = __esm(() => {
   };
 });
 
-// src/tools/schemas/story_manager.json
-var story_manager_default2;
-var init_story_manager3 = __esm(() => {
-  story_manager_default2 = {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["create", "save_segment", "load", "list", "branch", "continue", "update_metadata"],
-        description: "The operation to perform: create (new story), save_segment (add segment), load (restore story), list (all stories), branch (create branch), continue (get context), update_metadata (update story info)"
-      },
-      story_id: {
-        type: "string",
-        description: "Unique identifier for the story (required for most operations)"
-      },
-      world_checkpoint: {
-        type: "string",
-        description: "Name of the world checkpoint this story belongs to (required for create)"
-      },
-      title: {
-        type: "string",
-        description: "Title of the story (required for create operation)"
-      },
-      segment: {
-        type: "object",
-        description: "Story segment to add (for save_segment operation)",
-        properties: {
-          content: {
-            type: "string",
-            description: "The story text content"
-          },
-          word_count: {
-            type: "number",
-            description: "Number of words in this segment"
-          },
-          parent_segment: {
-            type: ["string", "null"],
-            description: "ID of parent segment, or null for first segment"
-          },
-          world_evolution: {
-            type: "object",
-            description: "How this segment affects the world",
-            properties: {
-              elements_introduced: {
-                type: "array",
-                items: { type: "string" },
-                description: "Element IDs introduced in this segment"
-              },
-              rules_applied: {
-                type: "array",
-                items: { type: "string" },
-                description: "Rule IDs applied in this segment"
-              },
-              rules_challenged: {
-                type: "array",
-                items: { type: "string" },
-                description: "Rules that were tested or bent"
-              },
-              new_questions: {
-                type: "array",
-                items: { type: "string" },
-                description: "Questions raised for worldbuilding"
-              },
-              world_changes: {
-                type: "array",
-                items: { type: "string" },
-                description: "How this segment changed the world"
-              }
-            }
-          },
-          assets: {
-            type: "array",
-            description: "Multimedia assets for this segment",
-            items: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string"
-                },
-                type: {
-                  type: "string",
-                  enum: ["image", "audio", "video", "document"]
-                },
-                path: {
-                  type: "string",
-                  description: "Path relative to .dsf/assets/"
-                },
-                description: {
-                  type: "string"
-                },
-                generated: {
-                  type: "boolean"
-                },
-                prompt: {
-                  type: "string"
-                }
-              },
-              required: ["id", "type", "path"]
-            }
-          },
-          branches: {
-            type: "array",
-            description: "Possible story branches from this segment",
-            items: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string"
-                },
-                prompt: {
-                  type: "string"
-                },
-                status: {
-                  type: "string",
-                  enum: ["active", "pending", "completed", "abandoned"]
-                },
-                segment_id: {
-                  type: "string"
-                }
-              },
-              required: ["id", "prompt", "status"]
-            }
-          }
-        },
-        required: ["content", "word_count", "parent_segment", "world_evolution"]
-      },
-      branch: {
-        type: "object",
-        description: "Story branch to create (for branch operation)",
-        properties: {
-          prompt: {
-            type: "string",
-            description: "What this branch explores"
-          },
-          status: {
-            type: "string",
-            enum: ["active", "pending", "completed", "abandoned"],
-            description: "Status of this branch"
-          }
-        },
-        required: ["prompt", "status"]
-      },
-      metadata: {
-        type: "object",
-        description: "Story metadata to update (for update_metadata operation)",
-        properties: {
-          title: {
-            type: "string"
-          },
-          status: {
-            type: "string",
-            enum: ["active", "completed", "abandoned", "paused"]
-          },
-          tags: {
-            type: "array",
-            items: { type: "string" }
-          },
-          author_notes: {
-            type: "string"
-          }
-        }
-      }
-    },
-    required: ["operation"]
-  };
-});
-
-// src/tools/schemas/asset_manager.json
-var asset_manager_default2;
-var init_asset_manager3 = __esm(() => {
-  asset_manager_default2 = {
-    type: "object",
-    properties: {
-      operation: {
-        type: "string",
-        enum: ["save", "load", "list", "delete"],
-        description: "The operation to perform: save (store asset), load (retrieve asset), list (all assets), delete (remove asset)"
-      },
-      asset: {
-        type: "object",
-        description: "Asset metadata (for save/load/delete operations)",
-        properties: {
-          id: {
-            type: "string",
-            description: "Unique identifier for the asset"
-          },
-          type: {
-            type: "string",
-            enum: ["image", "audio", "video", "document"],
-            description: "Type of asset"
-          },
-          path: {
-            type: "string",
-            description: "Path relative to .dsf/assets/ where asset will be stored"
-          },
-          description: {
-            type: "string",
-            description: "Human-readable description of the asset"
-          },
-          generated: {
-            type: "boolean",
-            description: "Whether this asset was AI-generated"
-          },
-          prompt: {
-            type: "string",
-            description: "Generation prompt if asset was AI-generated"
-          }
-        },
-        required: ["id", "type", "path"]
-      },
-      asset_id: {
-        type: "string",
-        description: "Asset ID (for load/delete operations)"
-      },
-      story_id: {
-        type: "string",
-        description: "Story ID to organize assets by story"
-      },
-      world_checkpoint: {
-        type: "string",
-        description: "World checkpoint to filter assets (for list operation)"
-      },
-      data: {
-        type: "string",
-        description: "Asset data as base64 string, data URL, or file path (for save operation)"
-      }
-    },
-    required: ["operation"]
-  };
-});
-
-// src/tools/schemas/image_generator.json
-var image_generator_default2;
-var init_image_generator3 = __esm(() => {
-  image_generator_default2 = {
-    type: "object",
-    properties: {
-      prompt: {
-        type: "string",
-        description: "Detailed description of the image to generate. Be specific about style, mood, composition, lighting, etc."
-      },
-      provider: {
-        type: "string",
-        enum: ["openai", "google"],
-        description: "Image generation provider. 'openai' uses DALL-E (default), 'google' uses Gemini/Imagen (Nano Banana)."
-      },
-      size: {
-        type: "string",
-        enum: ["1024x1024", "1792x1024", "1024x1792", "512x512", "256x256"],
-        description: "Image dimensions. DALL-E 3 supports 1024x1024, 1792x1024, 1024x1792. DALL-E 2 supports 256x256, 512x512, 1024x1024. Default: 1024x1024"
-      },
-      quality: {
-        type: "string",
-        enum: ["standard", "hd"],
-        description: "Image quality (DALL-E 3 only). 'hd' creates more detailed images but takes longer. Default: standard"
-      },
-      style: {
-        type: "string",
-        enum: ["vivid", "natural"],
-        description: "Image style (DALL-E 3 only). 'vivid' is more dramatic and artistic, 'natural' is more realistic. Default: vivid"
-      },
-      model: {
-        type: "string",
-        description: "Model to use (Google only). Examples: 'gemini-2.0-flash-exp' (Nano Banana, fast, free), 'imagen-3.0-generate-001'. Default: gemini-2.0-flash-exp"
-      },
-      number_of_images: {
-        type: "number",
-        description: "Number of images to generate (Google only, 1-4). Default: 1"
-      },
-      save_as_asset: {
-        type: "boolean",
-        description: "If true, automatically saves the generated image as a story asset. Default: false"
-      },
-      story_id: {
-        type: "string",
-        description: "Story ID to associate the asset with (required if save_as_asset is true)"
-      },
-      asset_id: {
-        type: "string",
-        description: "Custom asset ID. If not provided, auto-generates one."
-      },
-      asset_description: {
-        type: "string",
-        description: "Description of what the asset shows (used in story metadata)"
-      }
-    },
-    required: ["prompt"]
-  };
-});
-
-// src/tools/schemas/canvas_ui.json
-var canvas_ui_default2;
-var init_canvas_ui3 = __esm(() => {
-  canvas_ui_default2 = {
-    type: "object",
-    properties: {
-      target: {
-        type: "string",
-        description: "Mount point where the UI component should appear. Options: 'floating' (overlay), 'story_header', 'story_segment_{id}', 'story_segment_{id}_before', 'story_footer', 'world_header', 'world_overview'"
-      },
-      spec: {
-        type: "object",
-        description: "Component specification defining the UI to render. Must include 'type' (Dialog, Button, Text, Stack) and 'props'. May include 'id' and 'children' for nested components."
-      },
-      action: {
-        type: "string",
-        enum: ["create", "update", "remove"],
-        description: "Action to perform: create (new component), update (existing component), remove (delete component)"
-      }
-    },
-    required: ["target", "spec"]
-  };
-});
-
-// src/tools/schemas/get_canvas_interactions.json
-var get_canvas_interactions_default2;
-var init_get_canvas_interactions3 = __esm(() => {
-  get_canvas_interactions_default2 = {
-    name: "get_canvas_interactions",
-    description: "Get pending user interactions from the canvas UI. Call this to see what buttons users clicked, actions selected, or other interactions with your UI components.",
-    parameters: {
-      type: "object",
-      properties: {
-        peek: {
-          type: "boolean",
-          description: "If true, look at interactions without clearing the queue. Default: false (clears after reading)"
-        },
-        componentId: {
-          type: "string",
-          description: "Filter interactions by component ID"
-        },
-        interactionType: {
-          type: "string",
-          description: "Filter by interaction type (e.g., 'click', 'action')"
-        }
-      },
-      required: []
-    }
-  };
-});
-
-// src/tools/schemas/send_suggestion.json
-var send_suggestion_default2;
-var init_send_suggestion3 = __esm(() => {
-  send_suggestion_default2 = {
-    type: "object",
-    properties: {
-      title: {
-        type: "string",
-        description: "Short title for the suggestion (3-5 words)"
-      },
-      description: {
-        type: "string",
-        description: "Full explanation of the suggestion. Never truncate - include all relevant context"
-      },
-      priority: {
-        type: "string",
-        enum: ["high", "medium", "low"],
-        description: "Priority level: high (urgent), medium (helpful), low (optional)"
-      },
-      action_id: {
-        type: "string",
-        description: "Unique identifier for the action (e.g., 'develop_rule', 'continue_story', 'explore_branch')"
-      },
-      action_label: {
-        type: "string",
-        description: "Button text shown to user (e.g., 'Test in story', 'Explore this path')"
-      },
-      action_data: {
-        type: "object",
-        description: "Additional data to pass when user accepts the suggestion"
-      }
-    },
-    required: ["title", "description", "priority", "action_id"]
-  };
-});
-
 // src/tools/toolDefinitions.ts
 var toolDefinitions, TOOL_DEFINITIONS;
 var init_toolDefinitions = __esm(async () => {
   init_ApplyPatch();
   init_AskUserQuestion();
+  init_asset_manager();
   init_Bash();
   init_BashOutput();
+  init_canvas_ui();
   init_Edit();
   init_EnterPlanMode();
   init_ExitPlanMode();
@@ -49817,6 +50031,8 @@ var init_toolDefinitions = __esm(async () => {
   init_GlobGemini();
   init_Grep();
   init_GrepFiles();
+  init_get_canvas_interactions();
+  init_image_generator();
   init_KillBash();
   init_ListDirCodex();
   init_ListDirectoryGemini();
@@ -49832,28 +50048,28 @@ var init_toolDefinitions = __esm(async () => {
   init_Shell();
   init_ShellCommand();
   init_Skill();
+  init_send_suggestion();
+  init_story_manager();
   init_Task();
   init_TodoWrite();
   init_UpdatePlan();
   init_Write();
-  init_world_manager();
-  init_story_manager();
-  init_asset_manager();
-  init_image_generator();
-  init_canvas_ui();
-  init_get_canvas_interactions();
-  init_send_suggestion();
   init_WriteFileGemini();
   init_WriteTodosGemini();
+  init_world_manager();
   init_ApplyPatch2();
   init_AskUserQuestion2();
+  init_asset_manager2();
   init_BashOutput2();
+  init_canvas_ui2();
   init_Edit2();
   init_EnterPlanMode2();
   init_Glob2();
   init_GlobGemini2();
   init_Grep2();
   init_GrepFiles2();
+  init_get_canvas_interactions2();
+  init_image_generator2();
   init_KillBash2();
   init_ListDirCodex2();
   init_ListDirectoryGemini2();
@@ -49865,20 +50081,18 @@ var init_toolDefinitions = __esm(async () => {
   init_ReadManyFilesGemini2();
   init_ReplaceGemini2();
   init_SearchFileContentGemini2();
+  init_send_suggestion2();
+  init_story_manager2();
   init_TodoWrite2();
   init_Write2();
   init_WriteFileGemini2();
   init_world_manager2();
-  init_story_manager2();
-  init_asset_manager2();
-  init_image_generator2();
-  init_canvas_ui2();
-  init_get_canvas_interactions2();
-  init_send_suggestion2();
   init_ApplyPatch3();
   init_AskUserQuestion3();
+  init_asset_manager3();
   init_Bash3();
   init_BashOutput3();
+  init_canvas_ui3();
   init_Edit3();
   init_EnterPlanMode3();
   init_ExitPlanMode2();
@@ -49886,6 +50100,8 @@ var init_toolDefinitions = __esm(async () => {
   init_GlobGemini3();
   init_Grep3();
   init_GrepFiles3();
+  init_get_canvas_interactions3();
+  init_image_generator3();
   init_KillBash3();
   init_ListDirCodex3();
   init_ListDirectoryGemini3();
@@ -49901,6 +50117,8 @@ var init_toolDefinitions = __esm(async () => {
   init_Shell3();
   init_ShellCommand3();
   init_Skill3();
+  init_send_suggestion3();
+  init_story_manager3();
   init_Task3();
   init_TodoWrite3();
   init_UpdatePlan2();
@@ -49908,12 +50126,6 @@ var init_toolDefinitions = __esm(async () => {
   init_WriteFileGemini3();
   init_WriteTodosGemini2();
   init_world_manager3();
-  init_story_manager3();
-  init_asset_manager3();
-  init_image_generator3();
-  init_canvas_ui3();
-  init_get_canvas_interactions3();
-  init_send_suggestion3();
   await __promiseAll([
     init_Bash2(),
     init_RunShellCommandGemini2(),
@@ -50757,8 +50969,16 @@ var init_promptAssets2 = __esm(() => {
     {
       id: "default",
       label: "Default",
-      description: "Alias for letta-claude (Deep Sci-Fi)",
-      content: letta_claude_default,
+      description: "Deep Sci-Fi worldbuilding and storytelling agent",
+      content: system_prompt_default,
+      isFeatured: true,
+      isDefault: true
+    },
+    {
+      id: "dsf",
+      label: "Deep Sci-Fi",
+      description: "Sci-fi worldbuilding with world_manager, story_manager, image generation",
+      content: system_prompt_default,
       isFeatured: true
     },
     {
@@ -54369,7 +54589,8 @@ var init_manager2 = __esm(async () => {
     "asset_manager",
     "image_generator",
     "canvas_ui",
-    "get_canvas_interactions"
+    "get_canvas_interactions",
+    "send_suggestion"
   ];
   OPENAI_DEFAULT_TOOLS = [
     "shell_command",
@@ -54479,7 +54700,8 @@ var init_manager2 = __esm(async () => {
     asset_manager: { requiresApproval: false },
     image_generator: { requiresApproval: false },
     canvas_ui: { requiresApproval: false },
-    get_canvas_interactions: { requiresApproval: false }
+    get_canvas_interactions: { requiresApproval: false },
+    send_suggestion: { requiresApproval: false }
   };
   REGISTRY_KEY2 = Symbol.for("@letta/toolRegistry");
   toolRegistry2 = getRegistry2();
@@ -54582,7 +54804,14 @@ function getToolNames2() {
     "compare_versions",
     "analyze_information_gain",
     "search_trajectories",
-    "canvas_ui"
+    "search_decisions",
+    "world_manager",
+    "story_manager",
+    "asset_manager",
+    "image_generator",
+    "canvas_ui",
+    "get_canvas_interactions",
+    "send_suggestion"
   ];
 }
 function getAllLettaToolNames2() {
@@ -54812,7 +55041,9 @@ async function createAgent(nameOrOptions = DEFAULT_AGENT_NAME, model, embeddingM
     modelHandle = "anthropic/claude-opus-4-5-20251101";
   }
   const client = await getClient2();
-  const { isOpenAIModel: isOpenAIModel3 } = await init_manager2().then(() => exports_manager);
+  const { getServerToolName: getServerToolName2, getToolNames: getToolNames3, isOpenAIModel: isOpenAIModel3 } = await init_manager2().then(() => exports_manager);
+  const internalToolNames = getToolNames3();
+  const serverToolNames = internalToolNames.map((name2) => getServerToolName2(name2));
   const baseMemoryTool = isOpenAIModel3(modelHandle) ? "memory_apply_patch" : "memory";
   const defaultBaseTools = options.baseTools ?? [
     baseMemoryTool,
@@ -54824,9 +55055,12 @@ async function createAgent(nameOrOptions = DEFAULT_AGENT_NAME, model, embeddingM
     "compare_versions",
     "analyze_information_gain",
     "search_trajectories",
-    "canvas_ui"
+    "search_decisions"
   ];
-  let toolNames = [...defaultBaseTools];
+  let toolNames = [...serverToolNames, ...defaultBaseTools];
+  const allServerTools = await client.tools.list({ limit: 1000 });
+  const serverToolSet = new Set(allServerTools.items.map((t) => t.name).filter((n) => !!n));
+  toolNames = toolNames.filter((name2) => serverToolSet.has(name2));
   if (toolNames.includes("memory_apply_patch")) {
     try {
       const resp = await client.tools.list({ name: "memory_apply_patch" });
@@ -57610,6 +57844,166 @@ var init_available_models = __esm(async () => {
   CACHE_TTL_MS = 5 * 60 * 1000;
 });
 
+// src/agent-bus/cli-client.ts
+function setInteractionHandler(handler) {
+  interactionHandler = handler;
+  onInteraction = handler;
+}
+function generateSessionId() {
+  const now = Date.now();
+  const random = Math.random().toString(36).substr(2, 9);
+  return `cli-session-${now}-${random}`;
+}
+function connectToAgentBus(options) {
+  return new Promise((resolve16, reject) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      resolve16();
+      return;
+    }
+    const useSessionId = options?.sessionId || generateSessionId();
+    const userId = options?.userId || "cli-user";
+    const fullUrl = `${WS_URL}?type=cli&sessionId=${useSessionId}&userId=${userId}`;
+    console.log("[CLI WS] Connecting to unified WebSocket server...");
+    try {
+      ws = new WebSocket(fullUrl);
+      ws.onopen = () => {
+        console.log("[CLI WS] Connected");
+        reconnectAttempts = 0;
+        startPing();
+      };
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data.toString());
+          handleMessage(message, resolve16);
+        } catch (err) {
+          console.error("[CLI WS] Failed to parse message:", err);
+        }
+      };
+      ws.onclose = (event) => {
+        console.log("[CLI WS] Disconnected", event.code, event.reason);
+        stopPing();
+        ws = null;
+        clientId = null;
+        connectedClients = [];
+        onDisconnect?.();
+        scheduleReconnect();
+      };
+      ws.onerror = (_error) => {
+        console.error("[CLI WS] Connection error");
+        onError?.("WebSocket connection error");
+      };
+    } catch (err) {
+      console.error("[CLI WS] Failed to create WebSocket:", err);
+      reject(err);
+    }
+  });
+}
+function scheduleReconnect() {
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.log("[CLI WS] Max reconnection attempts reached");
+    return;
+  }
+  reconnectAttempts++;
+  const delay = RECONNECT_DELAY * 1.5 ** (reconnectAttempts - 1);
+  console.log(`[CLI WS] Reconnecting in ${Math.round(delay)}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+  setTimeout(() => {
+    connectToAgentBus({ sessionId: sessionId || undefined }).catch(() => {});
+  }, delay);
+}
+function startPing() {
+  pingInterval = setInterval(() => {
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "ping" }));
+    }
+  }, PING_INTERVAL);
+}
+function stopPing() {
+  if (pingInterval) {
+    clearInterval(pingInterval);
+    pingInterval = null;
+  }
+}
+function handleMessage(message, connectResolve) {
+  switch (message.type) {
+    case "connect":
+      clientId = message.clientId;
+      sessionId = message.sessionId;
+      connectedClients = message.connectedClients || [];
+      console.log("[CLI WS] Assigned ID:", clientId);
+      console.log("[CLI WS] Session:", sessionId);
+      console.log("[CLI WS] Other clients:", connectedClients.length > 0 ? connectedClients.map((c) => `${c.type}:${c.id}`).join(", ") : "none");
+      onConnect?.(clientId, sessionId, connectedClients);
+      connectResolve?.(undefined);
+      break;
+    case "client_joined":
+      connectedClients.push(message.client);
+      console.log(`[CLI WS] ${message.client.type} client joined:`, message.client.id);
+      onClientJoined?.(message.client);
+      break;
+    case "client_left":
+      connectedClients = connectedClients.filter((c) => c.id !== message.clientId);
+      console.log(`[CLI WS] ${message.clientType} client left:`, message.clientId);
+      onClientLeft?.(message.clientId, message.clientType);
+      break;
+    case "chat_chunk":
+      onChatChunk?.(message.chunk);
+      break;
+    case "canvas_ui":
+      console.log(`[CLI WS] Canvas UI: ${message.action} ${message.componentId}`);
+      onCanvasUI?.(message);
+      break;
+    case "state_change":
+      console.log(`[CLI WS] State change: ${message.event}`);
+      onStateChange?.(message.event, message.data);
+      break;
+    case "suggestion":
+      console.log(`[CLI WS] Suggestion: ${message.payload.title}`);
+      onSuggestion?.(message.payload);
+      break;
+    case "error":
+      console.error("[CLI WS] Server error:", message.error, message.details);
+      onError?.(message.error);
+      break;
+    case "pong":
+      break;
+    default:
+      if (message.type === "interaction") {
+        const interaction = message;
+        console.log("[CLI WS] Received interaction:", {
+          componentId: interaction.componentId,
+          interactionType: interaction.interactionType
+        });
+        const handler = onInteraction || interactionHandler;
+        if (handler) {
+          handler({
+            componentId: interaction.componentId,
+            interactionType: interaction.interactionType,
+            data: interaction.data,
+            target: interaction.target
+          }).catch((err) => {
+            console.error("[CLI WS] Error handling interaction:", err);
+          });
+        }
+      } else {
+        console.warn("[CLI WS] Unknown message type:", message.type);
+      }
+  }
+}
+function disconnectFromAgentBus() {
+  stopPing();
+  if (ws) {
+    ws.close(1000, "Client disconnect");
+    ws = null;
+  }
+  clientId = null;
+  sessionId = null;
+  connectedClients = [];
+}
+var WS_URL = "ws://localhost:8284/ws", ws = null, clientId = null, sessionId = null, connectedClients, reconnectAttempts = 0, pingInterval = null, MAX_RECONNECT_ATTEMPTS = 10, RECONNECT_DELAY = 3000, PING_INTERVAL = 30000, onChatChunk = null, onCanvasUI = null, onStateChange = null, onSuggestion = null, onInteraction = null, onClientJoined = null, onClientLeft = null, onConnect = null, onDisconnect = null, onError = null, interactionHandler = null;
+var init_cli_client = __esm(() => {
+  connectedClients = [];
+});
+
 // src/ralph/mode.ts
 function getDefaultState() {
   return {
@@ -57788,90 +58182,6 @@ var init_settings = __esm(() => {
     globalSharedBlockIds: {}
   };
 });
-
-// src/agent-bus/cli-client.ts
-function setInteractionHandler(handler) {
-  interactionHandler = handler;
-}
-function connectToAgentBus() {
-  return new Promise((resolve16, reject) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      resolve16();
-      return;
-    }
-    console.log("[CLI Agent Bus] Connecting to Agent Bus...");
-    try {
-      ws = new WebSocket(AGENT_BUS_URL3);
-      ws.onopen = () => {
-        console.log("[CLI Agent Bus] Connected to Agent Bus");
-        reconnectAttempts = 0;
-        resolve16();
-      };
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data.toString());
-          handleMessage(message);
-        } catch (err) {
-          console.error("[CLI Agent Bus] Failed to parse message:", err);
-        }
-      };
-      ws.onclose = () => {
-        console.log("[CLI Agent Bus] Disconnected from Agent Bus");
-        ws = null;
-        scheduleReconnect();
-      };
-      ws.onerror = (error) => {
-        console.error("[CLI Agent Bus] Connection error:", error);
-      };
-    } catch (err) {
-      console.error("[CLI Agent Bus] Failed to create WebSocket:", err);
-      reject(err);
-    }
-  });
-}
-function scheduleReconnect() {
-  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-    console.log("[CLI Agent Bus] Max reconnection attempts reached");
-    return;
-  }
-  reconnectAttempts++;
-  console.log(`[CLI Agent Bus] Reconnecting in ${RECONNECT_DELAY}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
-  setTimeout(() => {
-    connectToAgentBus().catch(() => {});
-  }, RECONNECT_DELAY);
-}
-function handleMessage(message) {
-  if (message.type === "connect") {
-    console.log(`[CLI Agent Bus] Registered as ${message.clientType}:${message.clientId}`);
-    return;
-  }
-  if (message.type === "interaction") {
-    const interaction = message;
-    console.log("[CLI Agent Bus] Received interaction:", {
-      componentId: interaction.componentId,
-      interactionType: interaction.interactionType
-    });
-    if (interactionHandler) {
-      interactionHandler({
-        componentId: interaction.componentId,
-        interactionType: interaction.interactionType,
-        data: interaction.data,
-        target: interaction.target
-      }).catch((err) => {
-        console.error("[CLI Agent Bus] Error handling interaction:", err);
-      });
-    } else {
-      console.warn("[CLI Agent Bus] No interaction handler registered");
-    }
-  }
-}
-function disconnectFromAgentBus() {
-  if (ws) {
-    ws.close();
-    ws = null;
-  }
-}
-var AGENT_BUS_URL3 = "ws://localhost:8284/ws?type=agent", ws = null, reconnectAttempts = 0, MAX_RECONNECT_ATTEMPTS = 10, RECONNECT_DELAY = 3000, interactionHandler = null;
 
 // src/cli/commands/mcp.ts
 function uid(prefix) {
@@ -76391,7 +76701,7 @@ function App2({
       if (interactionType === "context_menu_action" || interactionType === "action") {
         const action = data?.action || target || interactionType;
         const elementType = data?.elementType || "element";
-        const elementId = data?.elementId || componentId;
+        const _elementId = data?.elementId || componentId;
         const elementName = data?.elementName || data?.title || "";
         switch (action) {
           case "develop_world":
@@ -80747,6 +81057,7 @@ var init_App2 = __esm(async () => {
   init_check_approval();
   init_context();
   init_model();
+  init_cli_client();
   init_mode();
   init_mode2();
   init_settings();
@@ -81269,7 +81580,9 @@ async function createAgent2(nameOrOptions = DEFAULT_AGENT_NAME, model, embedding
     modelHandle = "anthropic/claude-opus-4-5-20251101";
   }
   const client = await getClient2();
-  const { isOpenAIModel: isOpenAIModel3 } = await init_manager2().then(() => exports_manager);
+  const { getServerToolName: getServerToolName2, getToolNames: getToolNames3, isOpenAIModel: isOpenAIModel3 } = await init_manager2().then(() => exports_manager);
+  const internalToolNames = getToolNames3();
+  const serverToolNames = internalToolNames.map((name2) => getServerToolName2(name2));
   const baseMemoryTool = isOpenAIModel3(modelHandle) ? "memory_apply_patch" : "memory";
   const defaultBaseTools = options.baseTools ?? [
     baseMemoryTool,
@@ -81281,9 +81594,12 @@ async function createAgent2(nameOrOptions = DEFAULT_AGENT_NAME, model, embedding
     "compare_versions",
     "analyze_information_gain",
     "search_trajectories",
-    "canvas_ui"
+    "search_decisions"
   ];
-  let toolNames = [...defaultBaseTools];
+  let toolNames = [...serverToolNames, ...defaultBaseTools];
+  const allServerTools = await client.tools.list({ limit: 1000 });
+  const serverToolSet = new Set(allServerTools.items.map((t) => t.name).filter((n) => !!n));
+  toolNames = toolNames.filter((name2) => serverToolSet.has(name2));
   if (toolNames.includes("memory_apply_patch")) {
     try {
       const resp = await client.tools.list({ name: "memory_apply_patch" });
@@ -81653,7 +81969,14 @@ function getToolNames3() {
     "compare_versions",
     "analyze_information_gain",
     "search_trajectories",
-    "canvas_ui"
+    "search_decisions",
+    "world_manager",
+    "story_manager",
+    "asset_manager",
+    "image_generator",
+    "canvas_ui",
+    "get_canvas_interactions",
+    "send_suggestion"
   ];
 }
 function getAllLettaToolNames3() {
@@ -83249,7 +83572,8 @@ var ANTHROPIC_DEFAULT_TOOLS = [
   "asset_manager",
   "image_generator",
   "canvas_ui",
-  "get_canvas_interactions"
+  "get_canvas_interactions",
+  "send_suggestion"
 ];
 var OPENAI_PASCAL_TOOLS = [
   "AskUserQuestion",
@@ -84255,4 +84579,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=86CC90DAE6D6C58964756E2164756E21
+//# debugId=083F2EAEC41C010C64756E2164756E21
