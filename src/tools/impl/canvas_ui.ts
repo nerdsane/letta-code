@@ -9,6 +9,7 @@ import type {
   CanvasUIMessage,
   InteractionMessage,
   StateChangeMessage,
+  JsonRenderTree,
 } from "../../agent-bus/types";
 import type { ComponentSpec } from "../../canvas/components/types";
 
@@ -231,6 +232,36 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
 }
 
 // ============================================================================
+// ComponentSpec → json-render Tree Conversion
+// ============================================================================
+
+/**
+ * Convert ComponentSpec (legacy format) to JsonRenderTree (json-render format)
+ *
+ * This enables backwards compatibility during Phase 0 migration.
+ * Agents can continue using ComponentSpec, but we send json-render tree format.
+ */
+function componentSpecToTree(spec: ComponentSpec): JsonRenderTree {
+  const tree: JsonRenderTree = {
+    type: spec.type,
+    props: (spec as any).props || {},
+    key: spec.id || `comp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  };
+
+  // Handle children recursively
+  const anySpec = spec as any;
+  if (anySpec.children) {
+    if (Array.isArray(anySpec.children)) {
+      tree.children = anySpec.children.map(componentSpecToTree);
+    } else {
+      tree.children = [componentSpecToTree(anySpec.children)];
+    }
+  }
+
+  return tree;
+}
+
+// ============================================================================
 // State Broadcast
 // ============================================================================
 
@@ -277,18 +308,26 @@ export async function canvas_ui(args: CanvasUIArgs): Promise<CanvasUIResult> {
 
     const componentId = spec.id || `canvas-${Date.now()}`;
 
+    // Phase 0 Migration: Convert ComponentSpec to json-render tree
+    const tree = action !== "remove" ? componentSpecToTree(spec) : undefined;
+
     const message: CanvasUIMessage = {
       type: "canvas_ui",
       action,
       target,
       componentId,
-      spec: action === "remove" ? undefined : spec,
+
+      // Send both formats during transition for backwards compatibility
+      spec: action === "remove" ? undefined : spec, // Legacy format
+      tree: tree, // New json-render format
+
       mode,
     };
 
     ws.send(JSON.stringify(message));
 
     console.log(`[canvas_ui] Sent ${action} for ${componentId} at ${target}`);
+    console.log(`[canvas_ui] Tree format:`, JSON.stringify(tree, null, 2));
 
     let resultMessage: string;
     if (action === "remove") {
