@@ -3272,6 +3272,8 @@ var init_package = __esm(() => {
       "@letta-ai/letta-client": "1.6.4",
       "@radix-ui/react-dialog": "^1.1.15",
       glob: "^13.0.0",
+      gsap: "^3.14.2",
+      howler: "^2.2.4",
       "ink-link": "^5.0.0",
       open: "^10.2.0",
       react: "^18.3.1",
@@ -84579,4 +84581,4 @@ Error during initialization: ${message}`);
 }
 main();
 
-//# debugId=8673E5321F194E4D64756E2164756E21
+//# debugId=8CECBCF4C1F4AC9E64756E2164756E21
