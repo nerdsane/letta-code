@@ -107,10 +107,6 @@ function handleInteraction(message: InteractionMessage) {
     interactionQueue.shift();
   }
 
-  console.log(
-    `[canvas_ui] Queued interaction: ${interactionType} on ${componentId} (queue size: ${interactionQueue.length})`,
-  );
-
   // Also try TypeScript callbacks for immediate handling
   if (target && interactionCallbacks.has(target)) {
     const callback = interactionCallbacks.get(target)!;
@@ -186,7 +182,6 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
     const ws = new WebSocket(AGENT_BUS_URL);
 
     ws.onopen = () => {
-      console.log("[canvas_ui] Connected to Agent Bus");
       isConnecting = false;
       agentBusWs = ws;
       resolve(ws);
@@ -210,7 +205,6 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
     };
 
     ws.onclose = () => {
-      console.log("[canvas_ui] Agent Bus connection closed");
       agentBusWs = null;
       isConnecting = false;
     };
@@ -221,7 +215,6 @@ function ensureAgentBusConnection(): Promise<WebSocket> {
           typeof event.data === "string" ? event.data : event.data.toString();
         const message = JSON.parse(data);
         if (message.type === "interaction") {
-          console.log("[canvas_ui] User interaction:", message);
           handleInteraction(message as InteractionMessage);
         }
       } catch (err) {
@@ -282,7 +275,6 @@ export async function broadcastStateChange(
     };
 
     ws.send(JSON.stringify(message));
-    console.log(`[canvas_ui] Broadcast state change: ${event}`);
   } catch (error) {
     console.error("[canvas_ui] Failed to broadcast state change:", error);
     throw error; // Re-throw so callers know about the failure
@@ -325,9 +317,6 @@ export async function canvas_ui(args: CanvasUIArgs): Promise<CanvasUIResult> {
     };
 
     ws.send(JSON.stringify(message));
-
-    console.log(`[canvas_ui] Sent ${action} for ${componentId} at ${target}`);
-    console.log(`[canvas_ui] Tree format:`, JSON.stringify(tree, null, 2));
 
     let resultMessage: string;
     if (action === "remove") {
