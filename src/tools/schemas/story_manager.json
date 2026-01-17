@@ -1,4 +1,5 @@
 {
+  "title": "StoryManagerArgs",
   "type": "object",
   "properties": {
     "operation": {

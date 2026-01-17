@@ -1,4 +1,5 @@
 {
+  "title": "SendSuggestionArgs",
   "type": "object",
   "properties": {
     "title": {

@@ -1,4 +1,5 @@
 {
+  "title": "WorldManagerArgs",
   "type": "object",
   "properties": {
     "operation": {

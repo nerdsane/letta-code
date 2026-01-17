@@ -1,4 +1,5 @@
 {
+  "title": "ImageGeneratorArgs",
   "type": "object",
   "properties": {
     "prompt": {

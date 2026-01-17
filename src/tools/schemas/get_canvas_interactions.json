@@ -2,6 +2,7 @@
   "name": "get_canvas_interactions",
   "description": "Get pending user interactions from the canvas UI. Call this to see what buttons users clicked, actions selected, or other interactions with your UI components.",
   "parameters": {
+    "title": "GetCanvasInteractionsArgs",
     "type": "object",
     "properties": {
       "peek": {

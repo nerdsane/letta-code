@@ -1,4 +1,5 @@
 {
+  "title": "AssetManagerArgs",
   "type": "object",
   "properties": {
     "operation": {
